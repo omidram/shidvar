@@ -1,0 +1,34 @@
+{
+  "sheets": [
+    {
+      "name": "فروردین",
+      "max_row": 309,
+      "max_col": 14
+    },
+    {
+      "name": "اردیبهشت",
+      "max_row": 1048,
+      "max_col": 15
+    },
+    {
+      "name": "خرداد",
+      "max_row": 456,
+      "max_col": 17
+    },
+    {
+      "name": "تیر",
+      "max_row": 691,
+      "max_col": 20
+    },
+    {
+      "name": "مرداد",
+      "max_row": 2383,
+      "max_col": 16
+    },
+    {
+      "name": "اعلام بار",
+      "max_row": 62,
+      "max_col": 8
+    }
+  ]
+}

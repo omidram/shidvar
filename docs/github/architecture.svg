@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
+  <title id="title">Shidvar runtime architecture</title>
+  <desc id="desc">Four portals talk to Next.js, which talks to PostgreSQL, Redis, files, and adapters.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#102018"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="960" height="420" rx="28" fill="url(#bg)"/>
+  <text x="48" y="46" fill="#7dffa8" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">RUNTIME</text>
+  <text x="48" y="78" fill="#f3f6f4" font-family="Segoe UI, sans-serif" font-size="26" font-weight="800">Four portals · one Next.js server</text>
+
+  <g filter="url(#shadow)">
+    <rect x="40" y="110" width="180" height="70" rx="16" fill="#111827" stroke="#00b562"/>
+    <text x="130" y="141" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700">Requester</text>
+    <text x="130" y="161" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, sans-serif" font-size="11">stores / purchasing</text>
+
+    <rect x="240" y="110" width="180" height="70" rx="16" fill="#111827" stroke="#22d37a"/>
+    <text x="330" y="141" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700">Supplier</text>
+    <text x="330" y="161" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, sans-serif" font-size="11">offers &amp; fulfillment</text>
+
+    <rect x="440" y="110" width="180" height="70" rx="16" fill="#111827" stroke="#00b562"/>
+    <text x="530" y="141" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700">Driver</text>
+    <text x="530" y="161" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, sans-serif" font-size="11">jobs · POD · wallet</text>
+
+    <rect x="640" y="110" width="180" height="70" rx="16" fill="#111827" stroke="#7c3aed"/>
+    <text x="730" y="141" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="14" font-weight="700">Admin</text>
+    <text x="730" y="161" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, sans-serif" font-size="11">KYC · invoices · rules</text>
+  </g>
+
+  <path d="M130 180 v28 H830 v-28" fill="none" stroke="#00b562" stroke-width="2" opacity="0.6"/>
+  <path d="M480 208 v22" stroke="#00b562" stroke-width="2"/>
+
+  <rect x="250" y="230" width="460" height="72" rx="18" fill="#04210f" stroke="#00b562"/>
+  <text x="480" y="261" text-anchor="middle" fill="#7dffa8" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">Next.js 16 · /api/v1 · HttpOnly sessions</text>
+  <text x="480" y="282" text-anchor="middle" fill="#d5e4db" font-family="Segoe UI, sans-serif" font-size="12">Domain services · state machines · RBAC</text>
+
+  <g>
+    <rect x="70" y="330" width="190" height="58" rx="14" fill="#111827" stroke="#1e2a36"/>
+    <text x="165" y="365" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">PostgreSQL</text>
+    <rect x="280" y="330" width="190" height="58" rx="14" fill="#111827" stroke="#1e2a36"/>
+    <text x="375" y="365" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">Redis / jobs</text>
+    <rect x="490" y="330" width="190" height="58" rx="14" fill="#111827" stroke="#1e2a36"/>
+    <text x="585" y="365" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">Private files</text>
+    <rect x="700" y="330" width="190" height="58" rx="14" fill="#111827" stroke="#1e2a36"/>
+    <text x="795" y="365" text-anchor="middle" fill="#e8eef4" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700">SMS · maps · pay</text>
+  </g>
+</svg>
