@@ -178,7 +178,7 @@ async function main() {
         emailVerifiedAt: new Date(),
         phoneVerifiedAt: new Date(),
       },
-      update: { passwordHash, status: "ACTIVE", firstName: opts.firstName, lastName: opts.lastName },
+      update: { passwordHash, phone: opts.phone, status: "ACTIVE", firstName: opts.firstName, lastName: opts.lastName },
     });
     await prisma.membership.upsert({
       where: { userId_companyId: { userId: user.id, companyId: opts.companyId } },
@@ -190,11 +190,16 @@ async function main() {
     return user;
   }
 
+  await prisma.user.updateMany({
+    where: { OR: [{ email: "admin@shidvar.local" }, { id: "00000000-0000-0000-0000-000000000011" }] },
+    data: { email: "shidroadmin" },
+  });
+
   const admin = await upsertUser({
     id: "00000000-0000-0000-0000-000000000011",
-    email: "admin@shidvar.local",
-    phone: "09120000001",
-    password: "DevAdmin!2026",
+    email: "shidroadmin",
+    phone: "09123245541",
+    password: "123shidroadmin123",
     firstName: "آرمین",
     lastName: "مدیری",
     roleId: adminRole.id,
@@ -203,7 +208,7 @@ async function main() {
 
   if (process.env.SHIDVAR_DEMO !== "1") {
     console.log("Seed complete. No demo companies, drivers, or loads were created.");
-    console.log("Admin  admin@shidvar.local / DevAdmin!2026");
+    console.log("Admin  shidroadmin / 123shidroadmin123");
     return;
   }
 
@@ -520,7 +525,7 @@ async function main() {
   await enforceSingleActiveLoad(prisma);
 
   console.log("Seed complete.");
-  console.log("Admin      admin@shidvar.local / DevAdmin!2026");
+  console.log("Admin      shidroadmin / 123shidroadmin123");
   console.log("Cargo owner buyer@alpha-stores.local / DevStore!2026");
   console.log("Driver     ali.rezaei@fleet.local / DevDriver!2026");
   console.log("Pending    pending.driver@fleet.local / DevDriver!2026");

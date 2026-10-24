@@ -151,6 +151,7 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     where: {
       OR: [{ email: identifier }, { phone: input.identifier.trim() }, { phone: normalizeMobile(identifier) }, { nationalId: digits }],
     },
+    include: { userRoles: { select: { role: { select: { portal: true } } } } },
   });
   if (!user) throw Errors.unauthorized("Invalid credentials");
 
@@ -183,6 +184,10 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
   });
 
   logger.info("login_password_accepted", { userId: user.id, ip: meta.ip });
+  const isPlatformAdmin = user.userRoles.some((row) => row.role.portal === "PLATFORM");
+  if (isPlatformAdmin) {
+    return completeLogin(user.id, input.portal as Portal | undefined, meta);
+  }
   return issueLoginOtp(user, input.portal as Portal | undefined);
 }
 

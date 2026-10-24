@@ -200,7 +200,7 @@ A normal seed creates only the platform operator. Companies and drivers register
 
 | Portal | Email | Password |
 | --- | --- | --- |
-| Admin | `admin@shidvar.local` | `DevAdmin!2026` |
+| Admin | `shidroadmin` | `123shidroadmin123` |
 
 Set `SHIDVAR_DEMO=1` only when you intentionally want the old sample companies, drivers, and loads.
 

@@ -1,0 +1,80 @@
+2026-10-14 11:59:19.325 +0330 [6280] LOG:  starting PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+2026-10-14 11:59:19.326 +0330 [6280] LOG:  listening on IPv4 address "127.0.0.1", port 5433
+2026-10-14 11:59:19.391 +0330 [2400] LOG:  database system was shut down at 2026-08-22 20:21:37 +0330
+2026-10-14 11:59:19.410 +0330 [6280] LOG:  database system is ready to accept connections
+2026-10-14 11:59:33.477 +0330 [12944] FATAL:  database "shidvar" does not exist
+2026-10-14 11:59:35.584 +0330 [8920] FATAL:  database "shidvar" does not exist
+2026-10-14 12:04:19.504 +0330 [27884] LOG:  checkpoint starting: time
+2026-10-14 12:06:08.150 +0330 [26692] ERROR:  character with byte sequence 0xd8 0xb1 in encoding "UTF8" has no equivalent in encoding "WIN1252"
+2026-10-14 12:06:08.150 +0330 [26692] CONTEXT:  unnamed portal parameter $3
+2026-10-14 12:06:08.150 +0330 [26692] STATEMENT:  INSERT INTO "public"."Currency" ("code","nameEn","nameFa","decimals","enabled") VALUES ($1,$2,$3,$4,$5) RETURNING "public"."Currency"."code"
+2026-10-14 12:06:08.192 +0330 [26692] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-14 12:06:24.625 +0330 [27884] LOG:  checkpoint complete: wrote 1159 buffers (7.1%), wrote 3 SLRU buffers; 1 WAL file(s) added, 0 removed, 0 recycled; write=124.966 s, sync=0.075 s, total=125.121 s; sync files=14, longest=0.012 s, average=0.006 s; distance=7863 kB, estimate=7863 kB; lsn=0/1FDB888, redo lsn=0/1F9F4E0
+2026-10-14 12:06:24.634 +0330 [27884] LOG:  checkpoint starting: immediate force wait
+2026-10-14 12:06:24.678 +0330 [27884] LOG:  checkpoint complete: wrote 1 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.012 s, total=0.045 s; sync files=2, longest=0.008 s, average=0.006 s; distance=241 kB, estimate=7101 kB; lsn=0/1FDB958, redo lsn=0/1FDB900
+2026-10-14 12:10:45.094 +0330 [25920] FATAL:  terminating connection due to administrator command
+2026-10-14 12:10:45.094 +0330 [18376] FATAL:  terminating connection due to administrator command
+2026-10-14 12:10:45.212 +0330 [27884] LOG:  checkpoint starting: immediate force wait
+2026-10-14 12:10:45.285 +0330 [27884] LOG:  checkpoint complete: wrote 3 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 1 recycled; write=0.003 s, sync=0.025 s, total=0.073 s; sync files=4, longest=0.008 s, average=0.007 s; distance=10353 kB, estimate=10353 kB; lsn=0/29F7F38, redo lsn=0/29F7EE0
+2026-10-14 12:15:45.290 +0330 [27884] LOG:  checkpoint starting: time
+2026-10-14 12:18:49.944 +0330 [27884] LOG:  checkpoint complete: wrote 1666 buffers (10.2%), wrote 2 SLRU buffers; 0 WAL file(s) added, 0 removed, 1 recycled; write=181.561 s, sync=3.055 s, total=184.654 s; sync files=719, longest=0.009 s, average=0.005 s; distance=10469 kB, estimate=10469 kB; lsn=0/3431688, redo lsn=0/34315F8
+2026-10-14 12:45:45.991 +0330 [27884] LOG:  checkpoint starting: time
+2026-10-14 12:45:49.702 +0330 [27884] LOG:  checkpoint complete: wrote 32 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=3.479 s, sync=0.195 s, total=3.712 s; sync files=29, longest=0.010 s, average=0.007 s; distance=109 kB, estimate=9433 kB; lsn=0/344CDF8, redo lsn=0/344CDA0
+2026-10-16 08:36:30.215 +0330 [6280] LOG:  could not reserve shared memory region (addr=000001C7E5A30000) for child 0000000000000B48: error code 487
+2026-10-17 05:30:28.006 +0330 [6280] LOG:  could not reserve shared memory region (addr=000001C7E8230000) for child 00000000000012BC: error code 487
+2026-10-24 10:20:32.962 +0330 [74120] LOG:  starting PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+2026-10-24 10:20:32.963 +0330 [74120] LOG:  listening on IPv4 address "127.0.0.1", port 5433
+2026-10-24 10:20:33.053 +0330 [64828] LOG:  database system was interrupted; last known up at 2026-10-14 12:45:49 +0330
+2026-10-24 10:20:34.618 +0330 [64828] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-10-24 10:20:34.626 +0330 [64828] LOG:  redo starts at 0/344CDA0
+2026-10-24 10:20:34.626 +0330 [64828] LOG:  invalid record length at 0/344CEA8: expected at least 24, got 0
+2026-10-24 10:20:34.626 +0330 [64828] LOG:  redo done at 0/344CE70 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-10-24 10:20:34.636 +0330 [68976] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-10-24 10:20:34.667 +0330 [68976] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.013 s, total=0.036 s; sync files=2, longest=0.011 s, average=0.007 s; distance=0 kB, estimate=0 kB; lsn=0/344CEA8, redo lsn=0/344CEA8
+2026-10-24 10:20:34.679 +0330 [74120] LOG:  database system is ready to accept connections
+2026-10-24 10:25:34.682 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 10:25:38.647 +0330 [68976] LOG:  checkpoint complete: wrote 35 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=3.830 s, sync=0.110 s, total=3.966 s; sync files=26, longest=0.048 s, average=0.005 s; distance=201 kB, estimate=201 kB; lsn=0/347F400, redo lsn=0/347F3A8
+2026-10-24 10:30:34.658 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 10:30:43.803 +0330 [68976] LOG:  checkpoint complete: wrote 82 buffers (0.5%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=8.999 s, sync=0.132 s, total=9.145 s; sync files=62, longest=0.006 s, average=0.003 s; distance=384 kB, estimate=384 kB; lsn=0/34E6220, redo lsn=0/34DF4B0
+2026-10-24 10:35:34.814 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 10:35:36.791 +0330 [68976] LOG:  checkpoint complete: wrote 17 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.931 s, sync=0.031 s, total=1.978 s; sync files=13, longest=0.004 s, average=0.003 s; distance=98 kB, estimate=355 kB; lsn=0/34F80F0, redo lsn=0/34F8098
+2026-10-24 10:40:34.795 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 10:40:35.977 +0330 [68976] LOG:  checkpoint complete: wrote 10 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.153 s, sync=0.014 s, total=1.182 s; sync files=7, longest=0.003 s, average=0.002 s; distance=60 kB, estimate=326 kB; lsn=0/3507338, redo lsn=0/35072E0
+2026-10-24 10:42:29.421 +0330 [78944] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.421 +0330 [35112] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.421 +0330 [75236] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.421 +0330 [77720] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.422 +0330 [76392] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.422 +0330 [70136] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.422 +0330 [76308] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.423 +0330 [75120] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.423 +0330 [72768] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.423 +0330 [78232] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.423 +0330 [76708] FATAL:  terminating connection due to administrator command
+2026-10-24 10:42:29.538 +0330 [68976] LOG:  checkpoint starting: immediate force wait
+2026-10-24 10:42:29.561 +0330 [68976] LOG:  checkpoint complete: wrote 1 buffers (0.0%), wrote 0 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.003 s, total=0.024 s; sync files=1, longest=0.003 s, average=0.003 s; distance=1 kB, estimate=293 kB; lsn=0/3507968, redo lsn=0/3507910
+2026-10-24 10:47:29.574 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 10:49:51.195 +0330 [68976] LOG:  checkpoint complete: wrote 1266 buffers (7.7%), wrote 2 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=140.639 s, sync=0.964 s, total=141.621 s; sync files=694, longest=0.014 s, average=0.002 s; distance=7740 kB, estimate=7740 kB; lsn=0/3C96A38, redo lsn=0/3C969A8
+2026-10-24 10:55:10.804 +0330 [66676] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-24 10:55:10.810 +0330 [77436] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-24 10:55:10.810 +0330 [52600] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-24 11:02:29.236 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 11:02:35.627 +0330 [68976] LOG:  checkpoint complete: wrote 58 buffers (0.4%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=6.283 s, sync=0.093 s, total=6.391 s; sync files=42, longest=0.008 s, average=0.003 s; distance=26 kB, estimate=6968 kB; lsn=0/3C9D4E0, redo lsn=0/3C9D450
+2026-10-24 11:07:29.647 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 11:07:33.666 +0330 [68976] LOG:  checkpoint complete: wrote 33 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=3.924 s, sync=0.079 s, total=4.020 s; sync files=28, longest=0.012 s, average=0.003 s; distance=127 kB, estimate=6284 kB; lsn=0/3CBF588, redo lsn=0/3CBD3A0
+2026-10-24 11:12:29.675 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 11:12:31.024 +0330 [68976] LOG:  checkpoint complete: wrote 12 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.312 s, sync=0.024 s, total=1.350 s; sync files=10, longest=0.005 s, average=0.003 s; distance=13 kB, estimate=5657 kB; lsn=0/3CC0B28, redo lsn=0/3CC0AD0
+2026-10-24 11:17:29.035 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 11:17:33.388 +0330 [68976] LOG:  checkpoint complete: wrote 38 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=4.270 s, sync=0.069 s, total=4.354 s; sync files=29, longest=0.008 s, average=0.003 s; distance=114 kB, estimate=5103 kB; lsn=0/3CDD4A8, redo lsn=0/3CDD450
+2026-10-24 11:27:29.403 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 11:27:29.862 +0330 [68976] LOG:  checkpoint complete: wrote 4 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.430 s, sync=0.013 s, total=0.460 s; sync files=5, longest=0.003 s, average=0.003 s; distance=8 kB, estimate=4593 kB; lsn=0/3CDF7F8, redo lsn=0/3CDF7A0
+2026-10-24 14:27:30.282 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 14:27:30.433 +0330 [68976] LOG:  checkpoint complete: wrote 1 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.110 s, sync=0.011 s, total=0.152 s; sync files=2, longest=0.007 s, average=0.006 s; distance=3 kB, estimate=4134 kB; lsn=0/3CE0618, redo lsn=0/3CE05C0
+2026-10-24 15:02:30.500 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 15:02:31.187 +0330 [68976] LOG:  checkpoint complete: wrote 6 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.636 s, sync=0.026 s, total=0.688 s; sync files=7, longest=0.006 s, average=0.004 s; distance=4 kB, estimate=3721 kB; lsn=0/3CE19E0, redo lsn=0/3CE1950
+2026-10-24 15:07:30.189 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 15:07:32.269 +0330 [68976] LOG:  checkpoint complete: wrote 18 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=2.000 s, sync=0.060 s, total=2.081 s; sync files=19, longest=0.005 s, average=0.004 s; distance=40 kB, estimate=3353 kB; lsn=0/3CEF020, redo lsn=0/3CEBB50
