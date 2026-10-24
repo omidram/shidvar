@@ -160,6 +160,8 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   }
 
   const items = NAV[portal];
+  const pinned = portal === "admin" ? items.filter((item) => item.key === "adminProfile" || item.key === "settings") : [];
+  const menuItems = portal === "admin" ? items.filter((item) => item.key !== "adminProfile" && item.key !== "settings") : items;
   const mobile = portal === "driver";
   const unread = (notes.data ?? []).filter((n) => !n.readAt).length;
   const hasCoins = portal === "requester" || portal === "driver";
@@ -182,7 +184,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
           {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.requester : t.auth.driver}
         </p>
         <nav className="mt-8 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
-          {items.map((item) => {
+          {menuItems.map((item) => {
             const Icon = ICONS[item.key];
             const active =
               navReady && (pathname === item.href || (item.href !== `/${portal}/dashboard` && pathname.startsWith(item.href)));
@@ -201,6 +203,27 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             );
           })}
         </nav>
+        {pinned.length ? (
+          <nav className="mt-3 grid shrink-0 gap-1 border-t border-white/10 pt-3">
+            {pinned.map((item) => {
+              const Icon = ICONS[item.key];
+              const active = navReady && (pathname === item.href || pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
+                    active ? "bg-primary text-primary-foreground" : "text-white/80 hover:bg-white/10",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.menu[item.key]}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
         <Button variant="outline" className="mt-4 w-full shrink-0 border-white/20 text-white" onClick={() => void signOut()}>
           <LogOut className="h-4 w-4" />
           {t.common.signOut}
@@ -224,6 +247,12 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
               </Link>
             ) : null}
             <ThemeToggle />
+            {portal === "admin" ? (
+              <Link href="/admin/settings" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-border bg-card px-3 text-sm font-semibold">
+                <Settings className="h-4 w-4" />
+                {t.menu.settings}
+              </Link>
+            ) : null}
             <Button variant="secondary" className="h-11 px-3" onClick={() => void signOut()}>
               <LogOut className="h-4 w-4" />
               {t.common.signOut}
