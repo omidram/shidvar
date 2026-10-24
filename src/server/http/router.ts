@@ -8,6 +8,7 @@ import { databaseUnavailableError, isDatabaseUnavailable, prismaErrorCode } from
 import { fail, ok, zodFields } from "@/server/http/envelope";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
+import { isAllowedRequestOrigin, PRODUCTION_ORIGINS } from "@/server/http/origin";
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
@@ -41,18 +42,19 @@ function matchPath(pattern: string, actual: string) {
 }
 
 function originAllowed(req: NextRequest) {
-  if (req.method === "GET" || req.method === "HEAD") return true;
-  const origin = req.headers.get("origin");
-  if (!origin) return true;
-  try {
-    const from = new URL(origin);
-    const app = new URL(config.appUrl);
-    if (from.origin === app.origin) return true;
-    const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
-    return from.protocol === app.protocol && from.port === (app.port || (app.protocol === "https:" ? "443" : "80")) && loopback.has(from.hostname) && loopback.has(app.hostname);
-  } catch {
-    return false;
-  }
+  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return true;
+  const extra = (process.env.ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return isAllowedRequestOrigin(req.headers.get("origin"), [
+    config.appUrl,
+    req.nextUrl.origin,
+    req.headers.get("host"),
+    req.headers.get("x-forwarded-host")?.split(",")[0],
+    ...PRODUCTION_ORIGINS,
+    ...extra,
+  ]);
 }
 
 export async function dispatch(req: NextRequest, pathParts: string[], routes: RouteDefinition[]) {

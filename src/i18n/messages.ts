@@ -14,6 +14,7 @@ export const fa = {
   },
   auth: {
     loginTitle: "ورود به سامانه",
+    loginHint: "با موبایل، ایمیل یا کد ملی وارد شوید. بعد از رمز، کد یک‌بارمصرف پیامک می‌شود.",
     registerTitle: "ایجاد حساب",
     identifier: "ایمیل یا موبایل",
     password: "رمز عبور",

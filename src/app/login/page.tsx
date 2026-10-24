@@ -105,7 +105,7 @@ function LoginForm() {
           <p className="mt-1 text-sm text-muted">
             {challenge
               ? `${challenge.channel === "SMS" ? t.auth.otpSentSms : t.auth.otpSentEmail} ${challenge.destination ?? ""}`
-              : "با موبایل، ایمیل یا کد ملی وارد شوید."}
+              : t.auth.loginHint}
           </p>
           <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
             {challenge ? (

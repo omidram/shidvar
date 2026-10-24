@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/visual/icons";
+import { SUPPORT_PHONES } from "@/lib/support-phones";
 
 export function PublicFooter() {
   return (
@@ -27,8 +28,13 @@ export function PublicFooter() {
         </div>
         <div>
           <h3 className="font-semibold">پشتیبانی</h3>
-          <p className="mt-3 text-sm text-white/75">صاحبان بار: ۰۲۱-۹۱۰۰۰۰۰۰</p>
-          <p className="mt-1 text-sm text-white/75">ناوگان: ۰۲۱-۹۱۰۰۰۰01</p>
+          <div className="mt-3 grid gap-2 text-sm text-white/75">
+            {SUPPORT_PHONES.map((phone) => (
+              <a key={phone} href={`tel:${phone}`} dir="ltr">
+                {phone}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

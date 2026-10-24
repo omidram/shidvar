@@ -182,23 +182,18 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     data: { failedLoginAttempts: 0, lockedUntil: null },
   });
 
-  if (user.twoFactorEnabled) {
-    return issueLoginOtp(user, input.portal as Portal | undefined);
-  }
-
-  return completeLogin(user.id, input.portal as Portal | undefined, meta);
+  logger.info("login_password_accepted", { userId: user.id, ip: meta.ip });
+  return issueLoginOtp(user, input.portal as Portal | undefined);
 }
 
 function twoFactorChannelOf(user: { twoFactorSecret: string | null; email: string | null; phone: string | null }): {
   channel: TwoFactorChannel;
   target: string;
 } {
-  const preferred = user.twoFactorSecret === "SMS" ? "SMS" : "EMAIL";
-  if (preferred === "SMS" && user.phone) return { channel: "SMS", target: user.phone };
-  if (preferred === "EMAIL" && user.email) return { channel: "EMAIL", target: user.email };
+  if (user.twoFactorSecret === "EMAIL" && user.email) return { channel: "EMAIL", target: user.email };
   if (user.phone) return { channel: "SMS", target: user.phone };
   if (user.email) return { channel: "EMAIL", target: user.email };
-  throw Errors.forbidden("برای ورود دو مرحله‌ای موبایل یا ایمیل لازم است");
+  throw Errors.forbidden("برای ورود، موبایل یا ایمیل لازم است");
 }
 
 function maskDestination(channel: TwoFactorChannel, target: string) {
@@ -209,8 +204,8 @@ function maskDestination(channel: TwoFactorChannel, target: string) {
     return `${visible}***@${domain}`;
   }
   const digits = target.replace(/\D/g, "");
-  if (digits.length < 7) return "۰۹*****";
-  return `${digits.slice(0, 4)}***${digits.slice(-3)}`;
+  if (digits.length < 7) return "\u200E09*****";
+  return `\u200E${digits.slice(0, 4)}***${digits.slice(-3)}`;
 }
 
 function sixDigitCode() {
