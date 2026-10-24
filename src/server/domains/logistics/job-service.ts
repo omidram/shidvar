@@ -26,6 +26,9 @@ import {
   completeTracking,
   startTrackingForJob,
 } from "@/server/domains/logistics/tracking-service";
+import { assertDriverCanTakeLoad, checkDriverLoad } from "@/server/domains/logistics/load-guard";
+import { moveCoins } from "@/server/domains/finance/coin-service";
+import { getRule } from "@/server/settings/rules";
 
 export { podSchema };
 
@@ -77,6 +80,9 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
     qualityNotes: job.order.request?.qualityNotes ?? null,
     packagingNotes: job.order.request?.packagingNotes ?? null,
     budgetAmount: job.order.request?.budgetAmount != null ? Number(job.order.request.budgetAmount) : null,
+    dispatchMode: job.order.request?.dispatchMode ?? "NORMAL",
+    needsWaybill: job.order.request?.needsWaybill ?? false,
+    needsInsurance: job.order.request?.needsInsurance ?? false,
     currencyCode: job.currencyCode,
     assignedDriver:
       (privileged || assigned) && job.assignedDriver
@@ -199,7 +205,8 @@ export async function listDriverMarketplace(actor: Actor) {
     });
     if (declined?.status === "REJECTED") continue;
     const job = await loadJob(match.job.id);
-    cards.push({ ...serializeJob(job, actor), matchScore: match.score });
+    const loadCheck = await checkDriverLoad(driver.id, job.id);
+    cards.push({ ...serializeJob(job, actor), matchScore: match.score, loadCheck });
   }
   return cards;
 }
@@ -315,7 +322,7 @@ export async function selectDriver(actor: Actor, jobId: string, driverId: string
     where: { jobId_driverId: { jobId, driverId } },
   });
   if (!application || application.status !== "SUBMITTED") throw Errors.conflict("Driver has not applied");
-  await assertDriverFreeForTrip(driverId);
+  await assertDriverCanTakeLoad(driverId, jobId);
 
   const updated = await prisma.transportationJob.updateMany({
     where: {
@@ -649,13 +656,34 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
   if (!["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) || job.assignedDriverId) {
     throw Errors.conflict("این بار دیگر قابل قبول نیست");
   }
-  await assertDriverFreeForTrip(driver.id);
+  await assertDriverCanTakeLoad(driver.id, jobId);
 
   const updated = await prisma.transportationJob.updateMany({
     where: { id: jobId, assignedDriverId: null, status: { in: ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"] } },
     data: { assignedDriverId: driver.id, status: "DRIVER_SELECTED", version: { increment: 1 } },
   });
   if (updated.count !== 1) throw Errors.conflict("راننده دیگری این بار را قبول کرده است");
+
+  const acceptCost = Math.max(0, Math.round(await getRule<number>("coins.acceptJobCost", 100)));
+  if (acceptCost > 0) {
+    try {
+      await moveCoins({
+        companyId: driver.carrierCompanyId,
+        amount: -acceptCost,
+        kind: "SPEND",
+        reason: `قبول بار ${job.number}`,
+        refType: "TransportationJob",
+        refId: jobId,
+        actorId: actor.userId,
+      });
+    } catch (error) {
+      await prisma.transportationJob.update({
+        where: { id: jobId },
+        data: { assignedDriverId: null, status: "OFFERED_TO_DRIVERS", version: { increment: 1 } },
+      });
+      throw error;
+    }
+  }
 
   await prisma.driverApplication.upsert({
     where: { jobId_driverId: { jobId, driverId: driver.id } },

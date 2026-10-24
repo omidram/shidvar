@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { useI18n } from "@/i18n/provider";
 import { DocumentGallery } from "@/components/domain/document-uploader";
+import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 
 export default function VerificationsPage() {
   const { t } = useI18n();
@@ -33,6 +34,7 @@ export default function VerificationsPage() {
         }>;
         drivers: Array<{
           id: string;
+          carrierCompanyId: string;
           status: string;
           licenseNumber?: string | null;
           licenseType?: string | null;
@@ -53,8 +55,9 @@ export default function VerificationsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["verifications"] }),
     onError: (e: Error) => toast.error(e.message),
   });
-  const companies = q.data?.companies ?? [];
   const drivers = q.data?.drivers ?? [];
+  const driverCompanyIds = new Set(drivers.map((d) => d.carrierCompanyId));
+  const companies = (q.data?.companies ?? []).filter((c) => !(c.type === "CARRIER" && driverCompanyIds.has(c.id)));
   return (
     <div>
       <PageHeader title={t.menu.verifications} description="شرکت‌ها و رانندگان در انتظار تأیید — قبل از تصمیم پروفایل را باز کنید" />
@@ -90,6 +93,12 @@ export default function VerificationsPage() {
                   <Link href={`/admin/companies/${c.id}`}>{t.common.details}</Link>
                 </Button>
               </div>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-bold text-primary">درخواست اطلاعات تکمیلی</summary>
+                <div className="mt-3">
+                  <AdminInfoRequestPanel companyId={c.id} target={c.type === "CARRIER" ? "driver" : "company"} />
+                </div>
+              </details>
               <div className="mt-4">
                 <DocumentGallery kind="company" entityId={c.id} title="مدارک شرکت" canVerify />
               </div>
@@ -101,7 +110,7 @@ export default function VerificationsPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <Link href={`/admin/drivers/${d.id}`} className="text-lg font-bold hover:underline">
-                  {d.user.firstName} {d.user.lastName}
+                  {`${d.user.firstName} ${d.user.lastName}`.trim() || `راننده ${d.user.phone ?? ""}`}
                 </Link>
                 <p className="mt-2 text-sm">
                   {[d.user.phone, d.user.email, d.carrier?.company?.tradeName].filter(Boolean).join(" · ")}
@@ -122,6 +131,12 @@ export default function VerificationsPage() {
                 <Link href={`/admin/drivers/${d.id}`}>{t.common.viewProfile}</Link>
               </Button>
             </div>
+            <details className="mt-4">
+              <summary className="cursor-pointer text-sm font-bold text-primary">درخواست اطلاعات تکمیلی</summary>
+              <div className="mt-3">
+                <AdminInfoRequestPanel companyId={d.carrierCompanyId} target="driver" />
+              </div>
+            </details>
             <div className="mt-4">
               <DocumentGallery kind="driver" entityId={d.id} title="مدارک راننده" canVerify />
             </div>

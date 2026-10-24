@@ -12,7 +12,7 @@ export function PublicHeader({ ink = false }: { ink?: boolean }) {
     <header className={ink ? "border-b border-white/10 bg-ink text-white" : "sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur"}>
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="text-lg">
-          <BrandMark className={ink ? "text-white" : ""} />
+          <BrandMark className="h-16" />
         </Link>
         <nav className="hidden items-center gap-5 text-sm md:flex">
           <Link href="/#services">{t.nav.services}</Link>

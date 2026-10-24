@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/github/logo.png" width="96" height="96" alt="Shidvar logo"/>
+  <img src="docs/github/logo.png" width="96" height="96" alt="shidro logo"/>
 </p>
 
-<h1 align="center">شیدور · Shidvar</h1>
+<h1 align="center">shidro</h1>
 
 <p align="center">
   <strong>Persian-first B2B cargo matching and logistics platform</strong><br/>
@@ -31,16 +31,16 @@
 ---
 
 <p align="center">
-  <img src="docs/github/hero.png" alt="Shidvar — night fleet, live matching, emerald tracking" width="100%"/>
+  <img src="docs/github/hero.png" alt="shidro — night fleet, live matching, emerald tracking" width="100%"/>
 </p>
 
 ## What it is
 
-Shidvar is **not** a client-only mock. Persistence is PostgreSQL. Authorization is enforced on the server. Status changes go through state machines. Documents (KYC, invoices, proof of delivery) stay in private storage.
+shidro is **not** a client-only mock. Persistence is PostgreSQL. Authorization is enforced on the server. Status changes go through state machines. Documents (KYC, invoices, proof of delivery) stay in private storage.
 
 | You get | How |
 | --- | --- |
-| Four portals | Requester · Supplier · Driver · Admin |
+| Three portals | Company (cargo owner / supplier) · Driver · Admin |
 | Matching | Weighted supplier + driver scoring, not a dump of every row |
 | Live ops | Tracking, POD photo + signature, invoices, disputes, tickets |
 | Persian product UI | `fa` + RTL as the default locale |
@@ -54,11 +54,18 @@ Shidvar is **not** a client-only mock. Persistence is PostgreSQL. Authorization 
 
 | Portal | Who | Prefix | They do |
 | --- | --- | --- | --- |
-| **Requester** | Chain stores / purchasing | `/requester/*` | Create loads, accept offers, track, receive goods |
-| **Supplier** | Supply companies | `/supplier/*` | Quote, confirm, hand off to transport |
-| **Driver** | Individual drivers | `/driver/*` | Accept jobs, navigate, e-POD, wallet |
-| **Admin** | Platform operators | `/admin/*` | KYC, publish requests, invoices, business rules |
+| **Company** | Cargo owners and suppliers (one role) | `/requester/*` | Post loads (normal or VIP, optional waybill / insurance), track, receive goods |
+| **Driver** | Individual drivers | `/driver/*` | Accept jobs (one active load, or same-destination روبار loads), navigate, e-POD, wallet |
+| **Admin** | Platform operators | `/admin/*` | Request follow-up info, review and announce loads, coins, invoices, business rules |
 | **Public** | Anyone | `/`, `/login`, `/register` | Marketing site + auth |
+
+### Load flow
+
+1. Sign-up asks only for mobile number, national ID, and password. Every new company or driver gets **1000 coins**.
+2. Admin asks newly registered accounts for whatever extra info and documents are needed; the user answers from their panel.
+3. A company posts a load as **normal** (all drivers in range) or **VIP** (one chosen driver), with optional waybill and insurance.
+4. Admin reviews the request and announces it to drivers (or re-targets it while no driver has taken it).
+5. A driver with an active load can only accept another load going to the same destination (روبار).
 
 ## Architecture
 
@@ -187,32 +194,25 @@ If Docker Desktop is installed you can use `docker compose up -d` instead of `np
 | `npm run db:seed` | Demo seed (blocked in real production unless `SHIDVAR_DEMO=1`) |
 | `npm run package:win` | Build a portable Windows EXE |
 
-## Demo accounts
+## Accounts
 
-Local / demo only. Do not reuse these passwords anywhere real.
+A normal seed creates only the platform operator. Companies and drivers register themselves. There is no list of suggested users on the login page.
 
 | Portal | Email | Password |
 | --- | --- | --- |
 | Admin | `admin@shidvar.local` | `DevAdmin!2026` |
-| Requester | `buyer@alpha-stores.local` | `DevStore!2026` |
-| Requester | `buyer@badr.local` | `DevStore!2026` |
-| Requester | `buyer@chashni.local` | `DevStore!2026` |
-| Requester | `buyer@mahram.local` | `DevStore!2026` |
-| Supplier | `sales@pars-grain.local` | `DevSupplier!2026` |
-| Driver | `ali.rezaei@fleet.local` | `DevDriver!2026` |
-| Driver | `navid.karimi@fleet.local` | `DevDriver!2026` |
 
-Phone login also works for the seeded Iranian numbers printed by the seed.
+Set `SHIDVAR_DEMO=1` only when you intentionally want the old sample companies, drivers, and loads.
 
 ## Windows EXE
 
 `npm run package:win` produces a single file:
 
-`dist/Shidvar.exe`
+`dist/Shidro.exe`
 
 Copy **only that file** to another Windows 10/11 x64 PC. Double-click it (do **not** use Run as administrator). It unpacks Node + a seeded Postgres cluster and opens `http://127.0.0.1:5500`.
 
-If a previous run was elevated, delete `%LOCALAPPDATA%\ShidvarDesktop` and try again.
+If a previous run was elevated, delete `%LOCALAPPDATA%\ShidroDesktop` and try again.
 
 ## Health
 

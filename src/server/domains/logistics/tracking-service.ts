@@ -3,6 +3,8 @@ import { Errors } from "@/server/errors";
 import type { Actor } from "@/server/rbac/actor";
 import { coordsForCity, type LatLng } from "@/lib/geo/city-coords";
 import { distanceKm, estimatedHours, headingDeg, interpolate, routeDistanceKm, routeWaypoints } from "@/lib/geo/route";
+import { evaluateLoadAcceptance, normalizeCity } from "@/server/logistics/load-rules";
+import { activeLoadDestinations, jobDestination } from "./load-guard";
 
 export const TRACKING_LIVE_STATUSES = [
   "LOADED",
@@ -36,9 +38,15 @@ export async function findOpenTrip(driverId: string, exceptJobId?: string) {
 
 export async function assertDriverFreeForTrip(driverId: string, exceptJobId?: string) {
   const open = await findOpenTrip(driverId, exceptJobId);
-  if (open) {
-    throw Errors.conflict("این راننده الان یک سفر باز دارد. تا پایان همان بار نمی‌تواند سفر دیگری را هم‌زمان انجام دهد.");
+  if (!open) return;
+  if (exceptJobId) {
+    const [active, target] = await Promise.all([
+      activeLoadDestinations(driverId, exceptJobId, DRIVER_TRIP_STATUSES),
+      jobDestination(exceptJobId),
+    ]);
+    if (evaluateLoadAcceptance(active, target).allowed) return;
   }
+  throw Errors.conflict("این راننده الان یک سفر باز به مقصد دیگری دارد. فقط بار روباری (هم‌مقصد) را می‌تواند هم‌زمان حمل کند.");
 }
 
 const TRACKING_DONE = ["DELIVERED", "PROOF_SUBMITTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -541,8 +549,10 @@ export async function ensureDemoTracking() {
       jobs.find((job) => badr && job.order.requesterCompanyId === badr.id && (job.order.request?.destinationCity?.includes("زاهدان") || job.number.includes("000520"))) ??
       jobs.find((job) => badr && job.order.requesterCompanyId === badr.id) ??
       jobs[0];
+    const keepCity = normalizeCity(preferred.order.request?.destinationCity);
     for (const job of jobs) {
-      if (job.id !== preferred.id) await demoteOpenTrip(job.id);
+      const roobar = keepCity && normalizeCity(job.order.request?.destinationCity) === keepCity;
+      if (job.id !== preferred.id && !roobar) await demoteOpenTrip(job.id);
     }
     void driverId;
   }

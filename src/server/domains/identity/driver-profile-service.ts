@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db";
 import { Errors } from "@/server/errors";
 import type { Actor } from "@/server/rbac/actor";
+import { ACTIVE_LOAD_STATUSES } from "@/server/logistics/load-rules";
 
 export async function getDriverProfile(actor: Actor, id: string) {
   const driver = await prisma.driverProfile.findUnique({
@@ -54,6 +55,20 @@ export async function getDriverProfile(actor: Actor, id: string) {
       });
   if (!isSelf && !actor.isPlatformStaff && !relatedJob) throw Errors.notFound();
 
+  const activeJobs = await prisma.transportationJob.findMany({
+    where: { assignedDriverId: driver.id, status: { in: [...ACTIVE_LOAD_STATUSES] } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { include: { requesterCompany: true, request: { include: { items: true } } } },
+      pickupWarehouse: { include: { address: true } },
+      deliveryWarehouse: { include: { address: true } },
+      shipment: true,
+    },
+  });
+  if (driver.openJobCount !== activeJobs.length) {
+    await prisma.driverProfile.update({ where: { id: driver.id }, data: { openJobCount: activeJobs.length } });
+  }
+
   const areas = await prisma.operatingArea.findMany({
     where: { ownerType: "DRIVER", ownerId: driver.id },
     include: { geographicArea: true },
@@ -75,7 +90,18 @@ export async function getDriverProfile(actor: Actor, id: string) {
     ratingAvg: Number(driver.ratingAvg),
     ratingCount: driver.ratingCount,
     completedJobs: driver.completedJobs,
-    openJobCount: driver.openJobCount,
+    openJobCount: activeJobs.length,
+    activeLoads: activeJobs.map((job) => ({
+      id: job.id,
+      number: job.number,
+      status: job.status,
+      originCity: job.order.request?.originCity ?? job.pickupWarehouse?.address.city ?? null,
+      destinationCity: job.order.request?.destinationCity ?? job.deliveryWarehouse?.address.city ?? null,
+      originLine1: job.order.request?.originLine1 ?? job.pickupWarehouse?.address.line1 ?? null,
+      destinationLine1: job.order.request?.destinationLine1 ?? job.deliveryWarehouse?.address.line1 ?? null,
+      cargoOwner: job.order.requesterCompany.tradeName,
+      waybill: job.shipment?.trackingNumber ?? null,
+    })),
     availableFrom: driver.availableFrom,
     availableTo: driver.availableTo,
     createdAt: driver.createdAt,

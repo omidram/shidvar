@@ -11,7 +11,7 @@ const vazir = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "شیدور | تأمین و حمل سازمانی",
+  title: "shidro | تأمین و حمل سازمانی",
   description: "سامانه تأمین عمده، تطبیق تأمین‌کننده و حمل بار برای فروشگاه‌های زنجیره‌ای",
 };
 

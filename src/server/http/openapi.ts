@@ -21,7 +21,7 @@ export function buildOpenApi(routes: RouteDefinition[]) {
   }
   return {
     openapi: "3.0.3",
-    info: { title: "Shidvar API", version: "1.0.0" },
+    info: { title: "shidro API", version: "1.0.0" },
     servers: [{ url: "/api/v1" }],
     components: {
       securitySchemes: {

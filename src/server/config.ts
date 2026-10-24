@@ -2,7 +2,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   isProd: process.env.NODE_ENV === "production",
   appUrl: process.env.APP_URL ?? "http://localhost:5500",
-  appName: process.env.APP_NAME ?? "Shidvar",
+  appName: process.env.APP_NAME ?? "shidro",
   databaseUrl: process.env.DATABASE_URL ?? "",
   redisUrl: process.env.REDIS_URL ?? "",
   sessionSecret: process.env.SESSION_SECRET ?? "",

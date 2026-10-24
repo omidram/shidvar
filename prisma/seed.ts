@@ -6,6 +6,7 @@ import { RULE_DEFAULTS } from "../src/server/settings/rules";
 import { dispatchCargoToDrivers } from "../src/server/domains/logistics/cargo-dispatch";
 import { runDriverMatching } from "../src/server/domains/matching/run-driver-matching";
 import { seedLiveData } from "./live-data";
+import { enforceSingleActiveLoad } from "./enforce-load-rule";
 
 const prisma = new PrismaClient();
 
@@ -139,7 +140,6 @@ async function main() {
 
   const adminRole = await prisma.role.findFirstOrThrow({ where: { code: "SUPER_ADMIN" } });
   const requesterRole = await prisma.role.findFirstOrThrow({ where: { code: "REQUESTER_OWNER" } });
-  const supplierRole = await prisma.role.findFirstOrThrow({ where: { code: "SUPPLIER_OWNER" } });
   const driverRole = await prisma.role.findFirstOrThrow({ where: { code: "DRIVER" } });
 
   const platform = await prisma.company.upsert({
@@ -148,8 +148,8 @@ async function main() {
       id: "00000000-0000-0000-0000-000000000001",
       type: "PLATFORM",
       status: "APPROVED",
-      legalName: "Shidvar",
-      tradeName: "Shidvar",
+      legalName: "shidro",
+      tradeName: "shidro",
     },
     update: { status: "APPROVED" },
   });
@@ -201,6 +201,12 @@ async function main() {
     companyId: platform.id,
   });
 
+  if (process.env.SHIDVAR_DEMO !== "1") {
+    console.log("Seed complete. No demo companies, drivers, or loads were created.");
+    console.log("Admin  admin@shidvar.local / DevAdmin!2026");
+    return;
+  }
+
   const requesterCo = await prisma.company.upsert({
     where: { id: "00000000-0000-0000-0000-000000000002" },
     create: {
@@ -220,7 +226,7 @@ async function main() {
     where: { id: "00000000-0000-0000-0000-000000000003" },
     create: {
       id: "00000000-0000-0000-0000-000000000003",
-      type: "SUPPLIER",
+      type: "REQUESTER",
       status: "APPROVED",
       legalName: "Pars Grain Co",
       tradeName: "پارس غلات",
@@ -228,7 +234,7 @@ async function main() {
       verifiedAt: new Date(),
       verifiedById: admin.id,
     },
-    update: { status: "APPROVED" },
+    update: { status: "APPROVED", type: "REQUESTER" },
   });
 
   const carrierCo = await prisma.company.upsert({
@@ -263,7 +269,7 @@ async function main() {
     password: "DevSupplier!2026",
     firstName: "Reza",
     lastName: "Pars",
-    roleId: supplierRole.id,
+    roleId: requesterRole.id,
     companyId: supplierCo.id,
   });
 
@@ -510,6 +516,8 @@ async function main() {
     aliDriverId: driver.id,
     aliUserId: driverUser.id,
   });
+
+  await enforceSingleActiveLoad(prisma);
 
   console.log("Seed complete.");
   console.log("Admin      admin@shidvar.local / DevAdmin!2026");

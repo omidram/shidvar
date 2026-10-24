@@ -6,7 +6,7 @@ export function PublicFooter() {
     <footer className="surface-ink mt-16">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
         <div>
-          <BrandMark className="text-white" />
+          <BrandMark className="h-20" />
           <p className="mt-3 text-sm text-white/70">اتصال شرکت‌های پخش تأییدشده به رانندگان تأییدشده؛ با ردیابی زنده و کیف پول زرین‌پال.</p>
         </div>
         <div>
@@ -17,7 +17,7 @@ export function PublicFooter() {
           </div>
         </div>
         <div>
-          <h3 className="font-semibold">شیدور</h3>
+          <h3 className="font-semibold">shidro</h3>
           <div className="mt-3 grid gap-2 text-sm text-white/75">
             <Link href="/about">درباره ما</Link>
             <Link href="/how-it-works">روش کار</Link>

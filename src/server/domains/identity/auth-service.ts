@@ -10,6 +10,8 @@ import { getRule } from "@/server/settings/rules";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
 import { sendLoginSmsOtp } from "@/server/notify/sms-otp";
+import { ensureCoinWallet } from "@/server/domains/finance/coin-service";
+import { maskNationalId, normalizeDigits, normalizeMobile } from "@/lib/identity";
 import type { Actor } from "@/server/rbac/actor";
 import {
   loginSchema,
@@ -72,82 +74,61 @@ export async function registerUser(input: z.infer<typeof registerSchema>, meta: 
   if (policy.length) throw Errors.validation({ password: policy });
 
   const existing = await prisma.user.findFirst({
-    where: { OR: [{ email: input.email.toLowerCase() }, ...(input.phone ? [{ phone: input.phone }] : [])] },
+    where: { OR: [{ phone: input.phone }, { nationalId: input.nationalId }] },
   });
-  if (existing) throw Errors.conflict("An account with this email or phone already exists");
+  if (existing) throw Errors.conflict("حسابی با این شماره موبایل یا کد ملی قبلاً ثبت شده است");
 
   const passwordHash = await hashPassword(input.password);
-  const companyType = input.portal === "DRIVER" ? "CARRIER" : input.portal;
-  const roleCode = input.portal === "REQUESTER" ? "REQUESTER_OWNER" : input.portal === "SUPPLIER" ? "SUPPLIER_OWNER" : "DRIVER";
+  const isDriver = input.portal === "DRIVER";
+  const placeholderName = isDriver ? `راننده ${input.phone}` : `شرکت ${input.phone}`;
 
   const result = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
-        email: input.email.toLowerCase(),
         phone: input.phone,
+        nationalId: input.nationalId,
         passwordHash,
-        firstName: input.firstName,
-        lastName: input.lastName,
+        firstName: "",
+        lastName: "",
         status: config.isProd ? "PENDING_VERIFICATION" : "ACTIVE",
-        emailVerifiedAt: config.isProd ? null : new Date(),
       },
     });
     const company = await tx.company.create({
       data: {
-        type: companyType,
+        type: isDriver ? "CARRIER" : "REQUESTER",
         status: "UNDER_REVIEW",
-        legalName: input.companyName,
-        tradeName: input.companyName,
-        email: input.email.toLowerCase(),
+        legalName: placeholderName,
+        tradeName: placeholderName,
         phone: input.phone,
-        taxId: input.taxId,
-        registrationNumber: input.registrationNumber,
       },
     });
     await tx.membership.create({
       data: { userId: user.id, companyId: company.id, isOwner: true, status: "ACTIVE" },
     });
-    const role = await tx.role.findFirst({ where: { code: roleCode, isSystem: true } });
+    const role = await tx.role.findFirst({ where: { code: isDriver ? "DRIVER" : "REQUESTER_OWNER", isSystem: true } });
     if (role) {
       await tx.userRole.create({ data: { userId: user.id, roleId: role.id, companyId: company.id } });
     }
-    if (input.portal === "SUPPLIER") {
-      await tx.supplierProfile.create({ data: { companyId: company.id, status: "UNDER_REVIEW" } });
-    }
     let driverProfileId: string | undefined;
-    let vehicleId: string | undefined;
-    if (input.portal === "DRIVER") {
+    if (isDriver) {
       await tx.carrierProfile.create({ data: { companyId: company.id, status: "UNDER_REVIEW" } });
       const driver = await tx.driverProfile.create({
         data: {
           userId: user.id,
           carrierCompanyId: company.id,
           status: "UNDER_REVIEW",
-          licenseNumber: input.licenseNumber,
-          licenseType: input.licenseType,
-          nationalIdMasked: input.nationalId ? `****${input.nationalId.slice(-4)}` : null,
+          nationalIdMasked: maskNationalId(input.nationalId),
         },
       });
       driverProfileId = driver.id;
-      if (input.plateNumber) {
-        const vehicle = await tx.vehicle.create({
-          data: {
-            companyId: company.id,
-            plateNumber: input.plateNumber,
-            vehicleType: input.vehicleType ?? "TRUCK",
-            weightCapacity: 8,
-          },
-        });
-        await tx.driverVehicle.create({ data: { driverId: driver.id, vehicleId: vehicle.id, isPrimary: true } });
-        vehicleId = vehicle.id;
-      }
     }
-    return { user, company, driverProfileId, vehicleId };
+    return { user, company, driverProfileId };
   });
-  if (input.portal === "REQUESTER") {
+  if (!isDriver) {
     const { ensurePriceBook } = await import("@/server/domains/finance/price-book-service");
     await ensurePriceBook(result.company.id, `دفترچه قیمت ${result.company.tradeName}`);
   }
+  await ensureCoinWallet(result.company.id);
 
   await writeAudit({
     actor: null,
@@ -159,15 +140,16 @@ export async function registerUser(input: z.infer<typeof registerSchema>, meta: 
   });
 
   const tokens = await createSession(result.user.id, { ...meta, portal: input.portal });
-  return { tokens, companyId: result.company.id, userId: result.user.id, driverProfileId: result.driverProfileId, vehicleId: result.vehicleId };
+  return { tokens, companyId: result.company.id, userId: result.user.id, driverProfileId: result.driverProfileId };
 }
 
 export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?: string; userAgent?: string }) {
   hitRateLimit(`login:${meta.ip ?? "unknown"}`);
   const identifier = input.identifier.trim().toLowerCase();
+  const digits = normalizeDigits(identifier);
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: identifier }, { phone: input.identifier.trim() }],
+      OR: [{ email: identifier }, { phone: input.identifier.trim() }, { phone: normalizeMobile(identifier) }, { nationalId: digits }],
     },
   });
   if (!user) throw Errors.unauthorized("Invalid credentials");

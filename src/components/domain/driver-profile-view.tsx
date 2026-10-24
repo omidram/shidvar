@@ -14,6 +14,8 @@ import { formatDate, formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { useMe } from "@/hooks/use-me";
+import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
+import { AdminCoinsPanel } from "@/components/domain/coins-view";
 
 export type DriverProfile = {
   id: string;
@@ -26,6 +28,17 @@ export type DriverProfile = {
   ratingCount: number;
   completedJobs: number;
   openJobCount: number;
+  activeLoads?: Array<{
+    id: string;
+    number: string;
+    status: string;
+    originCity?: string | null;
+    destinationCity?: string | null;
+    originLine1?: string | null;
+    destinationLine1?: string | null;
+    cargoOwner: string;
+    waybill?: string | null;
+  }>;
   availableFrom?: string | null;
   availableTo?: string | null;
   createdAt: string;
@@ -79,11 +92,54 @@ export function DriverProfileView({ id }: { id: string }) {
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const driver = q.data;
-  const name = `${driver.user.firstName} ${driver.user.lastName}`.trim();
+  const name = `${driver.user.firstName} ${driver.user.lastName}`.trim() || driver.user.phone || "راننده";
+  const activeLoads = driver.activeLoads ?? [];
+
+  async function signOut() {
+    await api("/auth/logout", { method: "POST" });
+    window.location.replace("/login");
+  }
 
   return (
     <div className="grid gap-6">
-      <PageHeader title={name} description={`${t.common.profile} · ${statusFa(driver.status)}`} />
+      <PageHeader
+        title={name}
+        description={`${t.common.profile} · ${statusFa(driver.status)}`}
+        actions={
+          pathname.startsWith("/driver") ? (
+            <Button variant="outline" onClick={() => void signOut()}>
+              {t.common.signOut}
+            </Button>
+          ) : null
+        }
+      />
+      <Card>
+        <h2 className="font-bold">وضعیت بار</h2>
+        {activeLoads.length ? (
+          <div className="mt-3 grid gap-3">
+            {activeLoads.map((load) => (
+              <Link key={load.id} href={jobHref(pathname, load.id)} className="rounded-2xl border border-border p-4 hover:bg-background">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold">{load.number}</span>
+                  <StatusBadge status={load.status} />
+                </div>
+                <div className="mt-3">
+                  <RouteLine from={load.originCity ?? t.job.pickup} to={load.destinationCity ?? t.job.delivery} />
+                </div>
+                <p className="mt-2 text-sm text-muted">
+                  {[load.originLine1, load.destinationLine1].filter(Boolean).join(" ← ") || "نشانی مسیر پس از جزئیات بار"}
+                </p>
+                <p className="mt-1 text-sm">
+                  {t.common.cargoOwner}: {load.cargoOwner}
+                  {load.waybill ? ` · ${t.common.waybill}: ${load.waybill}` : ""}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted">الان بار فعالی ندارید. بارهای اعلام‌شده را از بخش بارها می‌توانید قبول کنید.</p>
+        )}
+      </Card>
       <Card className="overflow-hidden p-0">
         <img src="/media/tracking-phone.jpg" alt="" className="h-40 w-full object-cover" />
         <div className="grid gap-4 p-5 sm:grid-cols-4">
@@ -149,6 +205,8 @@ export function DriverProfileView({ id }: { id: string }) {
           <p className="text-sm text-muted">محدوده ثبت‌شده‌ای دیده نشد.</p>
         )}
       </Card>
+      {canVerify ? <AdminInfoRequestPanel companyId={driver.carrier.id} target="driver" /> : null}
+      {canVerify ? <AdminCoinsPanel companyId={driver.carrier.id} /> : null}
       <DocumentGallery kind="driver" entityId={driver.id} title="عکس و مدارک راننده" canUpload={canUpload} canVerify={canVerify} />
       <Card>
         <h2 className="mb-3 font-bold">{t.common.fleet}</h2>

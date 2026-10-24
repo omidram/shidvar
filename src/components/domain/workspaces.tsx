@@ -19,6 +19,8 @@ import { PdfExportButton } from "@/components/domain/pdf-export";
 import { TrackingPanel } from "@/components/domain/tracking-panel";
 import { JobOpsPanel } from "@/components/domain/ops-panels";
 import { DocumentGallery } from "@/components/domain/document-uploader";
+import { CargoBadges } from "@/components/domain/cargo-badges";
+import { NativeSelect } from "@/components/ui/input";
 
 export { DashboardView } from "@/components/domain/dashboard-home";
 
@@ -36,9 +38,32 @@ type RequestRow = {
   pickupNotes?: string | null;
   notes?: string | null;
   matchScore?: number;
+  dispatchMode?: string;
+  needsWaybill?: boolean;
+  needsInsurance?: boolean;
   items: Array<{ name: string; quantity: number; unitCode?: string }>;
   company?: { tradeName: string; phone?: string | null };
+  vipDriver?: { user: { firstName: string; lastName: string } } | null;
+  orders?: Array<{
+    jobs: Array<{
+      id: string;
+      number: string;
+      status: string;
+      assignedDriver?: { user: { firstName: string; lastName: string; phone?: string | null } } | null;
+    }>;
+  }>;
 };
+
+const ASSIGNED_REQUEST_STATUSES = ["TRANSPORT_ASSIGNED", "PICKUP_SCHEDULED", "IN_TRANSIT", "DELIVERED", "RECEIVED", "COMPLETED"];
+
+function requestRelation(row: RequestRow) {
+  const job = row.orders?.flatMap((order) => order.jobs)[0];
+  const assigned = job?.assignedDriver?.user;
+  const driverName = assigned ? `${assigned.firstName} ${assigned.lastName}`.trim() : null;
+  const vipName = row.vipDriver ? `${row.vipDriver.user.firstName} ${row.vipDriver.user.lastName}`.trim() : null;
+  const expectsDriver = ASSIGNED_REQUEST_STATUSES.includes(row.status);
+  return { job, driverName, vipName, broken: expectsDriver && !driverName };
+}
 
 export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; marketplace?: boolean }) {
   const { t } = useI18n();
@@ -98,7 +123,10 @@ export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; m
               <Card className="transition hover:-translate-y-0.5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="text-lg font-bold">{row.number}</div>
+                    <div className="flex flex-wrap items-center gap-2 text-lg font-bold">
+                      {row.number}
+                      <CargoBadges dispatchMode={row.dispatchMode} needsWaybill={row.needsWaybill} needsInsurance={row.needsInsurance} />
+                    </div>
                     {row.company ? <p className="mt-1 text-sm">{t.common.cargoOwner}: {row.company.tradeName}{row.company.phone ? ` · ${row.company.phone}` : ""}</p> : null}
                   </div>
                   <StatusBadge status={row.status} />
@@ -114,6 +142,19 @@ export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; m
                 <p className="mt-2 text-sm">
                   {row.items.map((i) => `${i.name} ${i.quantity}${i.unitCode ? ` ${i.unitCode}` : ""}`).join("، ") || t.request.items}
                 </p>
+                {(() => {
+                  const relation = requestRelation(row);
+                  return (
+                    <p className={`mt-2 text-sm ${relation.broken ? "text-danger" : "text-muted"}`}>
+                      {relation.driverName
+                        ? `راننده: ${relation.driverName}${relation.job ? ` · ${relation.job.number} · ${statusFa(relation.job.status)}` : ""}`
+                        : relation.vipName
+                          ? `راننده VIP انتخاب‌شده: ${relation.vipName} · هنوز بار را قبول نکرده`
+                          : "راننده‌ای به این بار وصل نشده"}
+                      {relation.broken ? " · ارتباط راننده با این وضعیت بار ناقص است" : ""}
+                    </p>
+                  );
+                })()}
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
                   <span>{t.request.deliveryDate}: {formatDate(row.requestedDeliveryDate)}</span>
                   {row.budgetAmount != null ? <span>{t.request.budget}: {formatMoney(row.budgetAmount, row.currencyCode)}</span> : null}
@@ -226,6 +267,10 @@ type JobDto = {
   orderNumber?: string;
   matchScore?: number;
   trackingActive?: boolean;
+  dispatchMode?: string;
+  needsWaybill?: boolean;
+  needsInsurance?: boolean;
+  loadCheck?: { allowed: boolean; roobar: boolean; activeDestination: string | null; reason: string | null };
   items?: Array<{ id: string; name: string; quantity: number; unitCode: string }>;
 };
 
@@ -237,8 +282,10 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const accept = useMutation({
     mutationFn: (id: string) => api(`/jobs/${id}/accept`, { method: "POST" }),
     onSuccess: () => {
-      toast.success("بار قبول شد و بارنامه صادر شد");
+      toast.success("بار قبول شد. ۱۰۰ سکه کسر شد");
       qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["coins"] });
+      qc.invalidateQueries({ queryKey: ["driver"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -263,10 +310,18 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
           {rows.map((job) => (
             <Card key={job.id}>
               <div className="flex items-center justify-between gap-3">
-                <Link href={`${hrefPrefix}/${job.id}`} className="text-lg font-bold hover:underline">
-                  {job.number}
-                  {job.requestNumber ? <span className="ms-2 text-sm font-normal text-muted">{job.requestNumber}</span> : null}
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={`${hrefPrefix}/${job.id}`} className="text-lg font-bold hover:underline">
+                    {job.number}
+                    {job.requestNumber ? <span className="ms-2 text-sm font-normal text-muted">{job.requestNumber}</span> : null}
+                  </Link>
+                  <CargoBadges
+                    dispatchMode={job.dispatchMode}
+                    needsWaybill={job.needsWaybill}
+                    needsInsurance={job.needsInsurance}
+                    roobar={job.loadCheck?.roobar}
+                  />
+                </div>
                 <StatusBadge status={job.status} />
               </div>
               <div className="mt-4">
@@ -294,7 +349,9 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
                 {job.matchScore != null ? <span className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">{t.request.score}: {job.matchScore}</span> : null}
                 {marketplace && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
                   <>
-                    <Button onClick={() => accept.mutate(job.id)}>{t.common.accept}</Button>
+                    <Button disabled={job.loadCheck?.allowed === false} onClick={() => accept.mutate(job.id)}>
+                      {t.common.accept}
+                    </Button>
                     <Button variant="secondary" onClick={() => reject.mutate(job.id)}>
                       {t.common.reject}
                     </Button>
@@ -305,11 +362,90 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
                   </Button>
                 )}
               </div>
+              {marketplace && job.loadCheck?.reason ? <p className="mt-2 text-sm text-danger">{job.loadCheck.reason}</p> : null}
+              {marketplace && job.loadCheck?.roobar ? (
+                <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+                  این بار هم‌مقصد با بار فعلی شما ({job.loadCheck.activeDestination}) است و می‌توانید آن را روباری قبول کنید.
+                </p>
+              ) : null}
             </Card>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+type DirectoryDriver = { id: string; name: string; ratingAvg: number; completedJobs: number; vehicleType: string | null; plateNumber?: string | null };
+
+function AnnouncePanel({
+  requestId,
+  initialMode,
+  initialDriverId,
+  announced,
+}: {
+  requestId: string;
+  initialMode: "NORMAL" | "VIP";
+  initialDriverId: string;
+  announced: boolean;
+}) {
+  const qc = useQueryClient();
+  const [dispatchMode, setDispatchMode] = useState(initialMode);
+  const [vipDriverId, setVipDriverId] = useState(initialDriverId);
+  const drivers = useQuery({
+    queryKey: ["driver-directory"],
+    queryFn: () => api<DirectoryDriver[]>("/drivers/directory"),
+    enabled: dispatchMode === "VIP",
+  });
+  const announce = useMutation({
+    mutationFn: () =>
+      api(`/requests/${requestId}/announce`, {
+        method: "POST",
+        body: JSON.stringify({ dispatchMode, vipDriverId: dispatchMode === "VIP" ? vipDriverId : undefined }),
+      }),
+    onSuccess: () => {
+      toast.success(dispatchMode === "VIP" ? "بار به راننده VIP اعلام شد" : "بار به رانندگان محدوده اعلام شد");
+      qc.invalidateQueries({ queryKey: ["request", requestId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="grid gap-4 border-primary/40">
+      <div>
+        <h2 className="font-bold">{announced ? "اعلام مجدد بار" : "اعلام بار به رانندگان"}</h2>
+        <p className="mt-1 text-sm text-muted">درخواست را بررسی کنید، سپس به همه رانندگان محدوده یا فقط به یک راننده مشخص اعلام کنید.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {(["NORMAL", "VIP"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setDispatchMode(value)}
+            className={`rounded-full px-4 py-2 text-sm ${dispatchMode === value ? "bg-ink text-white" : "bg-background"}`}
+          >
+            {value === "VIP" ? "VIP — راننده مشخص" : "معمولی — رانندگان محدوده"}
+          </button>
+        ))}
+      </div>
+      {dispatchMode === "VIP" ? (
+        <NativeSelect value={vipDriverId} onChange={(e) => setVipDriverId(e.target.value)}>
+          <option value="">انتخاب راننده</option>
+          {(drivers.data ?? []).map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+              {d.plateNumber ? ` · ${d.plateNumber}` : ""}
+              {d.vehicleType ? ` · ${statusFa(d.vehicleType)}` : ""} · امتیاز {formatNumber(d.ratingAvg)}
+            </option>
+          ))}
+        </NativeSelect>
+      ) : null}
+      <div>
+        <Button disabled={announce.isPending || (dispatchMode === "VIP" && !vipDriverId)} onClick={() => announce.mutate()}>
+          {announce.isPending ? "در حال اعلام…" : "اعلام بار"}
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -337,6 +473,12 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
         notes?: string | null;
         createdAt?: string;
         publishedAt?: string | null;
+        announcedAt?: string | null;
+        dispatchMode?: "NORMAL" | "VIP";
+        vipDriverId?: string | null;
+        vipDriver?: { id: string; user: { firstName: string; lastName: string } } | null;
+        needsWaybill?: boolean;
+        needsInsurance?: boolean;
         company?: { id?: string; tradeName: string; legalName?: string; phone?: string | null; email?: string | null };
         items: Array<{ id: string; name: string; quantity: number; unitCode: string; minQuantity?: number; maxQuantity?: number; qualityNotes?: string | null; packagingNotes?: string | null }>;
         requirements?: Array<{ kind: string; value: string }>;
@@ -369,10 +511,6 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
         }>;
       }>(`/requests/${id}`),
   });
-  const publish = useMutation({
-    mutationFn: () => api(`/requests/${id}/publish`, { method: "POST" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["request", id] }),
-  });
   const submit = useMutation({
     mutationFn: () => api(`/requests/${id}/submit`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["request", id] }),
@@ -396,12 +534,23 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             <PdfExportButton kind="request" id={req.id} label={t.common.pdfExport} />
             {job?.id ? <PdfExportButton kind="waybill" id={job.id} label="خروجی بارنامه" /> : null}
             {mode !== "supplier" && req.status === "DRAFT" ? <Button onClick={() => submit.mutate()}>{t.common.submit}</Button> : null}
-            {mode === "admin" && ["SUBMITTED", "UNDER_REVIEW", "PUBLISHED"].includes(req.status) ? (
-              <Button onClick={() => publish.mutate()}>{t.common.publish}</Button>
-            ) : null}
           </div>
         }
       />
+      <CargoBadges dispatchMode={req.dispatchMode} needsWaybill={req.needsWaybill} needsInsurance={req.needsInsurance} />
+      {mode === "admin" &&
+      (["SUBMITTED", "UNDER_REVIEW", "PUBLISHED"].includes(req.status) ||
+        (req.status === "TRANSPORT_PENDING" && job && !job.assignedDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status))) ? (
+        <AnnouncePanel
+          requestId={req.id}
+          initialMode={req.dispatchMode ?? "NORMAL"}
+          initialDriverId={req.vipDriverId ?? ""}
+          announced={Boolean(req.announcedAt || ["PUBLISHED", "TRANSPORT_PENDING"].includes(req.status))}
+        />
+      ) : null}
+      {mode !== "admin" && req.status === "UNDER_REVIEW" ? (
+        <Card className="text-sm text-muted">درخواست شما در صف بررسی مدیریت است و پس از تأیید به رانندگان اعلام می‌شود.</Card>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <div className="text-xs text-muted">{t.request.deliveryDate}</div>
@@ -427,6 +576,12 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             { label: t.common.email, value: req.company?.email },
             { label: "تاریخ ثبت", value: formatDateTime(req.createdAt) },
             { label: "تاریخ انتشار", value: formatDateTime(req.publishedAt) },
+            { label: "نوع اعلام", value: req.dispatchMode === "VIP" ? "VIP (راننده مشخص)" : "معمولی (رانندگان محدوده)" },
+            {
+              label: "راننده VIP",
+              value: req.vipDriver ? `${req.vipDriver.user.firstName} ${req.vipDriver.user.lastName}`.trim() : null,
+            },
+            { label: "بارنامه / بیمه‌نامه", value: [req.needsWaybill ? "بارنامه" : null, req.needsInsurance ? "بیمه‌نامه" : null].filter(Boolean).join(" + ") || "ندارد" },
           ]}
         />
       </Card>
@@ -623,8 +778,10 @@ export function DriverJobView({ id }: { id: string }) {
   const accept = useMutation({
     mutationFn: () => api(`/jobs/${id}/accept`, { method: "POST" }),
     onSuccess: () => {
-      toast.success("بار قبول شد");
+      toast.success("بار قبول شد. ۱۰۰ سکه کسر شد");
       qc.invalidateQueries({ queryKey: ["job", id] });
+      qc.invalidateQueries({ queryKey: ["coins"] });
+      qc.invalidateQueries({ queryKey: ["driver"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -672,6 +829,7 @@ export function DriverJobView({ id }: { id: string }) {
           </div>
         }
       />
+      <CargoBadges dispatchMode={job.dispatchMode} needsWaybill={job.needsWaybill} needsInsurance={job.needsInsurance} />
       <Card className="overflow-hidden p-0">
         <img src="/media/cargo-2.jpg" alt="" className="h-40 w-full object-cover" />
         <div className="grid gap-4 p-5 sm:grid-cols-4">

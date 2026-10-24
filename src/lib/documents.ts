@@ -11,15 +11,15 @@ export type DocumentSlot = {
 };
 
 export const DOCUMENT_SLOTS: DocumentSlot[] = [
-  { type: "DRIVER_PHOTO", label: "عکس پرسنلی راننده", hint: "عکس تمام‌رخ واضح", required: true, kinds: ["driver"] },
-  { type: "DRIVER_NATIONAL_ID", label: "کارت ملی", hint: "اسکن روی کارت ملی", required: true, kinds: ["driver"] },
-  { type: "DRIVER_LICENSE", label: "گواهینامه رانندگی", hint: "روی گواهینامه پایه یک یا دو", required: true, kinds: ["driver"] },
+  { type: "DRIVER_PHOTO", label: "عکس پرسنلی راننده", hint: "عکس تمام‌رخ واضح", required: false, kinds: ["driver"] },
+  { type: "DRIVER_NATIONAL_ID", label: "کارت ملی", hint: "اسکن روی کارت ملی", required: false, kinds: ["driver"] },
+  { type: "DRIVER_LICENSE", label: "گواهینامه رانندگی", hint: "روی گواهینامه پایه یک یا دو", required: false, kinds: ["driver"] },
   { type: "DRIVER_LICENSE_BACK", label: "پشت گواهینامه", hint: "اسکن پشت گواهینامه", required: false, kinds: ["driver"] },
   { type: "DRIVER_HEALTH_CARD", label: "کارت سلامت", hint: "کارت معاینه پزشکی راننده", required: false, kinds: ["driver"] },
   { type: "DRIVER_BACKGROUND", label: "عدم سوءپیشینه", hint: "گواهی معتبر", required: false, kinds: ["driver"] },
-  { type: "VEHICLE_PHOTO", label: "عکس خودرو", hint: "عکس کامل ماشین از کنار", required: true, kinds: ["vehicle", "driver"] },
-  { type: "VEHICLE_PLATE", label: "اسکن پلاک", hint: "پلاک خوانا از نزدیک", required: true, kinds: ["vehicle", "driver"] },
-  { type: "VEHICLE_TITLE", label: "سند خودرو", hint: "برگ سبز یا سند مالکیت", required: true, kinds: ["vehicle", "driver"] },
+  { type: "VEHICLE_PHOTO", label: "عکس خودرو", hint: "عکس کامل ماشین از کنار", required: false, kinds: ["vehicle", "driver"] },
+  { type: "VEHICLE_PLATE", label: "اسکن پلاک", hint: "پلاک خوانا از نزدیک", required: false, kinds: ["vehicle", "driver"] },
+  { type: "VEHICLE_TITLE", label: "سند خودرو", hint: "برگ سبز یا سند مالکیت", required: false, kinds: ["vehicle", "driver"] },
   { type: "VEHICLE_CARD", label: "کارت ماشین", hint: "کارت شناسایی وسیله نقلیه", required: false, kinds: ["vehicle", "driver"] },
   { type: "VEHICLE_INSURANCE", label: "بیمه‌نامه شخص ثالث", hint: "بیمه معتبر خودرو", required: false, kinds: ["vehicle", "driver"] },
   { type: "VEHICLE_INSPECTION", label: "معاینه فنی", hint: "برگه معاینه فنی معتبر", required: false, kinds: ["vehicle", "driver"] },

@@ -12,8 +12,7 @@ export function safeInternalPath(next: string | null) {
 export function homePath(me: PortalIdentity) {
   if (me.isPlatformStaff) return "/admin/dashboard";
   if (me.driverProfile) return "/driver/dashboard";
-  if (me.memberships.some((m) => m.companyType === "SUPPLIER")) return "/supplier/dashboard";
-  if (me.memberships.some((m) => m.companyType === "REQUESTER")) return "/requester/dashboard";
+  if (me.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER")) return "/requester/dashboard";
   if (me.memberships.some((m) => m.companyType === "CARRIER")) return "/driver/dashboard";
   return "/login";
 }

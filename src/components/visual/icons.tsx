@@ -1,14 +1,7 @@
 import { cn } from "@/lib/utils";
 
 export function BrandMark({ className }: { className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center gap-2 font-bold tracking-tight", className)}>
-      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-primary-foreground">
-        <TruckIcon className="h-5 w-5" />
-      </span>
-      شیدور
-    </span>
-  );
+  return <img src="/shidro-logo.png" alt="shidro" className={cn("h-12 w-auto object-contain", className)} />;
 }
 
 export function TruckIcon({ className }: { className?: string }) {

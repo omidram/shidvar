@@ -22,7 +22,7 @@ export default function HowPage() {
         <p className="text-sm font-bold text-primary">مسیر سازمانی</p>
         <h1 className="mt-2 text-4xl font-black">چطور کار می‌کند؟</h1>
         <p className="mt-3 max-w-2xl text-muted">
-          از تأیید هویت تا تسویه ریالی، شیدور فروشگاه واسط نیست؛ شرکت پخش، راننده تأییدشده و مدیریت در یک مسیر مشخص کار می‌کنند.
+          از تأیید هویت تا تسویه ریالی، shidro فروشگاه واسط نیست؛ شرکت پخش، راننده تأییدشده و مدیریت در یک مسیر مشخص کار می‌کنند.
         </p>
         <VisualField className="mt-8 h-56 rounded-3xl bg-ink">
           <img src="/media/cargo-2.jpg" alt="" className="absolute inset-0 h-full w-full rounded-3xl object-cover opacity-50" />

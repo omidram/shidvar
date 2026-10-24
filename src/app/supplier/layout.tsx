@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { PortalShell } from "@/components/layout/portal-shell";
+import { redirect } from "next/navigation";
 
 export default function Layout({ children }: { children: ReactNode }) {
-  return <PortalShell portal="supplier">{children}</PortalShell>;
+  void children;
+  redirect("/requester/dashboard");
 }

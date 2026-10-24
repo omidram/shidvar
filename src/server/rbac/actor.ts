@@ -50,8 +50,8 @@ export function assertCompanyAccess(actor: Actor, companyId: string, permission?
 }
 
 export function requireRequesterCompany(actor: Actor) {
-  const id = companiesOfType(actor, "REQUESTER")[0];
-  if (!id && !actor.isPlatformStaff) throw Errors.forbidden("Requester membership required");
+  const id = companiesOfType(actor, "REQUESTER")[0] ?? companiesOfType(actor, "SUPPLIER")[0];
+  if (!id && !actor.isPlatformStaff) throw Errors.forbidden("حساب شرکت لازم است");
   return id;
 }
 

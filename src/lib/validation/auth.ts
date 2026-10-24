@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isIranianMobile, isValidNationalId, normalizeDigits, normalizeMobile } from "@/lib/identity";
 
 export function passwordPolicy(password: string) {
   const errors: string[] = [];
@@ -10,20 +11,16 @@ export function passwordPolicy(password: string) {
 }
 
 export const registerSchema = z.object({
-  portal: z.enum(["REQUESTER", "SUPPLIER", "DRIVER"]),
-  email: z.string().email(),
-  phone: z.string().min(8).optional(),
+  portal: z.enum(["REQUESTER", "DRIVER"]),
+  phone: z
+    .string()
+    .transform(normalizeMobile)
+    .refine(isIranianMobile, "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود"),
+  nationalId: z
+    .string()
+    .transform(normalizeDigits)
+    .refine(isValidNationalId, "کد ملی معتبر نیست"),
   password: z.string(),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  companyName: z.string().min(2),
-  nationalId: z.string().optional(),
-  taxId: z.string().optional(),
-  registrationNumber: z.string().optional(),
-  licenseNumber: z.string().optional(),
-  licenseType: z.string().optional(),
-  plateNumber: z.string().optional(),
-  vehicleType: z.enum(["VAN", "LIGHT_TRUCK", "TRUCK", "HEAVY_TRUCK", "TRAILER", "REFRIGERATED", "TANKER", "FLATBED", "CONTAINER"]).optional(),
 });
 
 export const loginSchema = z.object({

@@ -11,6 +11,8 @@ import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { PriceBookEditor } from "@/components/domain/price-book-editor";
 import { DocumentGallery } from "@/components/domain/document-uploader";
+import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
+import { AdminCoinsPanel } from "@/components/domain/coins-view";
 
 type CompanyProfile = {
   id: string;
@@ -63,6 +65,8 @@ export function CompanyProfileView({ id }: { id: string }) {
           ]}
         />
       </Card>
+      <AdminInfoRequestPanel companyId={company.id} target={company.type === "CARRIER" ? "driver" : "company"} />
+      <AdminCoinsPanel companyId={company.id} />
       {company.type === "REQUESTER" ? <PriceBookEditor companyId={company.id} /> : null}
       <DocumentGallery kind="company" entityId={company.id} title="مدارک ثبتی شرکت" canVerify />
       <Card>

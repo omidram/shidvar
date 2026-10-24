@@ -28,6 +28,21 @@ export const createRequestSchema = z.object({
   requiredVehicleType: z.string().optional(),
   requiredCertifications: z.array(z.string()).optional(),
   items: z.array(requestItemSchema).min(1),
+  dispatchMode: z.enum(["NORMAL", "VIP"]).default("NORMAL"),
+  vipDriverId: z.string().uuid().optional(),
+  needsWaybill: z.boolean().default(false),
+  needsInsurance: z.boolean().default(false),
+}).refine((value) => value.dispatchMode !== "VIP" || Boolean(value.vipDriverId), {
+  path: ["vipDriverId"],
+  message: "برای اعلام VIP یک راننده انتخاب کنید",
+});
+
+export const announceRequestSchema = z.object({
+  dispatchMode: z.enum(["NORMAL", "VIP"]),
+  vipDriverId: z.string().uuid().optional(),
+}).refine((value) => value.dispatchMode !== "VIP" || Boolean(value.vipDriverId), {
+  path: ["vipDriverId"],
+  message: "برای اعلام VIP یک راننده انتخاب کنید",
 });
 
 export const offerSchema = z.object({

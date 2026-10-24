@@ -160,8 +160,8 @@ export function DocumentGallery({
           </p>
         </div>
         {q.data ? (
-          <span className={`text-sm font-semibold ${q.data.complete ? "text-primary" : "text-danger"}`}>
-            {q.data.complete ? "مدارک کامل است" : "مدارک ناقص است"}
+          <span className={`text-sm font-semibold ${q.data.items.some((slot) => slot.required) && !q.data.complete ? "text-danger" : "text-primary"}`}>
+            {!q.data.items.some((slot) => slot.required) ? "بارگذاری اختیاری است" : q.data.complete ? "مدارک کامل است" : "مدارک ناقص است"}
           </span>
         ) : null}
       </div>
@@ -282,7 +282,7 @@ export function OwnDocumentGate() {
   return (
     <div className="grid gap-4">
       <p className="text-sm leading-7 text-muted">
-        قبل از تأیید مدیریت، مدارک الزامی را بارگذاری کنید. بعد از تکمیل، وضعیت از همین صفحه پیگیری می‌شود.
+        بارگذاری مدارک راننده و خودرو اختیاری است. اگر مدیریت مدرکی بخواهد، همان مورد را از اینجا بفرستید.
       </p>
       {driver ? <DocumentGallery kind="driver" entityId={driver.entityId} title="مدارک راننده" /> : null}
       {vehicle ? <DocumentGallery kind="vehicle" entityId={vehicle.entityId} title="مدارک خودرو" /> : null}

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { api, formatApiError } from "@/lib/api";
-import { DEV_LOGIN_ACCOUNTS } from "@/lib/dev-accounts";
 import { homePath, safeInternalPath } from "@/lib/portal";
 import { useI18n } from "@/i18n/provider";
 import type { Me } from "@/hooks/use-me";
@@ -88,7 +87,7 @@ function LoginForm() {
         <div className="absolute inset-0 bg-ink/70" />
         <div className="relative flex h-full items-center p-12 text-white">
           <div className="max-w-md">
-            <BrandMark className="text-white" />
+            <BrandMark className="h-28" />
             <h1 className="mt-8 text-4xl font-black">{t.auth.sideTitle}</h1>
             <p className="mt-4 text-lg text-white/85">{t.auth.sideBody}</p>
           </div>
@@ -106,7 +105,7 @@ function LoginForm() {
           <p className="mt-1 text-sm text-muted">
             {challenge
               ? `${challenge.channel === "SMS" ? t.auth.otpSentSms : t.auth.otpSentEmail} ${challenge.destination ?? ""}`
-              : t.auth.demo}
+              : "با موبایل، ایمیل یا کد ملی وارد شوید."}
           </p>
           <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
             {challenge ? (
@@ -150,22 +149,6 @@ function LoginForm() {
             </div>
           ) : (
             <>
-              <div className="mt-6 grid gap-2">
-                  {DEV_LOGIN_ACCOUNTS.map((account) => (
-                    <button
-                      key={account.email}
-                      type="button"
-                      className="flex items-center justify-between rounded-2xl border border-border px-3 py-2 text-start text-xs hover:border-primary"
-                      onClick={() => {
-                        setIdentifier(account.email);
-                        setPassword(account.password);
-                      }}
-                    >
-                      <span>{t.auth[account.portal]}</span>
-                      <span className="text-muted">{account.email}</span>
-                    </button>
-                  ))}
-                </div>
               <div className="mt-5 flex justify-between text-sm">
                 <Link href="/forgot-password" className="text-primary">
                   {t.auth.forgot}

@@ -38,6 +38,42 @@ async function warehouseForCity(companyId: string, city: string, line1?: string 
   });
 }
 
+async function offerToVipDriver(jobId: string, jobNumber: string, driverId: string) {
+  const driver = await prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true } });
+  if (!driver) return;
+  const breakdown = { vip: true, notify: true };
+  await prisma.driverMatch.upsert({
+    where: { jobId_driverId: { jobId, driverId } },
+    create: { jobId, driverId, score: 100, breakdown, eligible: true, notifiedAt: new Date() },
+    update: { score: 100, breakdown, eligible: true, notifiedAt: new Date() },
+  });
+  await prisma.notification.create({
+    data: {
+      userId: driver.userId,
+      eventType: "job.matched",
+      title: "بار VIP مخصوص شما",
+      body: `بار ${jobNumber} فقط برای شما اعلام شده است. جزئیات را ببینید و قبول یا رد کنید.`,
+      payload: { jobId, kind: "job.matched", vip: true },
+    },
+  });
+}
+
+export async function redispatchOpenJob(requestId: string) {
+  const request = await prisma.procurementRequest.findUnique({
+    where: { id: requestId },
+    include: { orders: { include: { jobs: true } } },
+  });
+  const job = request?.orders.flatMap((o) => o.jobs).find((j) => ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "MATCHING"].includes(j.status) && !j.assignedDriverId);
+  if (!request || !job) return null;
+  await prisma.driverMatch.updateMany({ where: { jobId: job.id }, data: { eligible: false } });
+  if (request.dispatchMode === "VIP" && request.vipDriverId) {
+    await offerToVipDriver(job.id, job.number, request.vipDriverId);
+  } else {
+    await runDriverMatching(job.id);
+  }
+  return job;
+}
+
 export async function dispatchCargoToDrivers(requestId: string) {
   const request = await prisma.procurementRequest.findUnique({
     where: { id: requestId },
@@ -101,7 +137,11 @@ export async function dispatchCargoToDrivers(requestId: string) {
     data: { status: "TRANSPORT_PENDING", destinationWarehouseId: delivery.id, version: { increment: 1 } },
   });
 
-  await runDriverMatching(job.id);
+  if (request.dispatchMode === "VIP" && request.vipDriverId) {
+    await offerToVipDriver(job.id, job.number, request.vipDriverId);
+  } else {
+    await runDriverMatching(job.id);
+  }
   await prisma.transportationJob.update({
     where: { id: job.id, status: "MATCHING" },
     data: { status: "OFFERED_TO_DRIVERS", version: { increment: 1 } },

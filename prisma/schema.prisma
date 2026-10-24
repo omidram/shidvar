@@ -293,10 +293,32 @@ enum ActorType {
   SYSTEM
 }
 
+enum CargoDispatchMode {
+  NORMAL
+  VIP
+}
+
+enum CoinTxnKind {
+  SIGNUP_BONUS
+  ADMIN_GRANT
+  ADMIN_DEDUCT
+  SPEND
+  EARN
+  REFUND
+}
+
+enum InfoRequestStatus {
+  OPEN
+  SUBMITTED
+  ACCEPTED
+  CANCELLED
+}
+
 model User {
   id                   String     @id @default(uuid())
   email                String?    @unique
   phone                String?    @unique
+  nationalId           String?    @unique
   passwordHash         String
   firstName            String
   lastName             String
@@ -465,6 +487,8 @@ model Company {
   invoicesIssued     Invoice[]            @relation("InvoiceIssuer")
   invoicesReceived   Invoice[]            @relation("InvoiceRecipient")
   priceBooks         PriceBook[]
+  coinWallet         CoinWallet?
+  infoRequests       ProfileInfoRequest[]
 
   @@index([type, status])
 }
@@ -756,6 +780,7 @@ model DriverProfile {
   matches            DriverMatch[]
   assignedJobs       TransportationJob[]
   wallet             DriverWallet?
+  vipRequests        ProcurementRequest[] @relation("VipRequestDriver")
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -823,6 +848,12 @@ model ProcurementRequest {
   destinationLine1      String?
   expiresAt             DateTime?
   publishedAt           DateTime?
+  dispatchMode          CargoDispatchMode @default(NORMAL)
+  vipDriverId           String?
+  vipDriver             DriverProfile? @relation("VipRequestDriver", fields: [vipDriverId], references: [id])
+  needsWaybill          Boolean       @default(false)
+  needsInsurance        Boolean       @default(false)
+  announcedAt           DateTime?
   version               Int           @default(1)
   items                 ProcurementRequestItem[]
   requirements          RequestRequirement[]
@@ -1486,6 +1517,52 @@ model WalletTransaction {
   @@unique([walletId, referenceType, referenceId])
   @@index([walletId, occurredAt])
   @@index([accountId, occurredAt])
+}
+
+model CoinWallet {
+  id           String            @id @default(uuid())
+  companyId    String            @unique
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  balance      Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  transactions CoinTransaction[]
+}
+
+model CoinTransaction {
+  id           String      @id @default(uuid())
+  walletId     String
+  wallet       CoinWallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  kind         CoinTxnKind
+  amount       Int
+  balanceAfter Int
+  reason       String?
+  refType      String?
+  refId        String?
+  createdById  String?
+  createdAt    DateTime    @default(now())
+
+  @@index([walletId, createdAt])
+}
+
+model ProfileInfoRequest {
+  id              String            @id @default(uuid())
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  driverProfileId String?
+  fields          Json
+  documents       Json
+  message         String?
+  status          InfoRequestStatus @default(OPEN)
+  response        Json?
+  adminNote       String?
+  createdById     String
+  respondedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([companyId, status])
+  @@index([status, createdAt])
 }
 
 model Impersonation {

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Crown, Users } from "lucide-react";
 import { ChoiceTile, PageHeader } from "@/components/domain/chrome";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { ColdIcon, HeavyTruckIcon, TankerIcon, TruckIcon, VanIcon } from "@/comp
 
 type Product = { id: string; nameEn: string; nameFa: string; categoryId: string; defaultUnit: string };
 type Line = { productId: string; name: string; categoryId: string; quantity: string; unitCode: string };
+type DirectoryDriver = { id: string; name: string; ratingAvg: number; completedJobs: number; vehicleType: string | null };
 type VehicleKey = "VAN" | "LIGHT_TRUCK" | "TRUCK" | "REFRIGERATED" | "TANKER";
 const VEHICLES: Array<{ key: VehicleKey; icon: React.ReactNode; body: string }> = [
   { key: "VAN", icon: <VanIcon className="h-7 w-7" />, body: "تا ۵۰۰ کیلو، شهری" },
@@ -36,6 +38,14 @@ function NewRequestForm() {
   const [helper, setHelper] = useState(false);
   const [covered, setCovered] = useState(true);
   const [insurance, setInsurance] = useState(false);
+  const [waybill, setWaybill] = useState(false);
+  const [dispatchMode, setDispatchMode] = useState<"NORMAL" | "VIP">("NORMAL");
+  const [vipDriverId, setVipDriverId] = useState("");
+  const directory = useQuery({
+    queryKey: ["driver-directory"],
+    queryFn: () => api<DirectoryDriver[]>("/drivers/directory"),
+    enabled: dispatchMode === "VIP",
+  });
   const [originCity, setOriginCity] = useState(params.get("origin") || "تهران");
   const [destinationCity, setDestinationCity] = useState(params.get("destination") || "آمل");
   const [originLine1, setOriginLine1] = useState("");
@@ -69,6 +79,14 @@ function NewRequestForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
+    if (dispatchMode === "VIP" && !vipDriverId) {
+      toast.error("برای بار VIP یک راننده انتخاب کنید");
+      return;
+    }
     setSaving(true);
     try {
       const extras = [
@@ -76,7 +94,6 @@ function NewRequestForm() {
         `فوریت: ${urgency === "urgent" ? t.request.urgent : urgency === "scheduled" ? t.request.scheduled : t.request.normal}`,
         helper ? t.request.helper : null,
         covered ? t.request.covered : null,
-        insurance ? t.request.insurance : null,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -94,6 +111,10 @@ function NewRequestForm() {
           requiredVehicleType: vehicle,
           packagingNotes: covered ? "حمل مسقف" : "حمل روباز",
           qualityNotes: urgency,
+          dispatchMode,
+          vipDriverId: dispatchMode === "VIP" ? vipDriverId : undefined,
+          needsWaybill: waybill,
+          needsInsurance: insurance,
           items: lines.map((line) => ({
             productId: line.productId || undefined,
             categoryId: line.categoryId || undefined,
@@ -104,7 +125,7 @@ function NewRequestForm() {
         }),
       });
       await api(`/requests/${created.id}/submit`, { method: "POST" });
-      toast.success("درخواست برای رانندگان محدوده ارسال شد");
+      toast.success("درخواست ثبت شد و ۱۰۰ سکه کسر شد. برای بررسی و اعلام مدیریت ارسال شد");
       router.push(`/requester/requests/${created.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t.common.error);
@@ -117,7 +138,7 @@ function NewRequestForm() {
     <form className="grid gap-6" onSubmit={onSubmit}>
       <PageHeader
         title={t.request.create}
-        description={t.request.example}
+        description={`${t.request.example} با ثبت درخواست، ۱۰۰ سکه از حساب شرکت کم می‌شود.`}
         actions={
           <div className="flex gap-2">
             {step > 1 ? (
@@ -275,7 +296,49 @@ function NewRequestForm() {
               ))}
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <h2 className="font-bold">نوع اعلام بار</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <ChoiceTile
+                title="معمولی"
+                body="به همه رانندگان تأییدشده محدوده اعلام می‌شود"
+                icon={<Users className="h-6 w-6" />}
+                active={dispatchMode === "NORMAL"}
+                onClick={() => setDispatchMode("NORMAL")}
+              />
+              <ChoiceTile
+                title="VIP"
+                body="فقط به یک راننده مشخص اعلام می‌شود"
+                icon={<Crown className="h-6 w-6" />}
+                active={dispatchMode === "VIP"}
+                onClick={() => setDispatchMode("VIP")}
+              />
+            </div>
+            {dispatchMode === "VIP" ? (
+              <div className="mt-3">
+                <Field label="راننده VIP" hint="مدیریت قبل از اعلام، انتخاب شما را بررسی می‌کند.">
+                  <NativeSelect value={vipDriverId} onChange={(e) => setVipDriverId(e.target.value)} required>
+                    <option value="">{directory.isLoading ? t.common.loading : "انتخاب راننده"}</option>
+                    {(directory.data ?? []).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} · امتیاز {d.ratingAvg.toLocaleString("fa-IR")} · {d.completedJobs.toLocaleString("fa-IR")} بار
+                        {d.vehicleType ? ` · ${t.vehicle[d.vehicleType as VehicleKey] ?? d.vehicleType}` : ""}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </Field>
+              </div>
+            ) : null}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
+              بارنامه
+              <input type="checkbox" checked={waybill} onChange={(e) => setWaybill(e.target.checked)} />
+            </label>
+            <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
+              بیمه‌نامه
+              <input type="checkbox" checked={insurance} onChange={(e) => setInsurance(e.target.checked)} />
+            </label>
             <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
               {t.request.helper}
               <input type="checkbox" checked={helper} onChange={(e) => setHelper(e.target.checked)} />
@@ -283,10 +346,6 @@ function NewRequestForm() {
             <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
               {t.request.covered}
               <input type="checkbox" checked={covered} onChange={(e) => setCovered(e.target.checked)} />
-            </label>
-            <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
-              {t.request.insurance}
-              <input type="checkbox" checked={insurance} onChange={(e) => setInsurance(e.target.checked)} />
             </label>
           </div>
           <Field label={t.common.notes}>

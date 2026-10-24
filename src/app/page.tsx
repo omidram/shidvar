@@ -66,7 +66,7 @@ export default function HomePage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-primary">
               <span className="live-dot h-2 w-2 rounded-full bg-primary" />
-              شیدور · حمل سازمانی B2B
+              shidro · حمل سازمانی B2B
             </p>
             <h1 className="mt-5 text-4xl font-black leading-[1.25] md:text-5xl">{t.landing.hero}</h1>
             <p className="mt-5 max-w-xl text-lg/8 text-white/85">{t.landing.body}</p>

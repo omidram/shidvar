@@ -21,7 +21,19 @@ import { COOKIES } from "@/server/config";
 import { NextResponse } from "next/server";
 import { ok } from "@/server/http/envelope";
 import { listPendingVerifications, moderateCompany, moderateDriver } from "@/server/domains/admin/verification-service";
-import { createRequest, createRequestSchema, listRequests, getRequestForActor, submitRequest, publishRequest, cancelRequest } from "@/server/domains/procurement/request-service";
+import { announceRequest, announceRequestSchema, createRequest, createRequestSchema, listDriverDirectory, listRequests, getRequestForActor, submitRequest, publishRequest, cancelRequest } from "@/server/domains/procurement/request-service";
+import { adjustCompanyCoins, getCompanyCoins, getOwnCoins } from "@/server/domains/finance/coin-service";
+import {
+  createInfoRequest,
+  createInfoRequestSchema,
+  listInfoRequestsForAdmin,
+  listInfoRequestsForCompany,
+  listOwnInfoRequests,
+  respondInfoRequest,
+  respondInfoRequestSchema,
+  reviewInfoRequest,
+  reviewInfoRequestSchema,
+} from "@/server/domains/identity/info-request-service";
 import { listMarketplaceRequests, submitOffer, offerSchema, acceptOffer, rejectOffer, listOffers } from "@/server/domains/offers/offer-service";
 import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, getJob, listDriverMarketplace, listJobsForActor, rejectCargoJob, returnDeliveryDocs, selectDriver, submitPod, podSchema, updateJobStatus } from "@/server/domains/logistics/job-service";
 import { consentJobTracking, getJobTracking, listLiveTracking, recordDriverPing } from "@/server/domains/logistics/tracking-service";
@@ -109,7 +121,7 @@ export const routes: RouteDefinition[] = [
     async handler({ req, body }) {
       const data = body as z.infer<typeof registerSchema>;
       const result = await registerUser(data, clientMeta(req));
-      const res = NextResponse.json(ok({ userId: result.userId, companyId: result.companyId, driverProfileId: result.driverProfileId, vehicleId: result.vehicleId }));
+      const res = NextResponse.json(ok({ userId: result.userId, companyId: result.companyId, driverProfileId: result.driverProfileId }));
       attachAuthCookies(res, result.tokens.sessionToken, result.tokens.refreshToken);
       return res;
     },
@@ -348,6 +360,96 @@ export const routes: RouteDefinition[] = [
     path: "/requests/:id/publish",
     async handler({ actor, params }) {
       return publishRequest(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/requests/:id/announce",
+    permissions: ["requests.publish"],
+    input: announceRequestSchema,
+    async handler({ actor, params, body }) {
+      return announceRequest(requireActor(actor), params.id, body as z.infer<typeof announceRequestSchema>);
+    },
+  },
+  {
+    method: "GET",
+    path: "/drivers/directory",
+    async handler({ actor }) {
+      return listDriverDirectory(requireActor(actor));
+    },
+  },
+  {
+    method: "GET",
+    path: "/coins",
+    async handler({ actor }) {
+      return getOwnCoins(requireActor(actor));
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/companies/:id/coins",
+    permissions: ["companies.read"],
+    async handler({ actor, params }) {
+      return getCompanyCoins(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/companies/:id/coins",
+    permissions: ["companies.update"],
+    input: z.object({ amount: z.number().int().refine((n) => n !== 0, "مقدار نمی‌تواند صفر باشد"), reason: z.string().trim().min(2) }),
+    async handler({ actor, params, body }) {
+      const data = body as { amount: number; reason: string };
+      return adjustCompanyCoins(requireActor(actor), params.id, data.amount, data.reason);
+    },
+  },
+  {
+    method: "GET",
+    path: "/info-requests",
+    async handler({ actor }) {
+      return listOwnInfoRequests(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/info-requests/:id/respond",
+    input: respondInfoRequestSchema,
+    async handler({ actor, params, body }) {
+      return respondInfoRequest(requireActor(actor), params.id, body as z.infer<typeof respondInfoRequestSchema>);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/info-requests",
+    permissions: ["companies.read"],
+    async handler({ actor }) {
+      return listInfoRequestsForAdmin(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/info-requests",
+    permissions: ["companies.read"],
+    input: createInfoRequestSchema,
+    async handler({ actor, body }) {
+      return createInfoRequest(requireActor(actor), body as z.infer<typeof createInfoRequestSchema>);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/companies/:id/info-requests",
+    permissions: ["companies.read"],
+    async handler({ actor, params }) {
+      return listInfoRequestsForCompany(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/info-requests/:id/review",
+    permissions: ["companies.read"],
+    input: reviewInfoRequestSchema,
+    async handler({ actor, params, body }) {
+      return reviewInfoRequest(requireActor(actor), params.id, body as z.infer<typeof reviewInfoRequestSchema>);
     },
   },
   {

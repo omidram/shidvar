@@ -8,13 +8,13 @@ export default function AboutPage() {
     <div className="bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-4xl px-4 py-16">
-        <p className="text-sm font-bold text-primary">درباره شیدور</p>
+        <p className="text-sm font-bold text-primary">درباره shidro</p>
         <h1 className="mt-2 text-4xl font-black">سامانه حمل بار برای شرکت‌های پخش و رانندگان تأییدشده</h1>
         <VisualField className="mt-8 h-64 rounded-3xl bg-ink">
           <img src="/media/truck-illustration.jpg" alt="" className="absolute inset-0 h-full w-full rounded-3xl object-cover opacity-50" />
         </VisualField>
         <p className="mt-5 text-lg text-muted">
-          شیدور فروشگاه واسط ندارد. شرکت پخش تأییدشده درخواست حمل ثبت می‌کند، سیستم راننده مناسب محدوده را پیدا می‌کند و با
+          shidro فروشگاه واسط ندارد. شرکت پخش تأییدشده درخواست حمل ثبت می‌کند، سیستم راننده مناسب محدوده را پیدا می‌کند و با
           قبول راننده بارنامه و فاکتور صادر می‌شود. ردیابی فقط با اجازه گوشی روشن است و تسویه راننده از کیف پول ریالی و درگاه زرین‌پال انجام می‌شود.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

@@ -123,11 +123,11 @@ async function wrapExe() {
   run("tar.exe", ["-a", "-cf", zipPath, "-C", payload, "."]);
 
   log("Compiling launcher...");
-  const stubPath = path.join(dist, "Shidvar-stub.exe");
+  const stubPath = path.join(dist, "Shidro-stub.exe");
   compileStub(stubPath);
 
-  log("Writing Shidvar.exe...");
-  const outExe = path.join(dist, "Shidvar.exe");
+  log("Writing Shidro.exe...");
+  const outExe = path.join(dist, "Shidro.exe");
   const stub = readFileSync(stubPath);
   const marker = Buffer.from(`SHIDVAR_ZIP_PAYLOAD_V1:${version}\n`, "utf8");
   const zip = readFileSync(zipPath);
@@ -194,7 +194,7 @@ async function main() {
     await waitPg(databaseUrl);
     run(nodeBin, [prismaBin, "db", "push", "--skip-generate", "--accept-data-loss"], { env: { DATABASE_URL: databaseUrl } });
     run(nodeBin, [tsxBin, "--tsconfig", "tsconfig.json", "prisma/seed.ts"], {
-      env: { DATABASE_URL: databaseUrl, NODE_ENV: "development", SHIDVAR_DEMO: "1" },
+      env: { DATABASE_URL: databaseUrl, NODE_ENV: "development" },
     });
     const version = createHash("sha256").update(`${Date.now()}`).digest("hex").slice(0, 16);
     writeFileSync(path.join(packPg, ".demo-version"), version);

@@ -10,6 +10,7 @@ import {
   Building2,
   ChevronLeft,
   ClipboardList,
+  Coins,
   FileText,
   LayoutDashboard,
   MapPinned,
@@ -61,6 +62,7 @@ const ICONS = {
   support: LifeBuoy,
   disputes: Scale,
   tickets: LifeBuoy,
+  coins: Coins,
 };
 
 const NAV = {
@@ -89,6 +91,7 @@ const NAV = {
     { href: "/requester/jobs", key: "jobs" as const },
     { href: "/requester/tracking", key: "tracking" as const },
     { href: "/requester/invoices", key: "invoices" as const },
+    { href: "/requester/coins", key: "coins" as const },
     { href: "/requester/reports", key: "reports" as const },
     { href: "/requester/price-book", key: "priceBook" as const },
     { href: "/requester/warehouses", key: "warehouses" as const },
@@ -153,14 +156,22 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const items = NAV[portal];
   const mobile = portal === "driver";
   const unread = (notes.data ?? []).filter((n) => !n.readAt).length;
+  const hasCoins = portal === "requester" || portal === "driver";
+  const coins = useQuery({
+    queryKey: ["coins"],
+    queryFn: () => api<{ balance: number }>("/coins"),
+    enabled: Boolean(me.data) && hasCoins,
+    retry: false,
+  });
+  const displayName = me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() || me.data.phone || me.data.email || "" : "";
 
   return (
     <div className={cn("min-h-screen bg-background", mobile ? "pb-24" : "grid md:grid-cols-[280px_1fr]")}>
       <aside className={cn("bg-ink p-5 text-white", mobile ? "hidden" : "min-h-screen")}>
         <Link href={`/${portal}/dashboard`} className="block">
-          <BrandMark className="text-white" />
+          <BrandMark className="h-20" />
         </Link>
-        <p className="mt-3 text-sm text-white/70">{me.data ? `${me.data.firstName} ${me.data.lastName}` : "…"}</p>
+        <p className="mt-3 text-sm text-white/70">{me.data ? displayName : "…"}</p>
         <p className="text-xs text-white/40">
           {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.supplier : t.auth.driver}
         </p>
@@ -191,10 +202,20 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
       <div>
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-8">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{me.data ? `${me.data.firstName} ${me.data.lastName}` : t.common.loading}</p>
+            <p className="truncate text-sm font-semibold">{me.data ? displayName : t.common.loading}</p>
             <p className="truncate text-xs text-muted">{me.data?.email ?? me.data?.phone}</p>
           </div>
           <div className="flex items-center gap-2">
+            {hasCoins && coins.data ? (
+              <Link
+                href={`/${portal}/coins`}
+                className="flex h-11 items-center gap-1.5 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-3 text-sm font-bold text-amber-700 dark:text-amber-300"
+                aria-label={t.menu.coins}
+              >
+                <Coins className="h-4 w-4" />
+                {coins.data.balance.toLocaleString("fa-IR")}
+              </Link>
+            ) : null}
             <ThemeToggle />
             <button
             type="button"

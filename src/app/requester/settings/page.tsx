@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { BellRing, Building2, FileText, LockKeyhole, Package, Palette, UserRound, Warehouse } from "lucide-react";
-import { ErrorState, PageHeader } from "@/components/domain/chrome";
+import { ErrorState, PageHeader, RouteLine } from "@/components/domain/chrome";
 import { SettingsSection, SettingToggle, TwoFactorSettings } from "@/components/domain/settings-controls";
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { StatusBadge } from "@/components/ui/badge";
 import { useSettingsForm } from "@/hooks/use-settings";
 import { useTheme } from "@/components/theme/theme-provider";
 import { useI18n } from "@/i18n/provider";
@@ -19,6 +22,31 @@ export default function RequesterSettingsPage() {
   const { theme, setTheme } = useTheme();
   const { query, draft, setDraft, save } = useSettingsForm();
   const data = query.data;
+  const loads = useQuery({
+    queryKey: ["requests", "own"],
+    queryFn: () =>
+      api<
+        Array<{
+          id: string;
+          number: string;
+          status: string;
+          originCity?: string | null;
+          destinationCity?: string | null;
+          vipDriver?: { user: { firstName: string; lastName: string } } | null;
+          orders?: Array<{
+            jobs: Array<{
+              number: string;
+              status: string;
+              assignedDriver?: { user: { firstName: string; lastName: string; phone?: string | null } } | null;
+            }>;
+          }>;
+        }>
+      >("/requests"),
+  });
+  const drivers = useQuery({
+    queryKey: ["driver-directory"],
+    queryFn: () => api<Array<{ id: string; name: string; vehicleType: string | null; ratingAvg: number }>>("/drivers/directory"),
+  });
 
   if (query.isError) return <ErrorState message={t.common.error} />;
   if (!draft || !data) return <p className="text-sm text-muted">{t.common.loading}</p>;
@@ -46,6 +74,50 @@ export default function RequesterSettingsPage() {
         <StatCard label={t.menu.warehouses} value={formatNumber(data.company?.warehouseCount ?? 0)} hint={`${formatNumber(data.company?.storeCount ?? 0)} فروشگاه`} />
         <StatCard label="اعضای سازمان" value={formatNumber(data.company?.memberCount ?? 0)} hint={data.user.email ?? data.user.phone ?? "—"} />
       </div>
+
+      <SettingsSection title="وضعیت بارها و رانندگان" description="هر درخواست با وضعیت واقعی، راننده وصل‌شده و فهرست رانندگان تأییدشده" icon={<Package className="h-5 w-5" />}>
+        <p className="text-sm text-muted">رانندگان تأییدشده برای اعلام VIP: {formatNumber(drivers.data?.length ?? 0)}</p>
+        <div className="grid gap-3">
+          {(loads.data ?? []).map((row) => {
+            const job = row.orders?.flatMap((order) => order.jobs)[0];
+            const assigned = job?.assignedDriver?.user;
+            const driverName = assigned ? `${assigned.firstName} ${assigned.lastName}`.trim() : null;
+            const expectsDriver = ["TRANSPORT_ASSIGNED", "PICKUP_SCHEDULED", "IN_TRANSIT", "DELIVERED", "RECEIVED", "COMPLETED"].includes(row.status);
+            return (
+              <Link key={row.id} href={`/requester/requests/${row.id}`} className="rounded-2xl border border-border p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold">{row.number}</span>
+                  <StatusBadge status={row.status} />
+                </div>
+                <div className="mt-3">
+                  <RouteLine from={row.originCity ?? "مبدأ"} to={row.destinationCity ?? "مقصد"} />
+                </div>
+                <p className={`mt-2 text-sm ${expectsDriver && !driverName ? "text-danger" : "text-muted"}`}>
+                  {driverName
+                    ? `راننده: ${driverName}${assigned?.phone ? ` · ${assigned.phone}` : ""}${job ? ` · ${job.number} · ${statusFa(job.status)}` : ""}`
+                    : row.vipDriver
+                      ? `راننده VIP: ${`${row.vipDriver.user.firstName} ${row.vipDriver.user.lastName}`.trim()} · هنوز قبول نکرده`
+                      : "راننده‌ای وصل نشده"}
+                  {expectsDriver && !driverName ? " · ارتباط راننده با وضعیت بار ناقص است" : ""}
+                </p>
+              </Link>
+            );
+          })}
+          {!loads.isLoading && !(loads.data ?? []).length ? <p className="text-sm text-muted">هنوز درخواستی ثبت نشده. ثبت هر درخواست ۱۰۰ سکه کم می‌کند.</p> : null}
+        </div>
+        {(drivers.data ?? []).length ? (
+          <div className="flex flex-wrap gap-2">
+            {drivers.data?.map((driver) => (
+              <span key={driver.id} className="rounded-full bg-background px-3 py-1 text-sm">
+                {driver.name}
+                {driver.vehicleType ? ` · ${statusFa(driver.vehicleType)}` : ""}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">راننده تأییدشده‌ای برای انتخاب VIP نیست.</p>
+        )}
+      </SettingsSection>
 
       <SettingsSection title={t.settings.personal} icon={<UserRound className="h-5 w-5" />}>
         <div className="grid gap-4 sm:grid-cols-2">

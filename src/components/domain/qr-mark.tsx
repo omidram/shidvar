@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { cn } from "@/lib/utils";
 
 export function qrPayload(kind: "invoice" | "load" | "request", number: string) {
-  return `SHIDVAR:${kind.toUpperCase()}:${number}`;
+  return `SHIDRO:${kind.toUpperCase()}:${number}`;
 }
 
 export function QrMark({

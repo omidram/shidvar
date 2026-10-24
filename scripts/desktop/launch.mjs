@@ -166,12 +166,12 @@ function openBrowser(url) {
 
 async function main() {
   if (isWindowsAdmin()) {
-    throw new Error("Do not use Run as administrator. Close this window and double-click Shidvar.exe normally.");
+    throw new Error("Do not use Run as administrator. Close this window and double-click Shidro.exe normally.");
   }
 
   mkdirSync(storageDir, { recursive: true });
   if (!existsSync(path.join(dataDir, "PG_VERSION")) || !existsSync(path.join(dataDir, ".demo-version"))) {
-    throw new Error("Demo data is missing from this package. Rebuild Shidvar.exe.");
+    throw new Error("Demo data is missing from this package. Rebuild Shidro.exe.");
   }
 
   log("Starting demo database...");
@@ -229,8 +229,8 @@ async function main() {
 
 main().catch((error) => {
   console.error(formatError(error));
-  console.error("\nDo not use Run as administrator. Close this window and double-click Shidvar.exe.");
-  console.error("If it still fails, delete %LOCALAPPDATA%\\ShidvarDesktop, then try again.");
+  console.error("\nDo not use Run as administrator. Close this window and double-click Shidro.exe.");
+  console.error("If it still fails, delete %LOCALAPPDATA%\\ShidroDesktop, then try again.");
   console.error("Press Enter to close.");
   try {
     stopPostgres();

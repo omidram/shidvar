@@ -12,7 +12,7 @@ internal static class Program
     static int Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Console.Title = "Shidvar";
+        Console.Title = "Shidro";
         try
         {
             var exePath = Process.GetCurrentProcess().MainModule.FileName;
@@ -30,7 +30,7 @@ internal static class Program
                 return 0;
             }
 
-            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ShidvarDesktop");
+            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ShidroDesktop");
             var payloadDir = Path.Combine(root, "payload");
             Directory.CreateDirectory(root);
 
@@ -48,14 +48,14 @@ internal static class Program
             var node = Path.Combine(payloadDir, "node.exe");
             if (!File.Exists(launch) || !File.Exists(node) || !File.Exists(stamp) || File.ReadAllText(stamp).Trim() != version)
             {
-                Console.WriteLine("Extracting Shidvar...");
+                Console.WriteLine("Extracting Shidro...");
                 if (Directory.Exists(payloadDir))
                 {
                     try { Directory.Delete(payloadDir, true); }
                     catch (Exception ex)
                     {
                         Console.WriteLine("Cannot replace the previous extract (often left over from Run as administrator).");
-                        Console.WriteLine("Delete this folder, then double-click Shidvar.exe normally:");
+                        Console.WriteLine("Delete this folder, then double-click Shidro.exe normally:");
                         Console.WriteLine(payloadDir);
                         Console.WriteLine(ex.Message);
                         Console.ReadLine();
@@ -76,7 +76,7 @@ internal static class Program
 
             if (!File.Exists(node) || !File.Exists(launch))
             {
-                Console.WriteLine("Extracted files are missing. Delete %LOCALAPPDATA%\\ShidvarDesktop and try again.");
+                Console.WriteLine("Extracted files are missing. Delete %LOCALAPPDATA%\\ShidroDesktop and try again.");
                 Console.ReadLine();
                 return 1;
             }
