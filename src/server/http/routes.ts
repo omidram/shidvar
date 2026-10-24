@@ -964,7 +964,7 @@ export const routes: RouteDefinition[] = [
     permissions: ["companies.read"],
     async handler() {
       return prisma.company.findMany({
-        where: { type: { not: "PLATFORM" } },
+        where: { type: { in: ["REQUESTER", "SUPPLIER"] } },
         include: { supplierProfile: true, carrierProfile: true, priceBooks: { include: { lines: { select: { id: true } } } } },
         orderBy: { createdAt: "desc" },
         take: 200,

@@ -56,11 +56,10 @@ export default function VerificationsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
   const drivers = q.data?.drivers ?? [];
-  const driverCompanyIds = new Set(drivers.map((d) => d.carrierCompanyId));
-  const companies = (q.data?.companies ?? []).filter((c) => !(c.type === "CARRIER" && driverCompanyIds.has(c.id)));
+  const companies = (q.data?.companies ?? []).filter((c) => c.type === "REQUESTER" || c.type === "SUPPLIER");
   return (
     <div>
-      <PageHeader title={t.menu.verifications} description="شرکت‌ها و رانندگان در انتظار تأیید — قبل از تصمیم پروفایل را باز کنید" />
+      <PageHeader title={t.menu.verifications} description="صاحبان بار و رانندگان در انتظار تأیید — پروفایل هر کدام جداست" />
       {!companies.length && !drivers.length ? <EmptyState title={t.common.empty} /> : null}
       <div className="grid gap-3">
         {companies.map((c) => {

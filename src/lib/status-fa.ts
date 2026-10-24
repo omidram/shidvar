@@ -32,7 +32,7 @@ const LABELS: Record<string, string> = {
   DISPUTED: "اختلاف",
   PLATFORM: "سامانه",
   REQUESTER: "صاحب بار",
-  SUPPLIER: "شرکت پخش",
+  SUPPLIER: "صاحب بار",
   TRANSPORT_PENDING: "در انتظار راننده",
   TRANSPORT_ASSIGNED: "راننده تخصیص یافت",
   PICKUP_SCHEDULED: "زمان بارگیری ثبت شد",

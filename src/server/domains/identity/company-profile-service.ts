@@ -80,6 +80,20 @@ export async function getCompanyProfile(actor: Actor, id: string) {
       invoiceCount: order.invoices.length,
       jobCount: order.jobs.length,
     })),
+    drivers:
+      company.type === "CARRIER"
+        ? (
+            await prisma.driverProfile.findMany({
+              where: { carrierCompanyId: company.id },
+              select: { id: true, status: true, user: { select: { firstName: true, lastName: true, phone: true } } },
+            })
+          ).map((driver) => ({
+            id: driver.id,
+            status: driver.status,
+            name: `${driver.user.firstName} ${driver.user.lastName}`.trim() || driver.user.phone || "راننده",
+            phone: driver.user.phone,
+          }))
+        : [],
     priceBook: await getPriceBookForCompany(actor, company.id),
   };
 }

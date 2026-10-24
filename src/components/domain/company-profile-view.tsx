@@ -35,6 +35,7 @@ type CompanyProfile = {
   addresses: Array<{ id: string; label?: string | null; line1: string; city: string; region: string; postalCode?: string | null }>;
   requests: Array<{ id: string; number: string; status: string; originCity?: string | null; destinationCity?: string | null; requestedDeliveryDate: string; items: string[] }>;
   orders: Array<{ id: string; number: string; status: string; invoiceCount: number; jobCount: number }>;
+  drivers: Array<{ id: string; status: string; name: string; phone?: string | null }>;
 };
 
 export function CompanyProfileView({ id }: { id: string }) {
@@ -43,12 +44,36 @@ export function CompanyProfileView({ id }: { id: string }) {
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const company = q.data;
+  const isCargoOwner = company.type === "REQUESTER" || company.type === "SUPPLIER";
+
+  if (!isCargoOwner) {
+    return (
+      <div className="grid gap-6">
+        <PageHeader title={company.tradeName} description={`پروفایل راننده · ${statusFa(company.status)}`} />
+        <Card>
+          <h2 className="font-bold">پروفایل راننده</h2>
+          <div className="mt-3 grid gap-3">
+            {company.drivers.map((driver) => (
+              <Link key={driver.id} href={`/admin/drivers/${driver.id}`} className="rounded-2xl border border-border p-4 hover:bg-background">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold">{driver.name}</div>
+                  <StatusBadge status={driver.status} />
+                </div>
+                {driver.phone ? <p className="mt-1 text-sm text-muted">{driver.phone}</p> : null}
+              </Link>
+            ))}
+            {!company.drivers.length ? <p className="text-sm text-muted">پروفایل راننده برای این حساب هنوز کامل نشده است.</p> : null}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-6">
-      <PageHeader title={company.tradeName} description={`${statusFa(company.type)} · ${statusFa(company.status)}`} />
+      <PageHeader title={company.tradeName} description={`صاحب بار · ${statusFa(company.status)}`} />
       <Card>
-        <h2 className="mb-3 font-bold">شناسنامه شرکت</h2>
+        <h2 className="mb-3 font-bold">شناسنامه صاحب بار</h2>
         <MetaGrid
           items={[
             { label: t.common.legalName, value: company.legalName },
@@ -65,10 +90,10 @@ export function CompanyProfileView({ id }: { id: string }) {
           ]}
         />
       </Card>
-      <AdminInfoRequestPanel companyId={company.id} target={company.type === "CARRIER" ? "driver" : "company"} />
+      <AdminInfoRequestPanel companyId={company.id} target="company" />
       <AdminCoinsPanel companyId={company.id} />
-      {company.type === "REQUESTER" ? <PriceBookEditor companyId={company.id} /> : null}
-      <DocumentGallery kind="company" entityId={company.id} title="مدارک ثبتی شرکت" canVerify />
+      {isCargoOwner ? <PriceBookEditor companyId={company.id} /> : null}
+      <DocumentGallery kind="company" entityId={company.id} title="مدارک صاحب بار" canVerify />
       <Card>
         <h2 className="mb-3 font-bold">اعضای شرکت</h2>
         <div className="grid gap-3">

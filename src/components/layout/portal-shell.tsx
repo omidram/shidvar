@@ -27,6 +27,7 @@ import {
   LifeBuoy,
   Scale,
   ScrollText,
+  LogOut,
 } from "lucide-react";
 import { api, isAuthError } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
@@ -55,6 +56,7 @@ const ICONS = {
   invoices: Receipt,
   drivers: Truck,
   profile: UserRound,
+  ownerProfile: UserRound,
   priceBook: Receipt,
   reports: BarChart3,
   wallet: Wallet,
@@ -96,6 +98,7 @@ const NAV = {
     { href: "/requester/price-book", key: "priceBook" as const },
     { href: "/requester/warehouses", key: "warehouses" as const },
     { href: "/requester/support", key: "support" as const },
+    { href: "/requester/profile", key: "ownerProfile" as const },
     { href: "/requester/settings", key: "settings" as const },
   ],
   supplier: [
@@ -167,15 +170,15 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
 
   return (
     <div className={cn("min-h-screen bg-background", mobile ? "pb-24" : "grid md:grid-cols-[280px_1fr]")}>
-      <aside className={cn("bg-ink p-5 text-white", mobile ? "hidden" : "min-h-screen")}>
-        <Link href={`/${portal}/dashboard`} className="block">
+      <aside className={cn("bg-ink p-5 text-white", mobile ? "hidden" : "sticky top-0 flex h-screen flex-col")}>
+        <Link href={`/${portal}/dashboard`} className="block shrink-0">
           <BrandMark className="h-20" />
         </Link>
-        <p className="mt-3 text-sm text-white/70">{me.data ? displayName : "…"}</p>
-        <p className="text-xs text-white/40">
-          {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.supplier : t.auth.driver}
+        <p className="mt-3 shrink-0 text-sm text-white/70">{me.data ? displayName : "…"}</p>
+        <p className="shrink-0 text-xs text-white/40">
+          {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.requester : t.auth.driver}
         </p>
-        <nav className="mt-8 grid gap-1">
+        <nav className="mt-8 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
           {items.map((item) => {
             const Icon = ICONS[item.key];
             const active =
@@ -195,7 +198,8 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             );
           })}
         </nav>
-        <Button variant="outline" className="mt-8 w-full border-white/20 text-white" onClick={signOut}>
+        <Button variant="outline" className="mt-4 w-full shrink-0 border-white/20 text-white" onClick={() => void signOut()}>
+          <LogOut className="h-4 w-4" />
           {t.common.signOut}
         </Button>
       </aside>
@@ -217,6 +221,10 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
               </Link>
             ) : null}
             <ThemeToggle />
+            <Button variant="secondary" className="h-11 px-3" onClick={() => void signOut()}>
+              <LogOut className="h-4 w-4" />
+              {t.common.signOut}
+            </Button>
             <button
             type="button"
             className="relative grid h-11 w-11 place-items-center rounded-2xl border border-border bg-card"
