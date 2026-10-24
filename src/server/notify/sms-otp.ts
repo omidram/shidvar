@@ -28,6 +28,13 @@ export function isSmsOtpConfigured() {
   return Boolean(config.smsOtp.apiKey.trim());
 }
 
+/** api.ir answers HTTP 200 with data:true even when success is false. */
+export function smsOtpAccepted(status: number, payload: SmsOtpResponse) {
+  if (status < 200 || status >= 300) return false;
+  if (payload.data === true || payload.success === true) return true;
+  return false;
+}
+
 export async function sendLoginSmsOtp(phone: string, code: string) {
   const mobile = normalizeIranMobile(phone);
   const apiKey = config.smsOtp.apiKey.trim();
@@ -70,7 +77,7 @@ export async function sendLoginSmsOtp(phone: string, code: string) {
     payload = {};
   }
 
-  if (!res.ok || payload.success === false || payload.data === false) {
+  if (!smsOtpAccepted(res.status, payload)) {
     logger.error("sms_otp_rejected", {
       status: res.status,
       code: payload.code,
