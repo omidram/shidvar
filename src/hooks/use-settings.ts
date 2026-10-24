@@ -11,6 +11,7 @@ export type SettingsDraft = {
   firstName: string;
   lastName: string;
   phone: string;
+  email: string;
   tradeName: string;
   companyPhone: string;
   companyEmail: string;
@@ -31,6 +32,7 @@ function toDraft(data: PortalSettings): SettingsDraft {
     firstName: data.user.firstName,
     lastName: data.user.lastName,
     phone: data.user.phone ?? "",
+    email: data.user.email ?? "",
     tradeName: data.company?.tradeName ?? "",
     companyPhone: data.company?.phone ?? "",
     companyEmail: data.company?.email ?? "",
@@ -66,6 +68,7 @@ export function useSettingsForm() {
           firstName: draft.firstName,
           lastName: draft.lastName,
           phone: draft.phone,
+          email: draft.email || undefined,
           tradeName: draft.tradeName || undefined,
           companyPhone: draft.companyPhone,
           companyEmail: draft.companyEmail,

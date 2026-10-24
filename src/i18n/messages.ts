@@ -238,6 +238,7 @@ export const fa = {
     drivers: "رانندگان",
     profile: "پروفایل راننده",
     ownerProfile: "پروفایل صاحب بار",
+    adminProfile: "پروفایل",
     priceBook: "دفترچه قیمت",
     reports: "گزارشات",
     wallet: "کیف پول",
@@ -298,6 +299,7 @@ export const fa = {
   settings: {
     driverHint: "شیفت، حریم ردیابی، اعلان‌ها و امنیت حساب راننده",
     requesterHint: "پروفایل سازمان، ترجیح بار، اعلان‌ها و امنیت حساب",
+    adminHint: "نام، موبایل و نام کاربری همین حساب مدیر",
     account: "حساب کاربری",
     personal: "مشخصات فردی",
     company: "مشخصات سازمان",

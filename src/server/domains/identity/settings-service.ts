@@ -65,6 +65,7 @@ export const updateSettingsSchema = z.object({
   firstName: z.string().trim().min(1).max(80).optional(),
   lastName: z.string().trim().min(1).max(80).optional(),
   phone: z.string().trim().min(8).max(20).optional().or(z.literal("")),
+  email: z.string().trim().min(3).max(120).optional(),
   twoFactorEnabled: z.boolean().optional(),
   twoFactorChannel: z.enum(["SMS", "EMAIL"]).optional(),
   tradeName: z.string().trim().min(2).max(120).optional(),
@@ -238,6 +239,15 @@ export async function updatePortalSettings(actor: Actor, input: z.infer<typeof u
   }
 
   const nextPhone = input.phone === "" ? null : (input.phone ?? current.phone);
+  const nextEmail = input.email?.trim().toLowerCase() || current.email;
+  if (nextPhone && nextPhone !== current.phone) {
+    const takenPhone = await prisma.user.findFirst({ where: { phone: nextPhone, NOT: { id: current.id } } });
+    if (takenPhone) throw Errors.conflict("این شماره موبایل قبلاً ثبت شده است");
+  }
+  if (nextEmail && nextEmail !== (current.email ?? "").toLowerCase()) {
+    const takenEmail = await prisma.user.findFirst({ where: { email: nextEmail, NOT: { id: current.id } } });
+    if (takenEmail) throw Errors.conflict("این نام کاربری قبلاً ثبت شده است");
+  }
   const twoFactorEnabled = input.twoFactorEnabled ?? current.twoFactorEnabled;
   const twoFactorChannel = input.twoFactorChannel ?? (current.twoFactorSecret === "SMS" ? "SMS" : "EMAIL");
   if (twoFactorEnabled) {
@@ -260,6 +270,7 @@ export async function updatePortalSettings(actor: Actor, input: z.infer<typeof u
         firstName: input.firstName ?? current.firstName,
         lastName: input.lastName ?? current.lastName,
         phone: nextPhone,
+        email: nextEmail,
         twoFactorEnabled,
         twoFactorSecret: twoFactorChannel,
         ...(input.newPassword ? { passwordHash: await hashPassword(input.newPassword) } : {}),

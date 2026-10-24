@@ -57,6 +57,7 @@ const ICONS = {
   drivers: Truck,
   profile: UserRound,
   ownerProfile: UserRound,
+  adminProfile: UserRound,
   priceBook: Receipt,
   reports: BarChart3,
   wallet: Wallet,
@@ -84,6 +85,8 @@ const NAV = {
     { href: "/admin/business-rules", key: "rules" as const },
     { href: "/admin/disputes", key: "disputes" as const },
     { href: "/admin/tickets", key: "tickets" as const },
+    { href: "/admin/profile", key: "adminProfile" as const },
+    { href: "/admin/settings", key: "settings" as const },
   ],
   requester: [
     { href: "/requester/dashboard", key: "dashboard" as const },
