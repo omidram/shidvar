@@ -23,7 +23,7 @@ const ACTION_FA: Record<string, string> = {
   "pod.submitted": "ثبت رسید تحویل",
   "pod.returned": "بازگشت مدارک تحویل",
   "delivery.confirmed": "تأیید تحویل",
-  "invoice.issued": "صدور فاکتور",
+  "invoice.issued": "صدور صورتحساب",
   "company.under_review": "ارسال شرکت برای بررسی",
 };
 
@@ -34,7 +34,7 @@ const ENTITY_FA: Record<string, string> = {
   Shipment: "محموله",
   User: "کاربر",
   Company: "شرکت",
-  Invoice: "فاکتور",
+  Invoice: "صورتحساب",
 };
 
 export default function AuditPage() {

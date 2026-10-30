@@ -736,7 +736,7 @@ export async function seedLiveData(prisma: PrismaClient, ctx: SeedCtx) {
   await notify(prisma, ctx.zarUserId, "راننده بار تهران به آمل را قبول کرد", "علی رضایی بار ماکارونی را قبول کرد و بارنامه صادر شد.", "job.accepted");
   await notify(prisma, ctx.zarUserId, "بار اصفهان در مسیر است", "جواد اکبری محموله آرد را بارگیری کرد.", "job.in_transit");
   await notify(prisma, ctx.aliUserId, "سه درخواست جدید در محدوده شما", "از تهران به آمل، مشهد و قم بارهای باز وجود دارد.", "job.offered");
-  await notify(prisma, ctx.aliUserId, "کرایه مسیر برگشتی ثبت شد", "بار آمل به تهران تکمیل و فاکتور صادر شد.", "invoice.issued");
+  await notify(prisma, ctx.aliUserId, "کرایه مسیر برگشتی ثبت شد", "بار آمل به تهران تکمیل و صورتحساب صادر شد.", "invoice.issued");
   await notify(prisma, ctx.adminId, "دو شرکت پخش در انتظار تأیید", "پخش میهن و پخش بهروز فرم ثبت‌نام فرستاده‌اند.", "company.review");
   await notify(prisma, ctx.adminId, "دو راننده در انتظار بررسی", "کامران لطفی و حسین محمدی مدارک را ارسال کرده‌اند.", "driver.review");
   await notify(prisma, golestan.owner.id, "درخواست تبریز برای رانندگان ارسال شد", "رانندگان تأییدشده محدوده تهران مطلع شدند.", "request.published");

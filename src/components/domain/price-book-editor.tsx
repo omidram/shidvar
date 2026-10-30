@@ -175,11 +175,8 @@ export function PriceBookEditor({ companyId, readOnly }: { companyId: string; re
             disabled={readOnly}
           />
         </Field>
-        <Field label="ارز">
-          <NativeSelect value={book.currencyCode} onChange={(e) => setBook({ ...book, currencyCode: e.target.value })} disabled={readOnly}>
-            <option value="IRR">ریال</option>
-            <option value="IRT">تومان</option>
-          </NativeSelect>
+        <Field label="واحد پول">
+          <Input value="ریال" disabled readOnly />
         </Field>
         <Field label="واحد شمارش">
           <NativeSelect value={book.unitCode} onChange={(e) => setBook({ ...book, unitCode: e.target.value })} disabled={readOnly}>

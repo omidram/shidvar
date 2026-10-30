@@ -460,6 +460,8 @@ model Company {
   phone              String?
   website            String?
   defaultCurrency    String        @default("IRR")
+  isSpecial          Boolean       @default(false)
+  specialNote        String?
   verificationNotes  String?
   verifiedAt         DateTime?
   verifiedById       String?
@@ -853,6 +855,7 @@ model ProcurementRequest {
   vipDriver             DriverProfile? @relation("VipRequestDriver", fields: [vipDriverId], references: [id])
   needsWaybill          Boolean       @default(false)
   needsInsurance        Boolean       @default(false)
+  loadType              String        @default("FULL")
   announcedAt           DateTime?
   version               Int           @default(1)
   items                 ProcurementRequestItem[]

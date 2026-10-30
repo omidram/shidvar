@@ -2,7 +2,7 @@ import { prisma } from "@/server/db";
 import { Errors } from "@/server/errors";
 import type { Actor } from "@/server/rbac/actor";
 import { coordsForCity, type LatLng } from "@/lib/geo/city-coords";
-import { distanceKm, estimatedHours, headingDeg, interpolate, routeDistanceKm, routeWaypoints } from "@/lib/geo/route";
+import { estimatedHours, etaMinutesFor, headingDeg, interpolate, remainingRoadKm, roadDistanceKm, roadFactor, routeWaypoints } from "@/lib/geo/route";
 import { evaluateLoadAcceptance, normalizeCity } from "@/server/logistics/load-rules";
 import { activeLoadDestinations, jobDestination } from "./load-guard";
 
@@ -94,12 +94,12 @@ function endpoints(job: {
   return { origin, dest, originCity, destCity };
 }
 
-function progressFor(startedAt: Date, points: LatLng[], status: string) {
+function progressFor(startedAt: Date, points: LatLng[], status: string, factor = 1.3) {
   if (TRACKING_DONE.includes(status) || status === "UNLOADING" || status === "AT_DESTINATION") return 0.97;
   if (status === "ARRIVING_AT_DESTINATION") return 0.88;
   const hours = Math.max(0, (Date.now() - startedAt.getTime()) / 3_600_000);
-  const duration = estimatedHours(points);
-  return Math.min(0.93, 0.16 + hours / duration);
+  const duration = estimatedHours(points, 55, factor);
+  return Math.min(0.9, 0.04 + hours / duration);
 }
 
 function canSimulate(session: { status: string; consentStatus: string; deviceConsent: boolean }) {
@@ -139,8 +139,9 @@ function serializeSession(
   const current = session.lastLat != null && session.lastLng != null
     ? { lat: Number(session.lastLat), lng: Number(session.lastLng) }
     : pings.at(-1) ?? origin;
-  const remaining = distanceKm(current, dest);
-  const speed = Number(session.speedKmh ?? 68);
+  const factor = roadFactor(originCity, destCity);
+  const remaining = remainingRoadKm(route, current, factor);
+  const speed = session.speedKmh != null ? Number(session.speedKmh) : null;
   return {
     jobId: job.id,
     jobNumber: job.number,
@@ -174,8 +175,8 @@ function serializeSession(
     lastAt: session.lastAt?.toISOString() ?? null,
     startedAt: session.startedAt.toISOString(),
     remainingKm: Math.round(remaining),
-    etaMinutes: Math.max(8, Math.round((remaining / Math.max(speed, 30)) * 60)),
-    routeKm: Math.round(routeDistanceKm(route)),
+    etaMinutes: etaMinutesFor(remaining, speed),
+    routeKm: Math.round(roadDistanceKm(route, factor)),
     route,
     trail: pings,
   };
@@ -222,11 +223,12 @@ export async function startTrackingForJob(
   const { origin, dest, originCity, destCity } = endpoints(job);
   const route = routeWaypoints(originCity, destCity, origin, dest);
   const startedAt = opts?.startedAt ?? new Date();
-  const progress = opts?.progress ?? progressFor(startedAt, route, job.status);
+  const factor = roadFactor(originCity, destCity);
+  const progress = opts?.progress ?? progressFor(startedAt, route, job.status, factor);
   const here = interpolate(route, progress);
   const next = interpolate(route, Math.min(1, progress + 0.02));
   const heading = headingDeg(here, next);
-  const speed = 58 + Math.round(progress * 18);
+  const speed = 52 + Math.round(progress * 8);
   const granted = Boolean(opts?.preGranted);
   const nextStatus = TRACKING_DONE.includes(job.status) ? "COMPLETED" : granted ? "ACTIVE" : "PENDING";
 
@@ -269,7 +271,7 @@ export async function startTrackingForJob(
     for (let i = 0; i <= steps; i++) {
       const t = (progress * i) / steps;
       const point = interpolate(route, t);
-      const at = new Date(startedAt.getTime() + t * estimatedHours(route) * 3_600_000);
+      const at = new Date(startedAt.getTime() + t * estimatedHours(route, 55, factor) * 3_600_000);
       stamps.push(at);
       await prisma.trackingPing.create({
         data: {
@@ -314,7 +316,7 @@ async function advanceSession(jobId: string) {
   if (!canSimulate(job.trackingSession)) return job.trackingSession;
   const { origin, dest, originCity, destCity } = endpoints(job);
   const route = routeWaypoints(originCity, destCity, origin, dest);
-  const progress = progressFor(job.trackingSession.startedAt, route, job.status);
+  const progress = progressFor(job.trackingSession.startedAt, route, job.status, roadFactor(originCity, destCity));
   const here = interpolate(route, progress);
   const next = interpolate(route, Math.min(1, progress + 0.015));
   const heading = headingDeg(here, next);
@@ -325,14 +327,14 @@ async function advanceSession(jobId: string) {
       sessionId: job.trackingSession.id,
       latitude: here.lat,
       longitude: here.lng,
-      speedKmh: 60 + Math.round(Math.sin(progress * 8) * 8),
+      speedKmh: 55 + Math.round(Math.sin(progress * 8) * 8),
       heading,
       recordedAt: new Date(),
     },
   });
   return prisma.trackingSession.update({
     where: { id: job.trackingSession.id },
-    data: { lastLat: here.lat, lastLng: here.lng, heading, speedKmh: 64, lastAt: new Date() },
+    data: { lastLat: here.lat, lastLng: here.lng, heading, speedKmh: 55 + Math.round(Math.sin(progress * 8) * 8), lastAt: new Date() },
   });
 }
 

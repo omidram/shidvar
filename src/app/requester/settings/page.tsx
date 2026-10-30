@@ -103,7 +103,7 @@ export default function RequesterSettingsPage() {
               </Link>
             );
           })}
-          {!loads.isLoading && !(loads.data ?? []).length ? <p className="text-sm text-muted">هنوز درخواستی ثبت نشده. ثبت هر درخواست ۱۰۰ سکه کم می‌کند.</p> : null}
+          {!loads.isLoading && !(loads.data ?? []).length ? <p className="text-sm text-muted">هنوز درخواستی ثبت نشده. ثبت هر درخواست ۱۰۰ اعتبار کم می‌کند.</p> : null}
         </div>
         {(drivers.data ?? []).length ? (
           <div className="flex flex-wrap gap-2">
@@ -161,7 +161,7 @@ export default function RequesterSettingsPage() {
             <Input value={draft.website} onChange={(e) => setDraft({ ...draft, website: e.target.value })} />
           </Field>
           <Field label="ارز پیش‌فرض">
-            <Input value={data.company?.defaultCurrency === "IRR" ? "ریال ایران" : (data.company?.defaultCurrency ?? "—")} disabled />
+            <Input value="ریال" disabled />
           </Field>
         </div>
       </SettingsSection>

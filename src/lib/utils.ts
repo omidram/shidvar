@@ -6,9 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(value: number | string | null | undefined, currency = "IRR", locale = "fa-IR") {
+/** Every amount in the product is in Iranian rial; the second argument is kept only for old call sites. */
+export function formatMoney(value: number | string | null | undefined, _currency?: string, locale = "fa-IR") {
+  void _currency;
   const amount = Number(value ?? 0);
-  return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.round(amount))} ریال`;
 }
 
 export function formatDate(value: string | Date | null | undefined) {

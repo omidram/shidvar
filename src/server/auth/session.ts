@@ -76,7 +76,7 @@ export async function rotateRefreshToken(
       where: { userId: existing.userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    throw Errors.unauthorized("Refresh token reuse detected");
+    throw Errors.unauthorized("نشست شما نامعتبر شد؛ دوباره وارد شوید");
   }
 
   await prisma.refreshToken.update({
@@ -201,6 +201,6 @@ export async function actorFromCookies() {
 
 export function requireActor(actor: Actor | null) {
   if (!actor) throw Errors.unauthorized();
-  if (actor.status === "SUSPENDED") throw Errors.forbidden("Account is suspended");
+  if (actor.status === "SUSPENDED") throw Errors.forbidden("حساب شما معلق شده است");
   return actor;
 }

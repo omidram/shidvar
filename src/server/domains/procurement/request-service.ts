@@ -26,7 +26,7 @@ export async function createRequest(actor: Actor, input: z.infer<typeof createRe
     const min = item.minQuantity ?? item.quantity;
     const max = item.maxQuantity ?? item.quantity;
     if (min > item.quantity || max < item.quantity) {
-      throw Errors.validation({ items: ["Quantity must sit between min and max"] });
+      throw Errors.validation({ items: ["مقدار باید بین حداقل و حداکثر مجاز باشد"] });
     }
   }
 
@@ -57,6 +57,7 @@ export async function createRequest(actor: Actor, input: z.infer<typeof createRe
       vipDriverId: input.dispatchMode === "VIP" ? input.vipDriverId : null,
       needsWaybill: input.needsWaybill,
       needsInsurance: input.needsInsurance,
+      loadType: input.loadType,
       items: {
         create: input.items.map((item) => ({
           productId: item.productId,
@@ -210,7 +211,7 @@ async function moveRequest(actor: Actor, id: string, to: Parameters<typeof asser
 export async function submitRequest(actor: Actor, id: string) {
   const request = await prisma.procurementRequest.findUnique({ where: { id }, include: { items: true, company: true } });
   if (!request) throw Errors.notFound();
-  if (!request.items.length) throw Errors.validation({ items: ["At least one line is required"] });
+  if (!request.items.length) throw Errors.validation({ items: ["حداقل یک قلم کالا لازم است"] });
   const adminAnnounce = await getRule<boolean>("requests.requireAdminAnnounce", true);
   const autoPublish = !adminAnnounce && (await getRule<boolean>("requests.autoPublish", true));
   await moveRequest(actor, id, "SUBMITTED", "requests.update");

@@ -3,10 +3,10 @@ import { isIranianMobile, isValidNationalId, normalizeDigits, normalizeMobile } 
 
 export function passwordPolicy(password: string) {
   const errors: string[] = [];
-  if (password.length < 10) errors.push("Must be at least 10 characters");
-  if (!/[A-Z]/.test(password)) errors.push("Must include an uppercase letter");
-  if (!/[a-z]/.test(password)) errors.push("Must include a lowercase letter");
-  if (!/[0-9]/.test(password)) errors.push("Must include a number");
+  if (password.length < 10) errors.push("رمز عبور باید حداقل ۱۰ نویسه باشد");
+  if (!/[A-Z]/.test(password)) errors.push("رمز عبور باید یک حرف بزرگ انگلیسی داشته باشد");
+  if (!/[a-z]/.test(password)) errors.push("رمز عبور باید یک حرف کوچک انگلیسی داشته باشد");
+  if (!/[0-9]/.test(password)) errors.push("رمز عبور باید یک عدد داشته باشد");
   return errors;
 }
 
@@ -21,6 +21,7 @@ export const registerSchema = z.object({
     .transform(normalizeDigits)
     .refine(isValidNationalId, "کد ملی معتبر نیست"),
   password: z.string(),
+  acceptRules: z.literal(true, { errorMap: () => ({ message: "برای ثبت‌نام باید قوانین را بخوانید و بپذیرید" }) }),
 });
 
 export const loginSchema = z.object({

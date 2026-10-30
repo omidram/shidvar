@@ -57,7 +57,7 @@ export function requireRequesterCompany(actor: Actor) {
 
 export function requireSupplierCompany(actor: Actor) {
   const id = companiesOfType(actor, "SUPPLIER")[0];
-  if (!id && !actor.isPlatformStaff) throw Errors.forbidden("Supplier membership required");
+  if (!id && !actor.isPlatformStaff) throw Errors.forbidden("عضویت در شرکت صاحب بار لازم است");
   return id;
 }
 
@@ -65,15 +65,15 @@ export function requireApprovedSupplier(actor: Actor) {
   const membership = actor.memberships.find((m) => m.companyType === "SUPPLIER");
   if (actor.isPlatformStaff) return membership?.companyId;
   if (!membership || membership.companyStatus !== "APPROVED") {
-    throw Errors.forbidden("Supplier account is not approved");
+    throw Errors.forbidden("حساب صاحب بار هنوز تأیید نشده است");
   }
   return membership.companyId;
 }
 
 export function requireApprovedDriver(actor: Actor) {
-  if (!actor.driverProfile) throw Errors.forbidden("Driver profile required");
+  if (!actor.driverProfile) throw Errors.forbidden("پروفایل راننده لازم است");
   if (actor.driverProfile.status !== "APPROVED" && !actor.isPlatformStaff) {
-    throw Errors.forbidden("Driver account is not approved");
+    throw Errors.forbidden("حساب راننده هنوز تأیید نشده است");
   }
   return actor.driverProfile;
 }

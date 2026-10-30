@@ -38,6 +38,7 @@ function NewRequestForm() {
   const [helper, setHelper] = useState(false);
   const [covered, setCovered] = useState(true);
   const [insurance, setInsurance] = useState(false);
+  const [loadType, setLoadType] = useState<"FULL" | "SHARED">("FULL");
   const [waybill, setWaybill] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<"NORMAL" | "VIP">("NORMAL");
   const [vipDriverId, setVipDriverId] = useState("");
@@ -115,6 +116,7 @@ function NewRequestForm() {
           vipDriverId: dispatchMode === "VIP" ? vipDriverId : undefined,
           needsWaybill: waybill,
           needsInsurance: insurance,
+          loadType,
           items: lines.map((line) => ({
             productId: line.productId || undefined,
             categoryId: line.categoryId || undefined,
@@ -125,7 +127,7 @@ function NewRequestForm() {
         }),
       });
       await api(`/requests/${created.id}/submit`, { method: "POST" });
-      toast.success("درخواست ثبت شد و ۱۰۰ سکه کسر شد. برای بررسی و اعلام مدیریت ارسال شد");
+      toast.success("درخواست ثبت شد و ۱۰۰ اعتبار کسر شد. برای بررسی و اعلام مدیریت ارسال شد");
       router.push(`/requester/requests/${created.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t.common.error);
@@ -138,7 +140,7 @@ function NewRequestForm() {
     <form className="grid gap-6" onSubmit={onSubmit}>
       <PageHeader
         title={t.request.create}
-        description={`${t.request.example} با ثبت درخواست، ۱۰۰ سکه از حساب شرکت کم می‌شود.`}
+        description={`${t.request.example} با ثبت درخواست، ۱۰۰ اعتبار از حساب شرکت کم می‌شود.`}
         actions={
           <div className="flex gap-2">
             {step > 1 ? (
@@ -330,6 +332,12 @@ function NewRequestForm() {
               </div>
             ) : null}
           </div>
+          <Field label="نوع بار">
+            <NativeSelect value={loadType} onChange={(e) => setLoadType(e.target.value as "FULL" | "SHARED")}>
+              <option value="FULL">دربستی (کل ماشین برای این بار)</option>
+              <option value="SHARED">روباری (می‌تواند با بار هم‌مقصد حمل شود)</option>
+            </NativeSelect>
+          </Field>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex items-center justify-between rounded-2xl border border-border p-4 text-sm">
               بارنامه

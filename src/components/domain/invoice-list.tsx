@@ -37,12 +37,12 @@ export function InvoiceList({ description }: { description?: string }) {
   const rows = q.data ?? [];
   return (
     <div>
-      <PageHeader title={t.menu.invoices} description={description ?? "فاکتور و اسناد حمل صادرشده پس از قبول راننده"} />
+      <PageHeader title={t.menu.invoices} description={description ?? "صورتحساب و اسناد حمل صادرشده پس از قبول راننده"} />
       <Card className="mb-4 overflow-hidden p-0">
         <img src="/media/invoice-illustration.jpg" alt="" className="h-40 w-full object-cover" />
       </Card>
       {q.isLoading ? <p>{t.common.loading}</p> : null}
-      {!q.isLoading && !rows.length ? <EmptyState title={t.common.empty} hint="با قبول اولین بار، فاکتور اینجا دیده می‌شود." /> : null}
+      {!q.isLoading && !rows.length ? <EmptyState title={t.common.empty} hint="با قبول اولین بار، صورتحساب اینجا دیده می‌شود." /> : null}
       <div className="grid gap-3">
         {rows.map((invoice) => (
           <Link key={invoice.id} href={invoiceHref(pathname, invoice.id)}>

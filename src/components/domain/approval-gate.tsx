@@ -36,7 +36,7 @@ export function ApprovalGate({ kind, children }: { kind: "requester" | "driver";
         <div className="p-6">
           <h1 className="text-2xl font-black">{t.auth.pendingTitle}</h1>
           <p className="mt-3 text-sm leading-7 text-muted">
-            حساب شما ساخته شد و ۱۰۰۰ سکه هدیه گرفتید. مدیریت به‌زودی اطلاعات و مدارک تکمیلی لازم را از همین صفحه از شما می‌خواهد؛ بعد از بررسی، حساب فعال می‌شود.
+            حساب شما ساخته شد و ۱۰۰۰ اعتبار هدیه گرفتید. مدیریت به‌زودی اطلاعات و مدارک تکمیلی لازم را از همین صفحه از شما می‌خواهد؛ بعد از بررسی، حساب فعال می‌شود.
           </p>
         </div>
       </Card>

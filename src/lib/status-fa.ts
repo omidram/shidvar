@@ -75,7 +75,7 @@ const LABELS: Record<string, string> = {
   OVERCHARGE: "هزینه اضافه",
   NO_SHOW: "عدم حضور",
   OTHER: "سایر",
-  BILLING: "مالی و فاکتور",
+  BILLING: "مالی و صورتحساب",
   LOAD: "بار و حمل",
   ACCOUNT: "حساب کاربری",
   TRACKING: "ردیابی",

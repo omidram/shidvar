@@ -12,12 +12,15 @@ const CORRIDORS: Record<string, string[]> = {
   "تهران|یزد": ["تهران", "قم", "کاشان", "یزد"],
   "کرج|تهران": ["کرج", "تهران"],
   "کرج|قم": ["کرج", "تهران", "قم"],
-  "آمل|تهران": ["آمل", "تهران"],
-  "تهران|آمل": ["تهران", "آمل"],
+  "آمل|تهران": ["آمل", "هراز", "لاریجان", "دماوند", "تهران"],
+  "تهران|آمل": ["تهران", "دماوند", "لاریجان", "هراز", "آمل"],
 };
 
 const EXTRA: Record<string, LatLng> = {
   زنجان: { lat: 36.6764, lng: 48.4963 },
+  دماوند: { lat: 35.7167, lng: 52.0667 },
+  لاریجان: { lat: 36.0, lng: 52.22 },
+  هراز: { lat: 36.2, lng: 52.3 },
 };
 
 function pointFor(name: string): LatLng | null {
@@ -84,8 +87,44 @@ export function routeDistanceKm(points: LatLng[]) {
   return segmentLengths(points).reduce((sum, item) => sum + item, 0);
 }
 
-export function estimatedHours(points: LatLng[], speedKmh = 68) {
-  return Math.max(2.5, routeDistanceKm(points) / speedKmh);
+/** Roads are longer than the straight polyline: less so when we know the real corridor towns. */
+export function roadFactor(originCity?: string | null, destCity?: string | null) {
+  const known = originCity && destCity ? Boolean(CORRIDORS[routeKey(originCity, destCity)]) : false;
+  return known ? 1.2 : 1.3;
+}
+
+/** Road kilometres for the whole trip. */
+export function roadDistanceKm(points: LatLng[], factor = 1.3) {
+  return routeDistanceKm(points) * factor;
+}
+
+/** Road kilometres left from the vehicle's position to the end of the route (not the straight line). */
+export function remainingRoadKm(points: LatLng[], current: LatLng, factor = 1.3) {
+  if (points.length < 2) return 0;
+  let nearest = 0;
+  let best = Number.POSITIVE_INFINITY;
+  points.forEach((point, index) => {
+    const d = distanceKm(point, current);
+    if (d < best) {
+      best = d;
+      nearest = index;
+    }
+  });
+  const segments = segmentLengths(points);
+  let left = 0;
+  for (let i = nearest; i < segments.length; i++) left += segments[i];
+  return (left + best) * factor;
+}
+
+/** Driving time in minutes. A parked or very slow vehicle is assumed to average a normal truck speed. */
+export function etaMinutesFor(remainingKm: number, speedKmh?: number | null) {
+  if (remainingKm <= 0.5) return 0;
+  const speed = speedKmh && speedKmh >= 25 ? Math.min(speedKmh, 90) : 55;
+  return Math.max(1, Math.round((remainingKm / speed) * 60));
+}
+
+export function estimatedHours(points: LatLng[], speedKmh = 55, factor = 1.3) {
+  return Math.max(0.25, roadDistanceKm(points, factor) / speedKmh);
 }
 
 function segmentLengths(points: LatLng[]) {

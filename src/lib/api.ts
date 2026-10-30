@@ -9,7 +9,7 @@ export function getApiError(error: unknown): ApiError | undefined {
   return undefined;
 }
 
-export function formatApiError(error: unknown, fallback = "Request failed") {
+export function formatApiError(error: unknown, fallback = "درخواست انجام نشد") {
   const apiError = getApiError(error);
   const fieldText = apiError?.fields
     ? Object.values(apiError.fields)
@@ -49,8 +49,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const json = (await res.json().catch(() => null)) as { success: boolean; data: T; error?: ApiError } | null;
   if (!res.ok || !json?.success) {
-    const error = new Error(json?.error?.message ?? "Request failed") as ApiFailure;
-    error.api = json?.error ?? { code: res.status === 401 ? "AUTH_REQUIRED" : "REQUEST_FAILED", message: json?.error?.message ?? "Request failed" };
+    const error = new Error(json?.error?.message ?? "درخواست انجام نشد") as ApiFailure;
+    error.api = json?.error ?? { code: res.status === 401 ? "AUTH_REQUIRED" : "REQUEST_FAILED", message: json?.error?.message ?? "درخواست انجام نشد" };
     throw error;
   }
   return json.data;

@@ -39,6 +39,8 @@ import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, getJob, lis
 import { consentJobTracking, getJobTracking, listLiveTracking, recordDriverPing } from "@/server/domains/logistics/tracking-service";
 import { dashboardFor, listNotifications, markNotificationRead } from "@/server/domains/dashboard/dashboard-service";
 import { reportsFor } from "@/server/domains/reports/report-service";
+import { createWarehouse, deleteWarehouse, listOwnWarehouses, updateWarehouse, warehouseSchema, type WarehouseInput } from "@/server/domains/identity/warehouse-service";
+import { profitLossReport, profitLossWorkbook } from "@/server/domains/reports/profit-loss-service";
 import { getOrderForActor, listOrders } from "@/server/domains/orders/order-service";
 import { getInvoice, listInvoices, payInvoice } from "@/server/domains/finance/invoice-service";
 import {
@@ -86,7 +88,7 @@ import {
   withdrawWallet,
 } from "@/server/domains/finance/wallet-service";
 import { getDriverProfile } from "@/server/domains/identity/driver-profile-service";
-import { createCargoCompany, getCompanyProfile } from "@/server/domains/identity/company-profile-service";
+import { createCargoCompany, getCompanyProfile, setCompanySpecial } from "@/server/domains/identity/company-profile-service";
 import { getPortalSettings, updatePortalSettings, updateSettingsSchema } from "@/server/domains/identity/settings-service";
 import { getOwnPriceBook, getPriceBookForCompany, quotePrice, upsertPriceBook } from "@/server/domains/finance/price-book-service";
 import { buildChecklist, deleteDocument, getOwnChecklist, verifyDocument } from "@/server/domains/documents/document-service";
@@ -262,6 +264,31 @@ export const routes: RouteDefinition[] = [
   },
   {
     method: "GET",
+    path: "/admin/reports/profit-loss",
+    async handler({ actor, query }) {
+      const count = query.get("count");
+      return profitLossReport(requireActor(actor), { granularity: query.get("granularity"), count: count ? Number(count) : null });
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/reports/profit-loss/export",
+    async handler({ actor, query }) {
+      const count = query.get("count");
+      const data = await profitLossReport(requireActor(actor), { granularity: query.get("granularity"), count: count ? Number(count) : null });
+      const file = await profitLossWorkbook(data);
+      const name = `shidro-profit-loss-${data.granularity}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      return new Response(new Uint8Array(file), {
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${name}"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    },
+  },
+  {
+    method: "GET",
     path: "/notifications",
     async handler({ actor }) {
       return listNotifications(requireActor(actor));
@@ -318,12 +345,30 @@ export const routes: RouteDefinition[] = [
     method: "GET",
     path: "/tenancy/warehouses",
     async handler({ actor }) {
-      const a = requireActor(actor);
-      const companyIds = a.isPlatformStaff ? undefined : a.memberships.map((m) => m.companyId);
-      return prisma.warehouse.findMany({
-        where: companyIds ? { companyId: { in: companyIds } } : undefined,
-        include: { address: true },
-      });
+      return listOwnWarehouses(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/tenancy/warehouses",
+    input: warehouseSchema,
+    async handler({ actor, body }) {
+      return createWarehouse(requireActor(actor), body as WarehouseInput);
+    },
+  },
+  {
+    method: "PUT",
+    path: "/tenancy/warehouses/:id",
+    input: warehouseSchema,
+    async handler({ actor, params, body }) {
+      return updateWarehouse(requireActor(actor), params.id, body as WarehouseInput);
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/tenancy/warehouses/:id",
+    async handler({ actor, params }) {
+      return deleteWarehouse(requireActor(actor), params.id);
     },
   },
   {
@@ -564,6 +609,9 @@ export const routes: RouteDefinition[] = [
   {
     method: "POST",
     path: "/jobs/:id/accept",
+    input: z.object({
+      contentsConfirmed: z.literal(true, { errorMap: () => ({ message: "ابتدا محتوای بار را ببینید و تأیید کنید" }) }),
+    }),
     async handler({ actor, params }) {
       return acceptCargoJob(requireActor(actor), params.id);
     },
@@ -864,6 +912,16 @@ export const routes: RouteDefinition[] = [
   },
   {
     method: "POST",
+    path: "/admin/companies/:id/special",
+    permissions: ["companies.update"],
+    input: z.object({ special: z.boolean(), note: z.string().trim().max(200).optional() }),
+    async handler({ actor, params, body }) {
+      const data = body as { special: boolean; note?: string };
+      return setCompanySpecial(requireActor(actor), params.id, data.special, data.note);
+    },
+  },
+  {
+    method: "POST",
     path: "/admin/companies",
     permissions: ["companies.create"],
     input: z.object({
@@ -900,7 +958,7 @@ export const routes: RouteDefinition[] = [
       status: z.enum(["DRAFT", "ACTIVE"]).optional(),
       validFrom: z.string().nullable().optional(),
       validTo: z.string().nullable().optional(),
-      currencyCode: z.string().optional(),
+      currencyCode: z.string().optional().transform(() => "IRR"),
       unitCode: z.string().optional(),
       channels: z.array(z.string()).optional(),
       terms: z.string().nullable().optional(),

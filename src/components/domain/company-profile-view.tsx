@@ -13,6 +13,7 @@ import { PriceBookEditor } from "@/components/domain/price-book-editor";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 import { AdminCoinsPanel } from "@/components/domain/coins-view";
+import { SpecialToggle } from "@/components/domain/special-badge";
 
 type CompanyProfile = {
   id: string;
@@ -26,6 +27,8 @@ type CompanyProfile = {
   phone?: string | null;
   website?: string | null;
   defaultCurrency: string;
+  isSpecial: boolean;
+  specialNote?: string | null;
   verificationNotes?: string | null;
   rejectedReason?: string | null;
   verifiedAt?: string | null;
@@ -50,6 +53,7 @@ export function CompanyProfileView({ id }: { id: string }) {
     return (
       <div className="grid gap-6">
         <PageHeader title={company.tradeName} description={`پروفایل راننده · ${statusFa(company.status)}`} />
+        <SpecialToggle companyId={company.id} isSpecial={company.isSpecial} note={company.specialNote} />
         <Card>
           <h2 className="font-bold">پروفایل راننده</h2>
           <div className="mt-3 grid gap-3">
@@ -71,7 +75,8 @@ export function CompanyProfileView({ id }: { id: string }) {
 
   return (
     <div className="grid gap-6">
-      <PageHeader title={company.tradeName} description={`صاحب بار · ${statusFa(company.status)}`} />
+      <PageHeader title={company.tradeName} description={`صاحب بار · ${statusFa(company.status)}${company.isSpecial ? " · ویژه" : ""}`} />
+      <SpecialToggle companyId={company.id} isSpecial={company.isSpecial} note={company.specialNote} />
       <Card>
         <h2 className="mb-3 font-bold">شناسنامه صاحب بار</h2>
         <MetaGrid
@@ -82,7 +87,7 @@ export function CompanyProfileView({ id }: { id: string }) {
             { label: t.common.taxId, value: company.taxId },
             { label: t.common.registration, value: company.registrationNumber },
             { label: "وب‌سایت", value: company.website },
-            { label: "ارز پیش‌فرض", value: company.defaultCurrency },
+            { label: "واحد پول", value: "ریال" },
             { label: "تاریخ تأیید", value: formatDate(company.verifiedAt) },
             { label: "عضویت از", value: formatDate(company.createdAt) },
             { label: "یادداشت بررسی", value: company.verificationNotes },

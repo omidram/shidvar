@@ -12,6 +12,7 @@ import { config } from "@/server/config";
 import { sendLoginSmsOtp } from "@/server/notify/sms-otp";
 import { ensureCoinWallet } from "@/server/domains/finance/coin-service";
 import { maskNationalId, normalizeDigits, normalizeMobile } from "@/lib/identity";
+import { SIGNUP_RULES_VERSION } from "@/lib/signup-rules";
 import type { Actor } from "@/server/rbac/actor";
 import {
   loginSchema,
@@ -135,7 +136,7 @@ export async function registerUser(input: z.infer<typeof registerSchema>, meta: 
     action: "user.registered",
     entityType: "User",
     entityId: result.user.id,
-    newValue: { portal: input.portal, companyId: result.company.id },
+    newValue: { portal: input.portal, companyId: result.company.id, rulesAccepted: SIGNUP_RULES_VERSION, rulesAcceptedAt: new Date().toISOString() },
     ipAddress: meta.ip,
   });
 
@@ -153,7 +154,7 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     },
     include: { userRoles: { select: { role: { select: { portal: true } } } } },
   });
-  if (!user) throw Errors.unauthorized("Invalid credentials");
+  if (!user) throw Errors.unauthorized("کد ملی، ایمیل، موبایل یا رمز عبور اشتباه است");
 
   const maxFails = await getRule<number>("auth.maxFailedLogins", 5);
   const lockMinutes = await getRule<number>("auth.lockoutMinutes", 15);
@@ -171,11 +172,11 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
         lockedUntil: fails >= maxFails ? new Date(Date.now() + lockMinutes * 60 * 1000) : null,
       },
     });
-    throw Errors.unauthorized("Invalid credentials");
+    throw Errors.unauthorized("کد ملی، ایمیل، موبایل یا رمز عبور اشتباه است");
   }
 
   if (user.status === "BLOCKED" || user.status === "DEACTIVATED") {
-    throw Errors.forbidden("Account is not allowed to sign in");
+    throw Errors.forbidden("این حساب مسدود یا غیرفعال است؛ با پشتیبانی تماس بگیرید");
   }
 
   await prisma.user.update({
@@ -334,9 +335,9 @@ export async function resetPassword(input: z.infer<typeof resetPasswordSchema>) 
     where: { tokenHash: hashToken(input.token) },
   });
   if (!challenge || challenge.type !== "PASSWORD_RESET" || challenge.consumedAt || challenge.expiresAt < new Date()) {
-    throw Errors.unauthorized("Reset token is invalid or expired");
+    throw Errors.unauthorized("پیوند بازیابی نامعتبر است یا منقضی شده است");
   }
-  if (!challenge.userId) throw Errors.unauthorized("Reset token is invalid or expired");
+  if (!challenge.userId) throw Errors.unauthorized("پیوند بازیابی نامعتبر است یا منقضی شده است");
   const passwordHash = await hashPassword(input.password);
   await prisma.$transaction(async (tx) => {
     await tx.user.update({

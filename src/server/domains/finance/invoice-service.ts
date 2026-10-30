@@ -249,10 +249,10 @@ export async function payInvoice(actor: Actor, id: string) {
   if (!invoice || !canSeeInvoice(actor, invoice)) throw Errors.notFound();
   const isRecipient = actor.memberships.some((m) => m.companyId === invoice.recipientCompanyId);
   if (!actor.isPlatformStaff && !isRecipient) {
-    throw Errors.forbidden("فقط گیرنده فاکتور می‌تواند آن را تسویه کند");
+    throw Errors.forbidden("فقط گیرنده صورتحساب می‌تواند آن را تسویه کند");
   }
   if (!["ISSUED", "SENT", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
-    throw Errors.conflict("این فاکتور قابل پرداخت نیست");
+    throw Errors.conflict("این صورتحساب قابل پرداخت نیست");
   }
 
   await prisma.$transaction(async (tx) => {

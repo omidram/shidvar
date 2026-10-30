@@ -42,7 +42,7 @@ type Dispute = {
 };
 
 const TICKET_CATEGORIES = [
-  { id: "BILLING", label: "مالی و فاکتور" },
+  { id: "BILLING", label: "مالی و صورتحساب" },
   { id: "LOAD", label: "بار و حمل" },
   { id: "ACCOUNT", label: "حساب کاربری" },
   { id: "TRACKING", label: "ردیابی" },

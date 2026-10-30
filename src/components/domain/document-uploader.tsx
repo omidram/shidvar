@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api, formatApiError } from "@/lib/api";
 import { slotsFor, type DocumentSlot } from "@/lib/documents";
+import { checkUpload, UPLOAD_ACCEPT, UPLOAD_ACCEPT_IMAGE } from "@/lib/file-types";
 import { StatusBadge } from "@/components/ui/badge";
 import { useMe } from "@/hooks/use-me";
 import { composeSignedReceipt, SignatureCapture } from "@/components/domain/signature-pad";
@@ -106,6 +107,11 @@ export function DocumentGallery({
 
   async function onPick(type: string, file?: File) {
     if (!file) return;
+    const check = checkUpload({ name: file.name, size: file.size, mimeType: file.type });
+    if (!check.ok) {
+      toast.error(check.message);
+      return;
+    }
     try {
       await uploadFile({ file, documentType: type, entityType, entityId });
       toast.success("مدرک بارگذاری شد");
@@ -155,8 +161,8 @@ export function DocumentGallery({
           <h2 className="text-lg font-bold">{title}</h2>
           <p className="mt-1 text-sm text-muted">
             {jobKind
-              ? "امضای الکترونیک روی گوشی، یا عکس سند امضاشده. تصویر یا PDF تا ۲۰ مگابایت."
-              : "مدارک تصویر یا PDF تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است. برای نمونه امضا می‌توانید امضای الکترونیک بگذارید."}
+              ? "امضای الکترونیک روی گوشی، یا عکس سند امضاشده. فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت."
+              : "فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است. برای نمونه امضا می‌توانید امضای الکترونیک بگذارید."}
           </p>
         </div>
         {q.data ? (
@@ -204,7 +210,7 @@ export function DocumentGallery({
                       عکس با دوربین
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={UPLOAD_ACCEPT_IMAGE}
                         capture="environment"
                         className="hidden"
                         onChange={(e) => onPick(slot.type, e.target.files?.[0])}
@@ -214,7 +220,7 @@ export function DocumentGallery({
                       {slot.document ? "جایگزینی فایل" : "انتخاب فایل"}
                       <input
                         type="file"
-                        accept="image/*,application/pdf"
+                        accept={UPLOAD_ACCEPT}
                         className="hidden"
                         onChange={(e) => onPick(slot.type, e.target.files?.[0])}
                       />
@@ -225,7 +231,7 @@ export function DocumentGallery({
                     {slot.document ? "جایگزینی" : "بارگذاری"}
                     <input
                       type="file"
-                      accept="image/*,application/pdf"
+                      accept={UPLOAD_ACCEPT}
                       className="hidden"
                       onChange={(e) => onPick(slot.type, e.target.files?.[0])}
                     />

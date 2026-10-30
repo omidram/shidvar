@@ -66,10 +66,10 @@ export async function submitOffer(actor: Actor, requestId: string, input: z.infe
   });
   if (!request) throw Errors.notFound();
   if (!["MATCHING", "SUPPLIER_RESPONDED"].includes(request.status)) {
-    throw Errors.conflict("Request is not open for offers");
+    throw Errors.conflict("این درخواست دیگر پیشنهاد نمی‌پذیرد");
   }
   const match = request.matches.find((m) => m.supplierCompanyId === supplierCompanyId && m.eligible);
-  if (!match) throw Errors.forbidden("This request was not matched to your company");
+  if (!match) throw Errors.forbidden("این درخواست برای شرکت شما در نظر گرفته نشده است");
 
   const maxHours = await getRule<number>("offers.maxValidityHours", 72);
   const hours = Math.min(input.validHours ?? maxHours, maxHours);
@@ -82,7 +82,7 @@ export async function submitOffer(actor: Actor, requestId: string, input: z.infe
     const min = Number(reqItem.minQuantity);
     const max = Number(reqItem.maxQuantity);
     if (line.quantity < min || line.quantity > max) {
-      throw Errors.validation({ items: [`Quantity for ${reqItem.name} must be between ${min} and ${max}`] });
+      throw Errors.validation({ items: [`مقدار «${reqItem.name}» باید بین ${min} و ${max} باشد`] });
     }
     if (!allowPartial && line.quantity !== Number(reqItem.quantity)) {
       throw Errors.validation({ items: ["Partial quantity offers are disabled"] });
@@ -95,7 +95,7 @@ export async function submitOffer(actor: Actor, requestId: string, input: z.infe
   const existing = await prisma.supplierOffer.findFirst({
     where: { requestId, supplierCompanyId, status: { in: ["DRAFT", "SUBMITTED", "UNDER_REVIEW"] } },
   });
-  if (existing) throw Errors.conflict("You already have an active offer on this request");
+  if (existing) throw Errors.conflict("برای این درخواست پیشنهاد فعال دارید");
 
   const offer = await prisma.$transaction(async (tx) => {
     const created = await tx.supplierOffer.create({
@@ -156,7 +156,7 @@ export async function acceptOffer(actor: Actor, offerId: string) {
       where: { id: offerId, status: offer.status, version: offer.version },
       data: { status: "ACCEPTED", version: { increment: 1 } },
     });
-    if (accepted.count !== 1) throw Errors.conflict("Offer could not be accepted");
+    if (accepted.count !== 1) throw Errors.conflict("پذیرش پیشنهاد ممکن نشد");
 
     if (singleWinner) {
       await tx.supplierOffer.updateMany({

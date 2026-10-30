@@ -26,7 +26,7 @@ export async function ensureCoinWallet(companyId: string) {
   } catch {
     const raced = await prisma.coinWallet.findUnique({ where: { companyId } });
     if (raced) return raced;
-    throw Errors.conflict("کیف سکه ساخته نشد");
+    throw Errors.conflict("کیف اعتبار ساخته نشد");
   }
 }
 
@@ -43,14 +43,14 @@ export async function moveCoins(
   tx?: Tx,
 ) {
   const amount = Math.trunc(input.amount);
-  if (!amount) throw Errors.validation({ amount: ["مقدار سکه نمی‌تواند صفر باشد"] });
+  if (!amount) throw Errors.validation({ amount: ["مقدار اعتبار نمی‌تواند صفر باشد"] });
   const wallet = await ensureCoinWallet(input.companyId);
   const run = async (db: Tx) => {
     const updated = await db.coinWallet.updateMany({
       where: { id: wallet.id, ...(amount < 0 ? { balance: { gte: -amount } } : {}) },
       data: { balance: { increment: amount } },
     });
-    if (updated.count !== 1) throw Errors.conflict("موجودی سکه کافی نیست");
+    if (updated.count !== 1) throw Errors.conflict("موجودی اعتبار کافی نیست");
     const fresh = await db.coinWallet.findUniqueOrThrow({ where: { id: wallet.id } });
     return db.coinTransaction.create({
       data: {
@@ -73,7 +73,7 @@ function ownCompanyId(actor: Actor) {
   const membership =
     actor.memberships.find((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER") ??
     actor.memberships.find((m) => m.companyType !== "PLATFORM");
-  if (!membership) throw Errors.notFound("کیف سکه برای این حساب تعریف نشده است");
+  if (!membership) throw Errors.notFound("کیف اعتبار برای این حساب تعریف نشده است");
   return membership.companyId;
 }
 

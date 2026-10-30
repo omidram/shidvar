@@ -83,6 +83,7 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
     dispatchMode: job.order.request?.dispatchMode ?? "NORMAL",
     needsWaybill: job.order.request?.needsWaybill ?? false,
     needsInsurance: job.order.request?.needsInsurance ?? false,
+    loadType: job.order.request?.loadType ?? "FULL",
     currencyCode: job.currencyCode,
     assignedDriver:
       (privileged || assigned) && job.assignedDriver
@@ -284,9 +285,9 @@ export async function applyToJob(actor: Actor, jobId: string, notes?: string) {
   const match = await prisma.driverMatch.findUnique({
     where: { jobId_driverId: { jobId, driverId: driver.id } },
   });
-  if (!match?.eligible) throw Errors.forbidden("You were not matched to this job");
+  if (!match?.eligible) throw Errors.forbidden("این بار برای شما در نظر گرفته نشده است");
   if (!["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status)) {
-    throw Errors.conflict("Job is not open");
+    throw Errors.conflict("این بار دیگر باز نیست");
   }
 
   const application = await prisma.$transaction(async (tx) => {
@@ -321,7 +322,7 @@ export async function selectDriver(actor: Actor, jobId: string, driverId: string
   const application = await prisma.driverApplication.findUnique({
     where: { jobId_driverId: { jobId, driverId } },
   });
-  if (!application || application.status !== "SUBMITTED") throw Errors.conflict("Driver has not applied");
+  if (!application || application.status !== "SUBMITTED") throw Errors.conflict("راننده برای این بار درخواست نداده است");
   await assertDriverCanTakeLoad(driverId, jobId);
 
   const updated = await prisma.transportationJob.updateMany({
@@ -332,7 +333,7 @@ export async function selectDriver(actor: Actor, jobId: string, driverId: string
     },
     data: { assignedDriverId: driverId, status: "DRIVER_SELECTED", version: { increment: 1 } },
   });
-  if (updated.count !== 1) throw Errors.conflict("Job is no longer available");
+  if (updated.count !== 1) throw Errors.conflict("این بار دیگر در دسترس نیست");
 
   await prisma.driverApplication.update({ where: { id: application.id }, data: { status: "SELECTED" } });
   await prisma.driverApplication.updateMany({
@@ -355,7 +356,7 @@ export async function confirmDriver(actor: Actor, jobId: string) {
     throw Errors.forbidden();
   }
   assertTransition(JOB_TRANSITIONS, job.status, "SUPPLIER_CONFIRMED");
-  if (!job.assignedDriverId) throw Errors.conflict("No driver selected");
+  if (!job.assignedDriverId) throw Errors.conflict("هنوز راننده‌ای انتخاب نشده است");
   const driverId = job.assignedDriverId;
 
   await prisma.$transaction(async (tx) => {
@@ -422,7 +423,7 @@ export async function updateJobStatus(actor: Actor, jobId: string, to: Transport
   const isAssignedDriver = actor.driverProfile?.id === job.assignedDriverId;
   if (!actor.isPlatformStaff && !isAssignedDriver) throw Errors.forbidden();
   if (isAssignedDriver && !DRIVER_FORWARD_STATUSES.includes(to) && to !== "PROOF_SUBMITTED") {
-    throw Errors.forbidden("Drivers can only move the trip forward");
+    throw Errors.forbidden("راننده فقط می‌تواند وضعیت سفر را به مرحلهٔ بعد ببرد");
   }
   if (DRIVER_TRIP_STATUSES.includes(to as (typeof DRIVER_TRIP_STATUSES)[number]) && job.assignedDriverId) {
     await assertDriverFreeForTrip(job.assignedDriverId, jobId);
@@ -487,7 +488,7 @@ export async function submitPod(actor: Actor, jobId: string, input: z.infer<type
   await prisma.$transaction(async (tx) => {
     for (const line of input.deliveredQuantities) {
       const item = job.shipment!.items.find((i) => i.id === line.shipmentItemId);
-      if (!item) throw Errors.validation({ deliveredQuantities: ["Unknown shipment item"] });
+      if (!item) throw Errors.validation({ deliveredQuantities: ["قلم بار نامعتبر است"] });
       const remaining = Number(item.requestedQuantity) - line.quantity;
       await tx.shipmentItem.update({
         where: { id: item.id },
@@ -697,7 +698,17 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
 
   await confirmDriver({ ...actor, isPlatformStaff: true, permissions: new Set([...actor.permissions, "jobs.confirm"]) }, jobId);
   await issueTransportDocuments(job.orderId, jobId);
-  await writeAudit({ actor, action: "job.accepted_by_driver", entityType: "TransportationJob", entityId: jobId });
+  await writeAudit({
+    actor,
+    action: "job.accepted_by_driver",
+    entityType: "TransportationJob",
+    entityId: jobId,
+    newValue: {
+      contentsConfirmed: true,
+      confirmedAt: new Date().toISOString(),
+      items: (job.order.request?.items ?? []).map((item) => `${item.name} ${Number(item.quantity)} ${item.unitCode}`),
+    },
+  });
   return getJob(actor, jobId);
 }
 

@@ -73,7 +73,7 @@ export function RegisterMotion() {
         <div className="mt-1 text-xs text-white/65">تهران ← آمل</div>
       </div>
       <div className="float-card delay-mid absolute end-[10%] top-[28%] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur">
-        <div className="text-[11px] text-violet-300">فاکتور</div>
+        <div className="text-[11px] text-violet-300">صورتحساب</div>
         <div className="mt-1 text-sm font-bold">خودکار صادر شد</div>
         <div className="mt-1 text-xs text-white/65">بعد از قبول راننده</div>
       </div>

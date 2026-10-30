@@ -1,1 +1,1 @@
-export const SUPPORT_PHONES = ["09123245541", "09053245541"] as const;
+export const SUPPORT_PHONES = ["09123245541", "09053245541", "02156902839"] as const;

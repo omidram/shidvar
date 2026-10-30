@@ -91,10 +91,12 @@ export async function uploadDocument(actor: Actor, input: UploadInput) {
   }
   const allowed = await canAccessEntity(actor, input.entityType, input.entityId, true, input.documentType);
   if (!allowed) throw Errors.forbidden();
+  const slot = DOCUMENT_SLOTS.find((item) => item.type === input.documentType);
   const stored = await FileService.upload({
     buffer: input.buffer,
     mimeType: input.mimeType,
     originalName: input.originalName,
+    allowPng: Boolean(slot?.signable),
   });
   const existing = await prisma.document.findFirst({
     where: { entityType: input.entityType, entityId: input.entityId, documentType: input.documentType },

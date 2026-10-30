@@ -20,7 +20,8 @@ import { TrackingPanel } from "@/components/domain/tracking-panel";
 import { JobOpsPanel } from "@/components/domain/ops-panels";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { CargoBadges } from "@/components/domain/cargo-badges";
-import { NativeSelect } from "@/components/ui/input";
+import { Field, NativeSelect } from "@/components/ui/input";
+import { LoadAcceptDialog } from "@/components/domain/load-accept-dialog";
 
 export { DashboardView } from "@/components/domain/dashboard-home";
 
@@ -268,6 +269,7 @@ type JobDto = {
   matchScore?: number;
   trackingActive?: boolean;
   dispatchMode?: string;
+  loadType?: string;
   needsWaybill?: boolean;
   needsInsurance?: boolean;
   loadCheck?: { allowed: boolean; roobar: boolean; activeDestination: string | null; reason: string | null };
@@ -279,10 +281,15 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const qc = useQueryClient();
   const path = marketplace ? "/marketplace/jobs" : "/jobs";
   const q = useQuery({ queryKey: ["jobs", path], queryFn: () => api<JobDto[]>(path) });
+  const [confirmJob, setConfirmJob] = useState<JobDto | null>(null);
+  const [fromCity, setFromCity] = useState("");
+  const [toCity, setToCity] = useState("");
+  const [loadFilter, setLoadFilter] = useState<"" | "FULL" | "SHARED">("");
   const accept = useMutation({
-    mutationFn: (id: string) => api(`/jobs/${id}/accept`, { method: "POST" }),
+    mutationFn: (id: string) => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),
     onSuccess: () => {
-      toast.success("بار قبول شد. ۱۰۰ سکه کسر شد");
+      setConfirmJob(null);
+      toast.success("بار قبول شد. ۱۰۰ اعتبار کسر شد");
       qc.invalidateQueries({ queryKey: ["jobs"] });
       qc.invalidateQueries({ queryKey: ["coins"] });
       qc.invalidateQueries({ queryKey: ["driver"] });
@@ -299,12 +306,58 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   });
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError) return <ErrorState message={t.common.error} />;
-  const rows = q.data ?? [];
+  const all = q.data ?? [];
+  const cityOf = (job: JobDto, side: "from" | "to") =>
+    (side === "from" ? job.originCity ?? job.pickup?.city : job.destinationCity ?? job.delivery?.city) ?? "";
+  const originOptions = [...new Set(all.map((job) => cityOf(job, "from")).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa"));
+  const destinationOptions = [...new Set(all.map((job) => cityOf(job, "to")).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa"));
+  const rows = marketplace
+    ? all.filter(
+        (job) =>
+          (!fromCity || cityOf(job, "from") === fromCity) &&
+          (!toCity || cityOf(job, "to") === toCity) &&
+          (!loadFilter || (job.loadType ?? "FULL") === loadFilter),
+      )
+    : all;
   return (
     <div>
       <PageHeader title={marketplace ? t.job.incoming : t.job.title} description="صاحب بار، نوع محموله و مقصد را ببینید و تصمیم بگیرید." />
+      {marketplace ? (
+        <Card className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Field label="مبدأ">
+            <NativeSelect value={fromCity} onChange={(e) => setFromCity(e.target.value)}>
+              <option value="">همهٔ مبدأها</option>
+              {originOptions.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field label="مقصد">
+            <NativeSelect value={toCity} onChange={(e) => setToCity(e.target.value)}>
+              <option value="">همهٔ مقصدها</option>
+              {destinationOptions.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field label="نوع بار">
+            <NativeSelect value={loadFilter} onChange={(e) => setLoadFilter(e.target.value as "" | "FULL" | "SHARED")}>
+              <option value="">دربستی و روباری</option>
+              <option value="FULL">دربستی</option>
+              <option value="SHARED">روباری</option>
+            </NativeSelect>
+          </Field>
+          <div className="flex items-end text-sm text-muted">
+            {formatNumber(rows.length)} بار در این مسیر
+          </div>
+        </Card>
+      ) : null}
       {rows.length === 0 ? (
-        <EmptyState title={t.common.empty} hint="وقتی باری در ناحیه شما آزاد شود اینجا ظاهر می‌شود." />
+        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "وقتی باری در ناحیه شما آزاد شود اینجا ظاهر می‌شود."} />
       ) : (
         <div className="grid gap-3">
           {rows.map((job) => (
@@ -316,6 +369,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
                     {job.requestNumber ? <span className="ms-2 text-sm font-normal text-muted">{job.requestNumber}</span> : null}
                   </Link>
                   <CargoBadges
+                    loadType={job.loadType}
                     dispatchMode={job.dispatchMode}
                     needsWaybill={job.needsWaybill}
                     needsInsurance={job.needsInsurance}
@@ -349,7 +403,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
                 {job.matchScore != null ? <span className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">{t.request.score}: {job.matchScore}</span> : null}
                 {marketplace && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
                   <>
-                    <Button disabled={job.loadCheck?.allowed === false} onClick={() => accept.mutate(job.id)}>
+                    <Button disabled={job.loadCheck?.allowed === false} onClick={() => setConfirmJob(job)}>
                       {t.common.accept}
                     </Button>
                     <Button variant="secondary" onClick={() => reject.mutate(job.id)}>
@@ -372,6 +426,14 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
           ))}
         </div>
       )}
+      {confirmJob ? (
+        <LoadAcceptDialog
+          job={confirmJob}
+          busy={accept.isPending}
+          onConfirm={() => accept.mutate(confirmJob.id)}
+          onClose={() => setConfirmJob(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -775,10 +837,12 @@ export function DriverJobView({ id }: { id: string }) {
   const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER"));
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["job", id], queryFn: () => api<JobDto>(`/jobs/${id}`) });
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const accept = useMutation({
-    mutationFn: () => api(`/jobs/${id}/accept`, { method: "POST" }),
+    mutationFn: () => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),
     onSuccess: () => {
-      toast.success("بار قبول شد. ۱۰۰ سکه کسر شد");
+      setConfirmOpen(false);
+      toast.success("بار قبول شد. ۱۰۰ اعتبار کسر شد");
       qc.invalidateQueries({ queryKey: ["job", id] });
       qc.invalidateQueries({ queryKey: ["coins"] });
       qc.invalidateQueries({ queryKey: ["driver"] });
@@ -829,7 +893,10 @@ export function DriverJobView({ id }: { id: string }) {
           </div>
         }
       />
-      <CargoBadges dispatchMode={job.dispatchMode} needsWaybill={job.needsWaybill} needsInsurance={job.needsInsurance} />
+      <CargoBadges loadType={job.loadType} dispatchMode={job.dispatchMode} needsWaybill={job.needsWaybill} needsInsurance={job.needsInsurance} />
+      {confirmOpen ? (
+        <LoadAcceptDialog job={job} busy={accept.isPending} onConfirm={() => accept.mutate()} onClose={() => setConfirmOpen(false)} />
+      ) : null}
       <Card className="overflow-hidden p-0">
         <img src="/media/cargo-2.jpg" alt="" className="h-40 w-full object-cover" />
         <div className="grid gap-4 p-5 sm:grid-cols-4">
@@ -944,7 +1011,7 @@ export function DriverJobView({ id }: { id: string }) {
       ) : null}
       {isDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
         <div className="grid grid-cols-2 gap-3">
-          <Button onClick={() => accept.mutate()}>{t.common.accept}</Button>
+          <Button onClick={() => setConfirmOpen(true)}>{t.common.accept}</Button>
           <Button variant="secondary" onClick={() => reject.mutate()}>
             {t.common.reject}
           </Button>

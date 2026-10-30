@@ -11,19 +11,19 @@ export class AppError extends Error {
 }
 
 export const Errors = {
-  validation: (fields: Record<string, string[]>, message = "Invalid request") =>
+  validation: (fields: Record<string, string[]>, message = "اطلاعات واردشده معتبر نیست") =>
     new AppError("VALIDATION_ERROR", message, 400, fields),
-  unauthorized: (message = "Authentication required") =>
+  unauthorized: (message = "برای ادامه باید وارد حساب شوید") =>
     new AppError("AUTH_REQUIRED", message, 401),
-  forbidden: (message = "You cannot perform this action") =>
+  forbidden: (message = "شما اجازهٔ انجام این کار را ندارید") =>
     new AppError("FORBIDDEN", message, 403),
-  notFound: (message = "Resource not found") =>
+  notFound: (message = "مورد درخواستی پیدا نشد") =>
     new AppError("NOT_FOUND", message, 404),
-  conflict: (message = "Conflict") => new AppError("CONFLICT", message, 409),
-  rateLimited: (message = "Too many attempts. Try again later.") =>
+  conflict: (message = "این درخواست با وضعیت فعلی همخوانی ندارد") => new AppError("CONFLICT", message, 409),
+  rateLimited: (message = "تعداد تلاش‌ها زیاد است؛ کمی بعد دوباره امتحان کنید") =>
     new AppError("RATE_LIMITED", message, 429),
   invalidTransition: (from: string, to: string) =>
-    new AppError("INVALID_STATE_TRANSITION", `Cannot move from ${from} to ${to}`, 409),
-  locked: (message = "Account is temporarily locked") =>
+    new AppError("INVALID_STATE_TRANSITION", `انتقال از وضعیت ${from} به ${to} مجاز نیست`, 409),
+  locked: (message = "حساب شما به‌دلیل ورود ناموفق چندباره موقتاً قفل شده است؛ چند دقیقه بعد دوباره امتحان کنید") =>
     new AppError("ACCOUNT_LOCKED", message, 423),
 };

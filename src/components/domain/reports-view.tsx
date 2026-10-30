@@ -18,7 +18,7 @@ import { BoxIcon, TruckIcon, WarehouseIcon } from "@/components/visual/icons";
 const KPI_LABELS: Record<string, string> = {
   requests: "درخواست‌ها",
   jobs: "بارها",
-  invoiceTotal: "جمع فاکتورها",
+  invoiceTotal: "جمع صورتحساب‌ها",
   unpaid: "مانده پرداخت‌نشده",
   waitingDrivers: "در انتظار راننده",
   cargoOwners: "صاحبان بار",

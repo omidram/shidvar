@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { SpecialBadge } from "@/components/domain/special-badge";
 import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { useI18n } from "@/i18n/provider";
@@ -19,6 +20,8 @@ type CompanyRow = {
   legalName?: string;
   type: string;
   status: string;
+  isSpecial?: boolean;
+  specialNote?: string | null;
   phone?: string | null;
   email?: string | null;
   taxId?: string | null;
@@ -117,7 +120,10 @@ export default function CompaniesPage() {
               <Card className="transition hover:-translate-y-0.5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="text-lg font-bold">{c.tradeName}</div>
+                    <div className="flex items-center gap-2 text-lg font-bold">
+                      {c.tradeName}
+                      {c.isSpecial ? <SpecialBadge note={c.specialNote} /> : null}
+                    </div>
                     <p className="mt-1 text-sm text-muted">{c.legalName}</p>
                   </div>
                   <StatusBadge status={c.status} />

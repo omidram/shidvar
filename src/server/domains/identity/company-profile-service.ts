@@ -3,7 +3,27 @@ import { Errors } from "@/server/errors";
 import type { Actor } from "@/server/rbac/actor";
 import { assertPermission } from "@/server/rbac/actor";
 import { hashPassword } from "@/server/auth/password";
+import { writeAudit } from "@/server/audit";
 import { ensurePriceBook, getPriceBookForCompany } from "@/server/domains/finance/price-book-service";
+
+export async function setCompanySpecial(actor: Actor, id: string, special: boolean, note?: string | null) {
+  assertPermission(actor, "companies.update");
+  const company = await prisma.company.findUnique({ where: { id }, select: { id: true, type: true } });
+  if (!company || company.type === "PLATFORM") throw Errors.notFound();
+  const updated = await prisma.company.update({
+    where: { id },
+    data: { isSpecial: special, specialNote: special ? note?.trim() || null : null },
+    select: { id: true, isSpecial: true, specialNote: true },
+  });
+  await writeAudit({
+    actor,
+    action: special ? "company.special_on" : "company.special_off",
+    entityType: "Company",
+    entityId: id,
+    newValue: { isSpecial: updated.isSpecial, note: updated.specialNote },
+  });
+  return updated;
+}
 
 export async function getCompanyProfile(actor: Actor, id: string) {
   assertPermission(actor, "companies.read");
@@ -32,7 +52,9 @@ export async function getCompanyProfile(actor: Actor, id: string) {
     email: company.email,
     phone: company.phone,
     website: company.website,
-    defaultCurrency: company.defaultCurrency,
+    defaultCurrency: "IRR",
+    isSpecial: company.isSpecial,
+    specialNote: company.specialNote,
     verificationNotes: company.verificationNotes,
     rejectedReason: company.rejectedReason,
     verifiedAt: company.verifiedAt,

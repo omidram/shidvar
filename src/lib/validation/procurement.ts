@@ -20,7 +20,7 @@ export const createRequestSchema = z.object({
   destinationWarehouseId: z.string().uuid().optional(),
   requestedDeliveryDate: z.string(),
   budgetAmount: z.number().nonnegative().optional(),
-  currencyCode: z.string().default("IRR"),
+  currencyCode: z.string().optional().transform(() => "IRR"),
   notes: z.string().optional(),
   qualityNotes: z.string().optional(),
   packagingNotes: z.string().optional(),
@@ -32,6 +32,7 @@ export const createRequestSchema = z.object({
   vipDriverId: z.string().uuid().optional(),
   needsWaybill: z.boolean().default(false),
   needsInsurance: z.boolean().default(false),
+  loadType: z.enum(["FULL", "SHARED"]).default("FULL"),
 }).refine((value) => value.dispatchMode !== "VIP" || Boolean(value.vipDriverId), {
   path: ["vipDriverId"],
   message: "برای اعلام VIP یک راننده انتخاب کنید",

@@ -59,7 +59,7 @@ function BalanceCard({ balance }: { balance: number }) {
         <Coins className="h-7 w-7" />
       </span>
       <div>
-        <p className="text-sm text-muted">موجودی سکه</p>
+        <p className="text-sm text-muted">موجودی اعتبار</p>
         <p className="text-3xl font-black">{fa(balance)}</p>
       </div>
     </Card>
@@ -70,9 +70,9 @@ export function CoinsView() {
   const q = useQuery({ queryKey: ["coins"], queryFn: () => api<CoinWalletView>("/coins") });
   return (
     <div className="grid gap-4">
-      <PageHeader title="سکه‌ها" description="ارز داخلی shidro. هر حساب تازه ۱۰۰۰ سکه هدیه می‌گیرد." />
+      <PageHeader title="اعتبارها" description="ارز داخلی shidro. هر حساب تازه ۱۰۰۰ اعتبار هدیه می‌گیرد." />
       {q.isLoading ? <p>در حال بارگذاری…</p> : null}
-      {q.error ? <ErrorState message={formatApiError(q.error, "سکه‌ها بارگذاری نشد")} /> : null}
+      {q.error ? <ErrorState message={formatApiError(q.error, "اعتبارها بارگذاری نشد")} /> : null}
       {q.data ? (
         <>
           <BalanceCard balance={q.data.balance} />
@@ -101,18 +101,18 @@ export function AdminCoinsPanel({ companyId }: { companyId: string }) {
       qc.setQueryData(["admin-coins", companyId], data);
       setAmount("");
       setReason("");
-      toast.success("موجودی سکه به‌روز شد");
+      toast.success("موجودی اعتبار به‌روز شد");
     },
-    onError: (error) => toast.error(formatApiError(error, "تغییر سکه انجام نشد")),
+    onError: (error) => toast.error(formatApiError(error, "تغییر اعتبار انجام نشد")),
   });
   const valid = Number(amount) > 0 && reason.trim().length >= 2;
 
   return (
     <Card className="grid gap-4">
-      <h2 className="text-lg font-black">سکه‌ها</h2>
+      <h2 className="text-lg font-black">اعتبارها</h2>
       {q.data ? <BalanceCard balance={q.data.balance} /> : <p className="text-sm text-muted">در حال بارگذاری…</p>}
       <div className="grid gap-3 sm:grid-cols-[10rem_1fr_auto_auto] sm:items-end">
-        <Field label="تعداد سکه">
+        <Field label="تعداد اعتبار">
           <Input type="number" min={1} dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
         <Field label="علت">

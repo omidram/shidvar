@@ -73,7 +73,7 @@ function DocsMotion() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgb(132_204_22_/_0.28),transparent_46%),linear-gradient(to_top,rgb(11_18_32_/_0.6),transparent)]" />
       <div className="doc-sheet">
         <b>بارنامه SHP-1405</b>
-        <span>فاکتور PDF آماده است</span>
+        <span>صورتحساب PDF آماده است</span>
       </div>
       <div className="float-chip end-3 top-3">صدور فوری</div>
     </div>

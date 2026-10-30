@@ -9,6 +9,7 @@ import { Field, Input } from "@/components/ui/input";
 import { ChoiceTile } from "@/components/domain/chrome";
 import { api, formatApiError, getApiError } from "@/lib/api";
 import { homePath } from "@/lib/portal";
+import { SIGNUP_RULES } from "@/lib/signup-rules";
 import { useI18n } from "@/i18n/provider";
 import type { Me } from "@/hooks/use-me";
 import { BrandMark, TruckIcon, WarehouseIcon } from "@/components/visual/icons";
@@ -27,15 +28,26 @@ function RegisterForm() {
     nationalId: "",
     password: "",
   });
+  const [rulesRead, setRulesRead] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+
+  function onRulesScroll(e: React.UIEvent<HTMLDivElement>) {
+    const box = e.currentTarget;
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 8) setRulesRead(true);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!rulesAccepted) {
+      toast.error("برای ثبت‌نام باید قوانین را بخوانید و بپذیرید");
+      return;
+    }
     setLoading(true);
     setFieldErrors({});
     try {
-      await api("/auth/register", { method: "POST", body: JSON.stringify(form) });
+      await api("/auth/register", { method: "POST", body: JSON.stringify({ ...form, acceptRules: rulesAccepted }) });
       const me = await api<Me>("/auth/me");
-      toast.success("ثبت‌نام انجام شد و ۱۰۰۰ سکه هدیه به حساب شما واریز شد");
+      toast.success("ثبت‌نام انجام شد و ۱۰۰۰ اعتبار هدیه به حساب شما واریز شد");
       router.replace(homePath(me));
     } catch (error) {
       setFieldErrors(getApiError(error)?.fields ?? {});
@@ -104,9 +116,38 @@ function RegisterForm() {
             <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </Field>
           <p className="rounded-2xl border border-border bg-surface-soft p-3 text-sm text-muted">
-            بعد از ثبت‌نام، مدیریت اطلاعات و مدارک تکمیلی را از داخل پنل از شما می‌خواهد. هر حساب تازه ۱۰۰۰ سکه هدیه می‌گیرد.
+            بعد از ثبت‌نام، مدیریت اطلاعات و مدارک تکمیلی را از داخل پنل از شما می‌خواهد. هر حساب تازه ۱۰۰۰ اعتبار هدیه می‌گیرد.
           </p>
-          <Button type="submit" disabled={loading} className="w-full">
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-4 py-2 text-sm font-bold">قوانین و شرایط استفاده از شیدرو</div>
+            <div
+              className="max-h-48 space-y-3 overflow-y-auto px-4 py-3 text-sm leading-7 text-muted"
+              tabIndex={0}
+              onScroll={onRulesScroll}
+              data-testid="signup-rules"
+            >
+              {SIGNUP_RULES.map((rule) => (
+                <div key={rule.title}>
+                  <div className="font-bold text-foreground">{rule.title}</div>
+                  <p>{rule.body}</p>
+                </div>
+              ))}
+            </div>
+            <label className={`flex items-start gap-2 border-t border-border px-4 py-3 text-sm ${rulesRead ? "" : "opacity-60"}`}>
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={rulesAccepted}
+                disabled={!rulesRead}
+                onChange={(e) => setRulesAccepted(e.target.checked)}
+              />
+              <span>
+                قوانین را تا انتها خواندم و می‌پذیرم.
+                {!rulesRead ? <span className="block text-xs text-muted">برای فعال شدن، متن قوانین را تا آخر بخوانید.</span> : null}
+              </span>
+            </label>
+          </div>
+          <Button type="submit" disabled={loading || !rulesAccepted} className="w-full">
             {loading ? t.common.loading : t.auth.submit}
           </Button>
           <p className="text-sm">

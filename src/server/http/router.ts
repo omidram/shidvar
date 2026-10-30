@@ -9,6 +9,9 @@ import { fail, ok, zodFields } from "@/server/http/envelope";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
 import { isAllowedRequestOrigin, PRODUCTION_ORIGINS } from "@/server/http/origin";
+import { installFaErrorMap } from "@/lib/validation/zod-fa";
+
+installFaErrorMap();
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
@@ -62,7 +65,7 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
   const method = req.method as HttpMethod;
   try {
     if (!originAllowed(req)) {
-      throw Errors.forbidden("Invalid origin");
+      throw Errors.forbidden("درخواست از مبدأ نامعتبر ارسال شده است");
     }
 
     const matched = routes
@@ -70,7 +73,7 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
       .find((entry) => entry.params && entry.route.method === method);
 
     if (!matched?.params) {
-      throw Errors.notFound("Endpoint not found");
+      throw Errors.notFound("آدرس درخواستی پیدا نشد");
     }
 
     const actor = await actorFromRequest(req);
@@ -90,7 +93,9 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
     if (matched.route.input) {
       const parsed = matched.route.input.safeParse(body);
       if (!parsed.success) {
-        throw Errors.validation(zodFields(parsed.error));
+        const fields = zodFields(parsed.error);
+        const first = Object.values(fields)[0]?.[0];
+        throw Errors.validation(fields, first ?? undefined);
       }
       body = parsed.data;
     }
@@ -109,7 +114,7 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
       return Response.json(fail(error.code, error.message, error.fields), { status: error.status });
     }
     if (error instanceof SyntaxError) {
-      return Response.json(fail("VALIDATION_ERROR", "Invalid JSON"), { status: 400 });
+      return Response.json(fail("VALIDATION_ERROR", "قالب درخواست معتبر نیست"), { status: 400 });
     }
     if (isDatabaseUnavailable(error)) {
       const mapped = databaseUnavailableError(error);
@@ -118,6 +123,6 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
     }
     const err = error && typeof error === "object" ? (error as { name?: string; message?: string }) : {};
     logger.error("unhandled_api_error", { path, method, name: err.name, code: prismaErrorCode(error) });
-    return Response.json(fail("INTERNAL_ERROR", "Something went wrong"), { status: 500 });
+    return Response.json(fail("INTERNAL_ERROR", "خطایی در سرور رخ داد؛ دوباره تلاش کنید"), { status: 500 });
   }
 }

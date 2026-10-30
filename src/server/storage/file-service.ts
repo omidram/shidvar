@@ -3,14 +3,7 @@ import path from "path";
 import { randomToken } from "@/server/auth/tokens";
 import { config } from "@/server/config";
 import { Errors } from "@/server/errors";
-
-const ALLOWED_MIME = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-]);
+import { checkUpload, mimeForKind } from "@/lib/file-types";
 
 export type StoredFile = {
   storageKey: string;
@@ -20,22 +13,20 @@ export type StoredFile = {
 };
 
 export const FileService = {
-  async validate(file: { mimeType: string; sizeBytes: number; originalName: string }) {
-    if (file.sizeBytes <= 0 || file.sizeBytes > 20 * 1024 * 1024) {
-      throw Errors.validation({ file: ["File must be between 1 byte and 20MB"] });
-    }
-    if (!ALLOWED_MIME.has(file.mimeType)) {
-      throw Errors.validation({ file: ["Unsupported file type"] });
-    }
-    return true;
+  async validate(file: { buffer: Buffer; mimeType: string; originalName: string; allowPng?: boolean }) {
+    const result = checkUpload({
+      name: file.originalName,
+      size: file.buffer.length,
+      bytes: file.buffer,
+      mimeType: file.mimeType,
+      allowPng: file.allowPng,
+    });
+    if (!result.ok) throw Errors.validation({ file: [result.message] }, result.message);
+    return result.kind;
   },
 
-  async upload(input: { buffer: Buffer; mimeType: string; originalName: string }): Promise<StoredFile> {
-    await this.validate({
-      mimeType: input.mimeType,
-      sizeBytes: input.buffer.length,
-      originalName: input.originalName,
-    });
+  async upload(input: { buffer: Buffer; mimeType: string; originalName: string; allowPng?: boolean }): Promise<StoredFile> {
+    const kind = await this.validate(input);
     const key = `${new Date().toISOString().slice(0, 10)}/${randomToken(18)}`;
     if (config.storageDriver === "local") {
       const full = path.join(config.storageLocalPath, key);
@@ -44,7 +35,7 @@ export const FileService = {
     }
     return {
       storageKey: key,
-      mimeType: input.mimeType,
+      mimeType: mimeForKind(kind),
       sizeBytes: input.buffer.length,
       originalName: input.originalName,
     };

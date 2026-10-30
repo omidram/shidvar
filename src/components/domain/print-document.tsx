@@ -195,20 +195,20 @@ function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatu
       <header className="flex items-start justify-between gap-3 border-b-2 border-ink pb-2">
         <div className="min-w-0">
           <BrandMark />
-          <h1 className="mt-2 text-xl font-black leading-7">فاکتور حمل</h1>
+          <h1 className="mt-2 text-xl font-black leading-7">صورتحساب حمل</h1>
           <p className="text-[11px] text-muted">
             {statusFa(invoice.type)} · {statusFa(invoice.status)} · شرکت شیدوَر تجارت ایرانیان
           </p>
         </div>
         <div className="flex shrink-0 items-start gap-2">
-          <QrMark value={qrPayload("invoice", invoice.number)} label={`فاکتور ${invoice.number}`} size={72} />
+          <QrMark value={qrPayload("invoice", invoice.number)} label={`صورتحساب ${invoice.number}`} size={72} />
           {loadNumber ? <QrMark value={qrPayload("load", loadNumber)} label={`بار ${loadNumber}`} size={72} /> : null}
         </div>
       </header>
 
       <div className="mt-2 grid grid-cols-4 gap-x-3 gap-y-1 border-b border-border pb-2 text-[11px]">
         <div>
-          <span className="text-muted">شماره فاکتور</span>
+          <span className="text-muted">شماره صورتحساب</span>
           <div className="font-black">{invoice.number}</div>
         </div>
         <div>
@@ -307,7 +307,7 @@ function RequestSheet({ request }: { request: RequestDto }) {
       codes={[
         { value: qrPayload("request", request.number), label: `درخواست ${request.number}` },
         ...(loadNumber ? [{ value: qrPayload("load", loadNumber), label: `بار ${loadNumber}` }] : []),
-        ...(invoiceNumber ? [{ value: qrPayload("invoice", invoiceNumber), label: `فاکتور ${invoiceNumber}` }] : []),
+        ...(invoiceNumber ? [{ value: qrPayload("invoice", invoiceNumber), label: `صورتحساب ${invoiceNumber}` }] : []),
       ]}
     >
       <Row label="صاحب بار" value={request.company?.tradeName} />
@@ -353,7 +353,7 @@ function WaybillSheet({ job }: { job: JobDto }) {
       codes={[
         { value: qrPayload("load", loadNumber), label: `بار ${loadNumber}` },
         ...(job.requestNumber ? [{ value: qrPayload("request", job.requestNumber), label: `درخواست ${job.requestNumber}` }] : []),
-        ...(invoiceNumber ? [{ value: qrPayload("invoice", invoiceNumber), label: `فاکتور ${invoiceNumber}` }] : []),
+        ...(invoiceNumber ? [{ value: qrPayload("invoice", invoiceNumber), label: `صورتحساب ${invoiceNumber}` }] : []),
       ]}
     >
       <Row label="صاحب بار" value={job.cargoOwner?.name} />
