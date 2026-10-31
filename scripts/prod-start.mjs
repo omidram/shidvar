@@ -12,7 +12,7 @@ const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
 const sync = spawnSync(process.execPath, [ensure], { cwd: root, env: process.env, stdio: "inherit" });
 if ((sync.status ?? 1) !== 0) process.exit(sync.status ?? 1);
 
-const env = { ...process.env, PORT: port, HOSTNAME: process.env.HOSTNAME || "127.0.0.1" };
+const env = { ...process.env, PORT: port, HOSTNAME: process.env.HOSTNAME || "185.165.119.9" };
 
 if (existsSync(standalone)) {
   console.log(`Starting standalone server on port ${port}…`);
