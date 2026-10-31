@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { databaseUnavailableError, isDatabaseUnavailable } from "./database-error";
+import {
+  databaseUnavailableError,
+  isDatabaseUnavailable,
+  isSchemaMismatch,
+  schemaMismatchError,
+} from "./database-error";
 
 describe("isDatabaseUnavailable", () => {
   it("maps Prisma P1001 connection failures", () => {
@@ -23,5 +28,15 @@ describe("databaseUnavailableError", () => {
     expect(mapped.status).toBe(503);
     expect(mapped.code).toBe("DATABASE_UNAVAILABLE");
     expect(mapped.message).toMatch(/db:up/);
+  });
+});
+
+describe("schemaMismatchError", () => {
+  it("maps Prisma P2022 missing-column failures", () => {
+    expect(isSchemaMismatch({ code: "P2022" })).toBe(true);
+    const mapped = schemaMismatchError();
+    expect(mapped.status).toBe(503);
+    expect(mapped.code).toBe("SCHEMA_MISMATCH");
+    expect(mapped.message).toMatch(/db:ensure/);
   });
 });

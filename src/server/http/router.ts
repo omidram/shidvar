@@ -4,7 +4,13 @@ import type { Actor } from "@/server/rbac/actor";
 import { actorFromRequest, requireActor } from "@/server/auth/session";
 import { actorCan } from "@/server/rbac/actor";
 import { AppError, Errors } from "@/server/errors";
-import { databaseUnavailableError, isDatabaseUnavailable, prismaErrorCode } from "@/server/http/database-error";
+import {
+  databaseUnavailableError,
+  isDatabaseUnavailable,
+  isSchemaMismatch,
+  prismaErrorCode,
+  schemaMismatchError,
+} from "@/server/http/database-error";
 import { fail, ok, zodFields } from "@/server/http/envelope";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
@@ -115,6 +121,11 @@ export async function dispatch(req: NextRequest, pathParts: string[], routes: Ro
     }
     if (error instanceof SyntaxError) {
       return Response.json(fail("VALIDATION_ERROR", "قالب درخواست معتبر نیست"), { status: 400 });
+    }
+    if (isSchemaMismatch(error)) {
+      const mapped = schemaMismatchError();
+      logger.error("schema_mismatch", { path, method, code: prismaErrorCode(error) });
+      return Response.json(fail(mapped.code, mapped.message), { status: mapped.status });
     }
     if (isDatabaseUnavailable(error)) {
       const mapped = databaseUnavailableError(error);

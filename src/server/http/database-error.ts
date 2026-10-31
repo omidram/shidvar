@@ -27,18 +27,30 @@ export function isDatabaseUnavailable(error: unknown): boolean {
   );
 }
 
+export function isSchemaMismatch(error: unknown): boolean {
+  return prismaErrorCode(error) === "P2022";
+}
+
+export function schemaMismatchError(): AppError {
+  return new AppError(
+    "SCHEMA_MISMATCH",
+    "ساختار دیتابیس با نسخهٔ جدید هم‌خوان نیست. روی سرور دستور npm run db:ensure را اجرا کنید و سرویس را دوباره بالا بیاورید.",
+    503,
+  );
+}
+
 export function databaseUnavailableError(error: unknown): AppError {
   const code = prismaErrorCode(error);
   if (code === "P1000") {
     return new AppError(
       "DATABASE_UNAVAILABLE",
-      "Database rejected DATABASE_URL credentials. Check the user and password.",
+      "اطلاعات اتصال به دیتابیس رد شد؛ DATABASE_URL را بررسی کنید.",
       503,
     );
   }
   return new AppError(
     "DATABASE_UNAVAILABLE",
-    "Database is not running. In this project run `npm run db:up`, then `npm run db:push` and `npm run db:seed`. Docker users can run `docker compose up -d postgres` instead.",
+    "دیتابیس در دسترس نیست. اول npm run db:up، بعد npm run db:push و در صورت نیاز npm run db:seed را اجرا کنید.",
     503,
   );
 }

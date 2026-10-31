@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --port 5500",
     "build": "prisma generate && next build",
-    "start": "next start --port 5500",
+    "start": "node scripts/prod-start.mjs",
+    "start:next": "next start --port 5500",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.mts",
@@ -16,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
+    "db:ensure": "node scripts/ensure-schema.mjs",
     "db:up": "tsx scripts/dev-postgres.ts",
     "db:seed": "tsx --tsconfig tsconfig.json prisma/seed.ts",
     "db:studio": "prisma studio",

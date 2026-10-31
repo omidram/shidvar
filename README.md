@@ -184,7 +184,9 @@ If Docker Desktop is installed you can use `docker compose up -d` instead of `np
 | --- | --- |
 | `npm run dev` | Next.js on port 5500 |
 | `npm run worker` | Background jobs |
-| `npm run build` | Production build |
+| `npm run build` | Production build (`output: standalone`) |
+| `npm run start` | Apply schema hotfix then start standalone on port 5500 |
+| `npm run db:ensure` | Add missing columns (`isSpecial`, `loadType`, …) without wiping data |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Unit tests |
@@ -193,6 +195,19 @@ If Docker Desktop is installed you can use `docker compose up -d` instead of `np
 | `npm run db:push` | Apply Prisma schema |
 | `npm run db:seed` | Demo seed (blocked in real production unless `SHIDVAR_DEMO=1`) |
 | `npm run package:win` | Build a portable Windows EXE |
+
+### Production deploy
+
+After pulling a release that changes Prisma schema:
+
+```bash
+npm install
+npm run db:ensure
+npm run build
+npm run start
+```
+
+`npm run start` runs `db:ensure` first, then `node .next/standalone/server.js` (required when `output: "standalone"` is set). Do **not** use plain `next start` on this build.
 
 ## Accounts
 
