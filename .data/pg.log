@@ -98,3 +98,39 @@
 2026-10-24 17:02:31.159 +0330 [68976] LOG:  checkpoint complete: wrote 4 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.435 s, sync=0.019 s, total=0.476 s; sync files=5, longest=0.008 s, average=0.004 s; distance=9 kB, estimate=1332 kB; lsn=0/3D678B0, redo lsn=0/3D67858
 2026-10-24 17:07:30.166 +0330 [68976] LOG:  checkpoint starting: time
 2026-10-24 17:07:31.936 +0330 [68976] LOG:  checkpoint complete: wrote 15 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.695 s, sync=0.049 s, total=1.771 s; sync files=15, longest=0.005 s, average=0.004 s; distance=36 kB, estimate=1202 kB; lsn=0/3D709C8, redo lsn=0/3D70970
+2026-10-24 18:02:31.042 +0330 [68976] LOG:  checkpoint starting: time
+2026-10-24 18:02:32.694 +0330 [68976] LOG:  checkpoint complete: wrote 14 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.586 s, sync=0.046 s, total=1.653 s; sync files=14, longest=0.004 s, average=0.004 s; distance=47 kB, estimate=1087 kB; lsn=0/3D7C5E8, redo lsn=0/3D7C590
+2026-10-25 17:09:59.083 +0330 [61956] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.150 +0330 [81980] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.152 +0330 [73920] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.152 +0330 [73484] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.152 +0330 [80892] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.173 +0330 [61288] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.173 +0330 [36724] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.198 +0330 [80720] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.208 +0330 [76452] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.252 +0330 [29276] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.254 +0330 [84172] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.254 +0330 [83860] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.265 +0330 [82488] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.265 +0330 [82768] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.297 +0330 [59088] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.298 +0330 [22348] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-10-25 17:09:59.299 +0330 [78808] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	

@@ -1,1 +1,1 @@
-C:/Users/Omid/Downloads/supplychain-demo-2/node_modules/@embedded-postgres/windows-x64/native/bin/postgres.exe "-D" ".data/postgres" "-p" "5433" "-h" "127.0.0.1"
+C:/Users/Omid/Downloads/supplychain-demo-2/node_modules/@embedded-postgres/windows-x64/native/bin/postgres.exe "-D" "C:\Users\Omid\Downloads\supplychain-demo-2\.data\postgres" "-p" "5433"
