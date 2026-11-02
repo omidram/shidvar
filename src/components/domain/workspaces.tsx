@@ -234,6 +234,8 @@ type JobDto = {
   deliveryDeadline?: string | null;
   detailsReleased: boolean;
   cargoOwner?: { id?: string; name: string; legalName?: string | null; phone?: string | null; email?: string | null };
+  contactLocked?: boolean;
+  contactCost?: number;
   cargoItems?: Array<{ name: string; quantity: number; unitCode: string; qualityNotes?: string | null; packagingNotes?: string | null }>;
   originCity?: string | null;
   destinationCity?: string | null;
@@ -294,6 +296,15 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
       qc.invalidateQueries({ queryKey: ["jobs"] });
       qc.invalidateQueries({ queryKey: ["coins"] });
       qc.invalidateQueries({ queryKey: ["driver"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reveal = useMutation({
+    mutationFn: (id: string) => api(`/jobs/${id}/reveal-contact`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("شماره صاحب بار نمایش داده شد");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["coins"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -367,6 +378,16 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
                   {t.common.cargoOwner}: {job.cargoOwner.name}
                   {job.cargoOwner.phone ? ` · ${job.cargoOwner.phone}` : ""}
                 </p>
+              ) : null}
+              {marketplace && job.contactLocked ? (
+                <Button
+                  className="mt-2"
+                  variant="secondary"
+                  disabled={reveal.isPending}
+                  onClick={() => reveal.mutate(job.id)}
+                >
+                  {reveal.isPending ? t.common.loading : `${t.job.revealContact} (${formatNumber(job.contactCost ?? 100)} اعتبار)`}
+                </Button>
               ) : null}
               <p className="mt-1 text-sm text-muted">
                 {(job.cargoItems ?? job.items ?? []).map((item) => `${item.name} ${item.quantity} ${item.unitCode}`).join("، ") || `${job.cargoWeight} ${job.cargoUnit}`}
@@ -754,7 +775,7 @@ export function OrderDetailView({ id }: { id: string }) {
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const order = q.data;
-  const requester = me.data?.memberships.some((m) => m.companyType === "REQUESTER") || me.data?.isPlatformStaff;
+  const requester = me.data?.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER") || me.data?.isPlatformStaff;
   return (
     <div className="grid gap-6">
       <PageHeader title={order.number} description={statusFa(order.status)} />
@@ -815,7 +836,9 @@ export function DriverJobView({ id }: { id: string }) {
   const pathname = usePathname();
   const me = useMe();
   const isDriver = Boolean(me.data?.driverProfile);
-  const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER"));
+  const requester = Boolean(
+    me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER"),
+  );
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["job", id], queryFn: () => api<JobDto>(`/jobs/${id}`) });
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -838,14 +861,21 @@ export function DriverJobView({ id }: { id: string }) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const endTrip = useMutation({
-    mutationFn: () => api(`/jobs/${id}/end`, { method: "POST" }),
+  const reveal = useMutation({
+    mutationFn: () => api(`/jobs/${id}/reveal-contact`, { method: "POST" }),
     onSuccess: () => {
-      toast.success("مسیر تمام شد و بار بسته شد");
+      toast.success("شماره صاحب بار نمایش داده شد");
       qc.invalidateQueries({ queryKey: ["job", id] });
-      qc.invalidateQueries({ queryKey: ["tracking"] });
-      qc.invalidateQueries({ queryKey: ["tracking-live"] });
-      qc.invalidateQueries({ queryKey: ["jobs"] });
+      qc.invalidateQueries({ queryKey: ["coins"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const requestDelivery = useMutation({
+    mutationFn: () => api(`/jobs/${id}/request-delivery`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success(t.job.requestDeliverySent);
+      qc.invalidateQueries({ queryKey: ["job", id] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -854,15 +884,6 @@ export function DriverJobView({ id }: { id: string }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["job", id] }),
     onError: (e: Error) => toast.error(e.message),
   });
-  const pod = useMutation({
-    mutationFn: (payload: unknown) => api(`/jobs/${id}/pod`, { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => {
-      toast.success("رسید برای تأیید صاحب بار ارسال شد");
-      qc.invalidateQueries({ queryKey: ["job", id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const job = q.data;
@@ -949,6 +970,14 @@ export function DriverJobView({ id }: { id: string }) {
         ) : (
           <p className="text-sm text-muted">—</p>
         )}
+        {isDriver && job.contactLocked ? (
+          <div className="mt-4 grid gap-2">
+            <p className="text-sm text-muted">{t.job.revealContactHint}</p>
+            <Button disabled={reveal.isPending} onClick={() => reveal.mutate()}>
+              {reveal.isPending ? t.common.loading : `${t.job.revealContact} (${formatNumber(job.contactCost ?? 100)} اعتبار)`}
+            </Button>
+          </div>
+        ) : null}
       </Card>
       <Card>
         <h2 className="mb-3 font-bold">{t.job.cargo}</h2>
@@ -1014,48 +1043,32 @@ export function DriverJobView({ id }: { id: string }) {
         (job.status !== "DELIVERED" && (DRIVER_STEPS as readonly string[]).includes(job.status))) ? (
         <Button onClick={() => status.mutate(job.status === "DRIVER_ASSIGNED" ? "ARRIVING_AT_PICKUP" : next)}>{t.job.nextStatus}</Button>
       ) : null}
-      {["DELIVERED", "PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"].includes(job.status) ? (
+      {["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"].includes(job.status) ? (
         <DocumentGallery
           kind="job"
           entityId={job.id}
           title={t.job.deliveryDocs}
           canUpload={(slot) => {
-            if (me.data?.isPlatformStaff && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status)) return true;
+            const open = ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
+            if (me.data?.isPlatformStaff && open) return true;
             if (slot.signatureRole === "issuer") return requester && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
-            return isDriver && job.status === "DELIVERED";
+            return isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status);
           }}
           canSign={(slot) => {
-            if (me.data?.isPlatformStaff && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status)) return Boolean(slot.signable);
+            const open = ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
+            if (me.data?.isPlatformStaff && open) return Boolean(slot.signable);
             if (slot.signatureRole === "issuer") return requester && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
-            return isDriver && job.status === "DELIVERED";
+            return isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status);
           }}
           context={{ number: job.number, waybill: job.waybill }}
         />
       ) : null}
-      {isDriver && job.status === "DELIVERED" && job.shipment ? (
-        <Card>
-          <h2 className="font-semibold">{t.job.pod}</h2>
-          <p className="mt-1 text-sm text-muted">{t.job.podNeedDocs}</p>
-          <PodForm
-            items={job.shipment.items}
-            docsComplete={Boolean(job.deliveryDocs?.complete)}
-            pending={pod.isPending}
-            onSubmit={(payload) => pod.mutate(payload)}
-          />
-        </Card>
-      ) : null}
-      {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "CONFIRMED"].includes(job.status) ? (
+      {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status) ? (
         <Card className="grid gap-3">
-          <h2 className="font-bold">{t.job.endTrip}</h2>
-          <p className="text-sm text-muted">{t.job.endTripHint}</p>
-          <Button
-            className="w-full"
-            disabled={endTrip.isPending}
-            onClick={() => {
-              if (window.confirm(t.job.endTripConfirm)) endTrip.mutate();
-            }}
-          >
-            {endTrip.isPending ? t.common.loading : t.job.endTrip}
+          <h2 className="font-bold">{t.job.requestDelivery}</h2>
+          <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
+          <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+            {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
           </Button>
         </Card>
       ) : null}
@@ -1075,59 +1088,3 @@ export function DriverJobView({ id }: { id: string }) {
   );
 }
 
-function PodForm({
-  items,
-  docsComplete,
-  pending,
-  onSubmit,
-}: {
-  items: Array<{ id: string; requestedQuantity: number; unitCode: string }>;
-  docsComplete: boolean;
-  pending?: boolean;
-  onSubmit: (payload: {
-    receiverName: string;
-    notes?: string;
-    damageNotes?: string;
-    deliveredQuantities: Array<{ shipmentItemId: string; quantity: number }>;
-  }) => void;
-}) {
-  const { t } = useI18n();
-  const [name, setName] = useState("");
-  const [notes, setNotes] = useState("");
-  const [damageNotes, setDamageNotes] = useState("");
-  return (
-    <form
-      className="mt-4 grid gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!docsComplete) {
-          toast.error(t.job.podNeedDocs);
-          return;
-        }
-        onSubmit({
-          receiverName: name,
-          notes: notes || undefined,
-          damageNotes: damageNotes || undefined,
-          deliveredQuantities: items.map((item) => ({ shipmentItemId: item.id, quantity: Number(item.requestedQuantity) })),
-        });
-      }}
-    >
-      <label className="grid gap-1 text-sm">
-        {t.job.receiver}
-        <input className="h-10 rounded-md border border-border px-3" value={name} onChange={(e) => setName(e.target.value)} required />
-      </label>
-      <label className="grid gap-1 text-sm">
-        {t.common.notes}
-        <input className="h-10 rounded-md border border-border px-3" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </label>
-      <label className="grid gap-1 text-sm">
-        {t.ops.disputeHint}
-        <input className="h-10 rounded-md border border-border px-3" value={damageNotes} onChange={(e) => setDamageNotes(e.target.value)} placeholder={t.job.quality} />
-      </label>
-      {!docsComplete ? <p className="text-sm text-danger">{t.job.podNeedDocs}</p> : null}
-      <Button type="submit" disabled={!docsComplete || pending}>
-        {t.common.submit}
-      </Button>
-    </form>
-  );
-}

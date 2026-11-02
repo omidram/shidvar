@@ -36,19 +36,35 @@ function isJobParty(actor: Actor, job: { order: { supplierCompanyId: string; req
   return (
     actor.isPlatformStaff ||
     actor.driverProfile?.id === job.assignedDriverId ||
+    isCargoOwner(actor, job)
+  );
+}
+
+function isCargoOwner(actor: Actor, job: { order: { supplierCompanyId: string; requesterCompanyId: string } }) {
+  return (
+    actor.isPlatformStaff ||
     actor.memberships.some(
       (m) => m.companyId === job.order.supplierCompanyId || m.companyId === job.order.requesterCompanyId,
     )
   );
 }
 
-function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
+const CONTACT_REF = "JobContact";
+
+async function contactUnlocked(companyId: string, jobId: string) {
+  const wallet = await prisma.coinWallet.findUnique({ where: { companyId }, select: { id: true } });
+  if (!wallet) return false;
+  const txn = await prisma.coinTransaction.findFirst({
+    where: { walletId: wallet.id, refType: CONTACT_REF, refId: jobId, amount: { lt: 0 } },
+    select: { id: true },
+  });
+  return Boolean(txn);
+}
+
+function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor, unlocked = false) {
   const assigned = Boolean(actor.driverProfile && job.assignedDriverId === actor.driverProfile.id);
-  const privileged =
-    actor.isPlatformStaff ||
-    actor.memberships.some(
-      (m) => m.companyId === job.order.supplierCompanyId || m.companyId === job.order.requesterCompanyId,
-    );
+  const privileged = isCargoOwner(actor, job);
+  const showContact = privileged || unlocked;
   const pickup = job.pickupWarehouse?.address;
   const delivery = job.deliveryWarehouse?.address;
   const owner = job.order.requesterCompany;
@@ -57,9 +73,11 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
       id: owner.id,
       name: owner.tradeName,
       legalName: owner.legalName,
-      phone: privileged || assigned ? owner.phone : null,
-      email: privileged || assigned ? owner.email : null,
+      phone: showContact ? owner.phone : null,
+      email: showContact ? owner.email : null,
     },
+    contactLocked: Boolean(actor.driverProfile) && !showContact,
+    contactCost: 100,
     cargoItems: (job.order.request?.items ?? []).map((item) => ({
       name: item.name,
       quantity: Number(item.quantity),
@@ -136,7 +154,7 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
           region: pickup.region,
           line1: pickup.line1,
           contactName: owner.tradeName,
-          contactPhone: owner.phone,
+          contactPhone: showContact ? owner.phone : null,
           latitude: pickup.latitude ? Number(pickup.latitude) : null,
           longitude: pickup.longitude ? Number(pickup.longitude) : null,
         }
@@ -146,7 +164,7 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
             region: job.order.request.originCity ?? "نامشخص",
             line1: job.order.request.originLine1 ?? "نشانی پس از قبول بار",
             contactName: owner.tradeName,
-            contactPhone: owner.phone,
+            contactPhone: showContact ? owner.phone : null,
           }
         : null,
     delivery: delivery
@@ -155,7 +173,7 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
           region: delivery.region,
           line1: delivery.line1,
           contactName: job.order.requesterCompany.tradeName,
-          contactPhone: job.order.requesterCompany.phone,
+          contactPhone: showContact ? job.order.requesterCompany.phone : null,
           latitude: delivery.latitude ? Number(delivery.latitude) : null,
           longitude: delivery.longitude ? Number(delivery.longitude) : null,
         }
@@ -190,6 +208,45 @@ async function loadJob(id: string) {
   return job;
 }
 
+async function presentJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor) {
+  const unlocked = actor.driverProfile ? await contactUnlocked(actor.driverProfile.carrierCompanyId, job.id) : false;
+  const cost = Math.max(0, Math.round(await getRule<number>("coins.revealContactCost", 100)));
+  return { ...serializeJob(job, actor, unlocked), contactCost: cost };
+}
+
+async function cargoOwnerUserIds(job: { order: { requesterCompanyId: string; supplierCompanyId: string } }) {
+  const members = await prisma.membership.findMany({
+    where: { companyId: { in: [job.order.requesterCompanyId, job.order.supplierCompanyId] }, status: "ACTIVE" },
+    select: { userId: true },
+  });
+  return [...new Set(members.map((row) => row.userId))];
+}
+
+export async function revealOwnerContact(actor: Actor, jobId: string) {
+  const driver = requireApprovedDriver(actor);
+  const job = await loadJob(jobId);
+  const matched = await prisma.driverMatch.findUnique({
+    where: { jobId_driverId: { jobId, driverId: driver.id } },
+  });
+  const assigned = job.assignedDriverId === driver.id;
+  if (!assigned && !matched?.eligible) throw Errors.forbidden("این بار برای شما نیست");
+  if (await contactUnlocked(driver.carrierCompanyId, jobId)) return getJob(actor, jobId);
+  const cost = Math.max(0, Math.round(await getRule<number>("coins.revealContactCost", 100)));
+  if (cost > 0) {
+    await moveCoins({
+      companyId: driver.carrierCompanyId,
+      amount: -cost,
+      kind: "SPEND",
+      reason: `نمایش شماره صاحب بار ${job.number}`,
+      refType: CONTACT_REF,
+      refId: jobId,
+      actorId: actor.userId,
+    });
+  }
+  await writeAudit({ actor, action: "job.contact_revealed", entityType: "TransportationJob", entityId: jobId, newValue: { cost } });
+  return getJob(actor, jobId);
+}
+
 export async function listDriverMarketplace(actor: Actor) {
   assertPermission(actor, "marketplace.driver.read");
   const driver = requireApprovedDriver(actor);
@@ -207,7 +264,7 @@ export async function listDriverMarketplace(actor: Actor) {
     if (declined?.status === "REJECTED") continue;
     const job = await loadJob(match.job.id);
     const loadCheck = await checkDriverLoad(driver.id, job.id);
-    cards.push({ ...serializeJob(job, actor), matchScore: match.score, loadCheck });
+    cards.push({ ...(await presentJob(job, actor)), matchScore: match.score, loadCheck });
   }
   return cards;
 }
@@ -223,7 +280,7 @@ export async function getJob(actor: Actor, id: string) {
   if (!isParty && !matched?.eligible) throw Errors.notFound();
   const deliveryDocs = isParty ? await listJobDeliveryDocs(actor, id) : null;
   return {
-    ...serializeJob(job, actor),
+    ...(await presentJob(job, actor)),
     applications: isParty && !actor.driverProfile ? job.applications : undefined,
     shipment: detailsReleased(job.status) && isParty ? job.shipment : undefined,
     deliveryDocs,
@@ -254,7 +311,7 @@ export async function listJobsForActor(actor: Actor) {
     const cards = [];
     for (const row of jobs) {
       const job = await loadJob(row.id);
-      cards.push(serializeJob(job, actor));
+      cards.push(await presentJob(job, actor));
     }
     return cards;
   }
@@ -270,7 +327,7 @@ export async function listJobsForActor(actor: Actor) {
   for (const row of jobs) {
     const job = await loadJob(row.id);
     cards.push({
-      ...serializeJob(job, actor),
+      ...(await presentJob(job, actor)),
       applications: job.applications,
       orderNumber: job.order.number,
     });
@@ -548,10 +605,8 @@ export async function confirmDelivery(
   dispute?: { reason?: "DAMAGE" | "SHORTAGE" | "DELAY" | "OVERCHARGE" | "NO_SHOW" | "OTHER"; description?: string },
 ) {
   const job = await loadJob(jobId);
-  if (!actor.isPlatformStaff && !actor.memberships.some((m) => m.companyId === job.order.requesterCompanyId)) {
-    throw Errors.forbidden();
-  }
-  if (!job.shipment?.pod) throw Errors.conflict("راننده هنوز رسید تحویل را ثبت نکرده است");
+  if (!isCargoOwner(actor, job)) throw Errors.forbidden();
+  if (!job.shipment?.pod) throw Errors.conflict("راننده هنوز درخواست تحویل را ثبت نکرده است");
   const docs = await prisma.document.findMany({
     where: { entityType: "TransportationJob", entityId: jobId, documentType: { in: [...JOB_DELIVERY_DOC_TYPES] } },
   });
@@ -583,6 +638,21 @@ export async function confirmDelivery(
   }
   if (nextJob === "CONFIRMED" && job.assignedDriverId) {
     await creditJobIncome(job.assignedDriverId, jobId);
+    if (job.shipment) {
+      await prisma.shipment.update({ where: { id: job.shipment.id }, data: { status: "COMPLETED" } });
+    }
+    await completeTracking(jobId);
+  }
+  if (job.assignedDriver?.userId && (resolution === "ACCEPTED" || resolution === "PARTIALLY_ACCEPTED")) {
+    await prisma.notification.create({
+      data: {
+        userId: job.assignedDriver.userId,
+        eventType: "job.pod",
+        title: "تحویل و پایان سفر تأیید شد",
+        body: `صاحب بار مدارک ${job.number} را تأیید کرد و سفر بسته شد`,
+        payload: { jobId, kind: "job.pod" },
+      },
+    });
   }
   if (resolution === "DISPUTED") {
     await createDispute(actor, {
@@ -596,9 +666,7 @@ export async function confirmDelivery(
 
 export async function returnDeliveryDocs(actor: Actor, jobId: string, note?: string) {
   const job = await loadJob(jobId);
-  if (!actor.isPlatformStaff && !actor.memberships.some((m) => m.companyId === job.order.requesterCompanyId)) {
-    throw Errors.forbidden();
-  }
+  if (!isCargoOwner(actor, job)) throw Errors.forbidden();
   if (job.status !== "PROOF_SUBMITTED") throw Errors.conflict("فقط قبل از تأیید نهایی می‌توان مدارک را برای اصلاح برگرداند");
   assertTransition(JOB_TRANSITIONS, job.status, "DELIVERED");
   if (job.shipment?.pod) {
@@ -709,6 +777,64 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
       items: (job.order.request?.items ?? []).map((item) => `${item.name} ${Number(item.quantity)} ${item.unitCode}`),
     },
   });
+  return getJob(actor, jobId);
+}
+
+const DELIVERY_REQUEST_FROM = ["AT_DESTINATION", "UNLOADING", "DELIVERED"] as const;
+
+/** Driver asks the cargo owner to approve the waybill and delivery papers, then the trip closes. */
+export async function requestDelivery(actor: Actor, jobId: string) {
+  const job = await loadJob(jobId);
+  if (actor.driverProfile?.id !== job.assignedDriverId && !actor.isPlatformStaff) {
+    throw Errors.forbidden("فقط رانندهٔ همین بار می‌تواند درخواست تحویل بدهد");
+  }
+  if (job.status === "PROOF_SUBMITTED" || job.status === "COMPLETED" || job.status === "CONFIRMED") return getJob(actor, jobId);
+  if (!(DELIVERY_REQUEST_FROM as readonly string[]).includes(job.status)) {
+    throw Errors.conflict("درخواست تحویل بعد از رسیدن به مقصد ممکن است");
+  }
+  if (!job.shipment) throw Errors.conflict("بارنامه هنوز صادر نشده است");
+  const docs = await prisma.document.findMany({
+    where: { entityType: "TransportationJob", entityId: jobId, documentType: { in: [...JOB_DELIVERY_DOC_TYPES] } },
+  });
+  const ready = JOB_DELIVERY_DOC_TYPES.every((type) => docs.some((doc) => doc.documentType === type && doc.verification !== "REJECTED"));
+  if (!ready) throw Errors.conflict("اول بارنامه و مدارک تحویل را بارگذاری کنید");
+  assertTransition(JOB_TRANSITIONS, job.status, "PROOF_SUBMITTED");
+  await prisma.$transaction(async (tx) => {
+    for (const item of job.shipment!.items) {
+      await tx.shipmentItem.update({
+        where: { id: item.id },
+        data: { deliveredQuantity: item.requestedQuantity, remainingQuantity: 0, remainingDisposition: "CANCELLED" },
+      });
+    }
+    if (!job.shipment!.pod) {
+      await tx.proofOfDelivery.create({
+        data: {
+          shipmentId: job.shipment!.id,
+          receiverName: "گیرنده بار",
+          deliveredAt: new Date(),
+          signatureStorageKey: docs.find((doc) => doc.documentType === "JOB_SIGNED_WAYBILL")?.storageKey,
+        },
+      });
+    }
+    await tx.transportationJob.update({
+      where: { id: jobId, status: job.status },
+      data: { status: "PROOF_SUBMITTED", version: { increment: 1 } },
+    });
+    await tx.shipment.update({ where: { id: job.shipment!.id }, data: { status: "PROOF_SUBMITTED" } });
+  });
+  const owners = await cargoOwnerUserIds(job);
+  if (owners.length) {
+    await prisma.notification.createMany({
+      data: owners.map((userId) => ({
+        userId,
+        eventType: "job.pod",
+        title: "درخواست تحویل بار",
+        body: `راننده مدارک ${job.number} را فرستاده و منتظر تأیید شماست`,
+        payload: { jobId, kind: "job.pod" },
+      })),
+    });
+  }
+  await writeAudit({ actor, action: "delivery.requested", entityType: "TransportationJob", entityId: jobId });
   return getJob(actor, jobId);
 }
 

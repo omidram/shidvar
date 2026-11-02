@@ -56,13 +56,11 @@ export function requireRequesterCompany(actor: Actor) {
 }
 
 export function requireSupplierCompany(actor: Actor) {
-  const id = companiesOfType(actor, "SUPPLIER")[0];
-  if (!id && !actor.isPlatformStaff) throw Errors.forbidden("عضویت در شرکت صاحب بار لازم است");
-  return id;
+  return requireRequesterCompany(actor);
 }
 
 export function requireApprovedSupplier(actor: Actor) {
-  const membership = actor.memberships.find((m) => m.companyType === "SUPPLIER");
+  const membership = actor.memberships.find((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER");
   if (actor.isPlatformStaff) return membership?.companyId;
   if (!membership || membership.companyStatus !== "APPROVED") {
     throw Errors.forbidden("حساب صاحب بار هنوز تأیید نشده است");

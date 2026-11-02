@@ -118,7 +118,7 @@ function JobExtras({ jobId, currencyCode }: { jobId: string; currencyCode?: stri
   const { t } = useI18n();
   const me = useMe();
   const qc = useQueryClient();
-  const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER"));
+  const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER"));
   const [kind, setKind] = useState<(typeof EXTRA_KINDS)[number]["id"]>("DETENTION");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -205,7 +205,7 @@ function JobDeliveryActions({ jobId, status, receiverName }: { jobId: string; st
   const { t } = useI18n();
   const me = useMe();
   const qc = useQueryClient();
-  const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER"));
+  const requester = Boolean(me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER"));
   const [reason, setReason] = useState<(typeof DISPUTE_REASONS)[number]["id"]>("DAMAGE");
   const [description, setDescription] = useState("");
   const [returnNote, setReturnNote] = useState("");

@@ -557,11 +557,13 @@ a {
 
   .print-single-page {
     width: 194mm;
-    max-height: 281mm;
-    overflow: hidden;
-    page-break-after: avoid;
-    page-break-inside: avoid;
-    break-after: avoid;
+    overflow: visible;
+  }
+
+  .print-single-page tr,
+  .print-single-page section,
+  .print-single-page footer {
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

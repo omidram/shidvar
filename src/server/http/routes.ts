@@ -35,7 +35,7 @@ import {
   reviewInfoRequestSchema,
 } from "@/server/domains/identity/info-request-service";
 import { listMarketplaceRequests, submitOffer, offerSchema, acceptOffer, rejectOffer, listOffers } from "@/server/domains/offers/offer-service";
-import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, endDriverTrip, getJob, listDriverMarketplace, listJobsForActor, rejectCargoJob, returnDeliveryDocs, selectDriver, submitPod, podSchema, updateJobStatus } from "@/server/domains/logistics/job-service";
+import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, endDriverTrip, getJob, listDriverMarketplace, listJobsForActor, rejectCargoJob, requestDelivery, returnDeliveryDocs, revealOwnerContact, selectDriver, submitPod, podSchema, updateJobStatus } from "@/server/domains/logistics/job-service";
 import { consentJobTracking, getJobTracking, listLiveTracking, recordDriverPing } from "@/server/domains/logistics/tracking-service";
 import { dashboardFor, listNotifications, markNotificationRead } from "@/server/domains/dashboard/dashboard-service";
 import { reportsFor } from "@/server/domains/reports/report-service";
@@ -622,6 +622,20 @@ export const routes: RouteDefinition[] = [
     path: "/jobs/:id/reject",
     async handler({ actor, params }) {
       return rejectCargoJob(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/jobs/:id/reveal-contact",
+    async handler({ actor, params }) {
+      return revealOwnerContact(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/jobs/:id/request-delivery",
+    async handler({ actor, params }) {
+      return requestDelivery(requireActor(actor), params.id);
     },
   },
   {

@@ -187,8 +187,8 @@ function PartyCell({ title, party }: { title: string; party: InvoiceDetail["issu
 
 function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatures?: JobDto["signatures"] }) {
   const loadNumber = invoice.waybill || invoice.jobNumber || invoice.requestNumber || invoice.orderNumber;
-  const visibleLines = invoice.lines.slice(0, 6);
-  const hidden = invoice.lines.length - visibleLines.length;
+  const visibleLines = invoice.lines;
+  const hidden = 0;
 
   return (
     <article className="print-single-page mx-auto w-[210mm] max-w-full bg-white p-5 text-[12px] leading-5 print:p-0">

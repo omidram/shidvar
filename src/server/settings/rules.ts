@@ -12,6 +12,7 @@ const DEFAULTS: Record<string, unknown> = {
   "coins.signupBonus": 1000,
   "coins.createRequestCost": 100,
   "coins.acceptJobCost": 100,
+  "coins.revealContactCost": 100,
   "jobs.opportunityExpiryMinutes": 30,
   "jobs.requireSupplierConfirm": true,
   "fulfillment.singleWinner": true,
