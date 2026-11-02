@@ -66,6 +66,7 @@ export function SupportCenter({ initialTab = "tickets" }: { initialTab?: "ticket
   const { t } = useI18n();
   const pathname = usePathname();
   const me = useMe();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<"tickets" | "disputes">(initialTab);
   const tickets = useQuery({ queryKey: ["tickets"], queryFn: () => api<Ticket[]>("/tickets") });
   const disputes = useQuery({ queryKey: ["disputes"], queryFn: () => api<Dispute[]>("/disputes") });
@@ -84,6 +85,7 @@ export function SupportCenter({ initialTab = "tickets" }: { initialTab?: "ticket
                   await api("/admin/tickets/purge", { method: "POST" });
                   toast.success(t.ops.ticketsPurged);
                   void tickets.refetch();
+                  void qc.invalidateQueries({ queryKey: ["notifications"] });
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : t.common.error);
                 }

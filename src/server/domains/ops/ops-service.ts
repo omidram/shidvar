@@ -606,8 +606,17 @@ export async function purgeTickets(actor: Actor) {
   assertPermission(actor, "tickets.manage");
   const deletedMessages = await prisma.ticketMessage.deleteMany();
   const deletedTickets = await prisma.supportTicket.deleteMany();
-  await writeAudit({ actor, action: "tickets.purged", entityType: "SupportTicket", entityId: "all", newValue: { tickets: deletedTickets.count, messages: deletedMessages.count } });
-  return { deleted: deletedTickets.count };
+  const deletedNotes = await prisma.notification.deleteMany({
+    where: { OR: [{ eventType: { startsWith: "ticket." } }, { title: { startsWith: "تیکت پشتیبانی" } }] },
+  });
+  await writeAudit({
+    actor,
+    action: "tickets.purged",
+    entityType: "SupportTicket",
+    entityId: "all",
+    newValue: { tickets: deletedTickets.count, messages: deletedMessages.count, notifications: deletedNotes.count },
+  });
+  return { deleted: deletedTickets.count, notifications: deletedNotes.count };
 }
 
 export async function updateTicketStatus(actor: Actor, id: string, input: z.infer<typeof ticketStatusSchema>) {

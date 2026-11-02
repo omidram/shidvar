@@ -10,7 +10,13 @@ ALTER TABLE "Company"
 ALTER TABLE "ProcurementRequest"
   ADD COLUMN IF NOT EXISTS "loadType" TEXT NOT NULL DEFAULT 'FULL';
 
--- Drop leftover demo tickets from before this release (safe after restart: newer tickets stay).
+-- Drop leftover demo tickets and the bell notifications that still show them.
+-- Cutoff is 11:00 Tehran on 2 Nov 2026; tickets opened after that stay across restarts.
 DELETE FROM "TicketMessage"
-WHERE "ticketId" IN (SELECT id FROM "SupportTicket" WHERE "createdAt" < TIMESTAMPTZ '2026-11-02T12:00:00Z');
-DELETE FROM "SupportTicket" WHERE "createdAt" < TIMESTAMPTZ '2026-11-02T12:00:00Z';
+WHERE "ticketId" IN (
+  SELECT id FROM "SupportTicket" WHERE "createdAt" < TIMESTAMPTZ '2026-11-02T11:00:00+03:30'
+);
+DELETE FROM "SupportTicket" WHERE "createdAt" < TIMESTAMPTZ '2026-11-02T11:00:00+03:30';
+DELETE FROM "Notification"
+WHERE "createdAt" < TIMESTAMPTZ '2026-11-02T11:00:00+03:30'
+  AND ("eventType" LIKE 'ticket.%' OR "title" LIKE 'تیکت پشتیبانی%');
