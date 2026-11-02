@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5500",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build && node scripts/copy-standalone-assets.mjs",
     "start": "node scripts/prod-start.mjs",
     "start:next": "next start --port 5500",
     "lint": "eslint",
