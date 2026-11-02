@@ -71,16 +71,29 @@ async function canAccessEntity(actor: Actor, entityType: string, entityId: strin
     });
     if (!job) return false;
     const isDriver = actor.driverProfile?.id === job.assignedDriverId;
-    const isRequester = actor.memberships.some((m) => m.companyId === job.order.requesterCompanyId);
+    const isOwner = actor.memberships.some(
+      (m) => m.companyId === job.order.requesterCompanyId || m.companyId === job.order.supplierCompanyId,
+    );
+    const openForDriver = [
+      "SCHEDULED",
+      "DRIVER_ASSIGNED",
+      "ARRIVING_AT_PICKUP",
+      "AT_PICKUP",
+      "LOADING",
+      "LOADED",
+      "IN_TRANSIT",
+      "ARRIVING_AT_DESTINATION",
+      "AT_DESTINATION",
+      "UNLOADING",
+      "DELIVERED",
+    ].includes(job.status);
     if (write) {
       const slot = DOCUMENT_SLOTS.find((item) => item.type === documentType);
-      if (isDriver && job.status === "DELIVERED" && slot?.signatureRole !== "issuer") return true;
-      if (isRequester && slot?.signatureRole === "issuer" && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status)) {
-        return true;
-      }
+      if (isDriver && openForDriver && slot?.signatureRole !== "issuer") return true;
+      if (isOwner && slot?.signatureRole === "issuer" && (openForDriver || job.status === "PROOF_SUBMITTED")) return true;
       return false;
     }
-    return Boolean(isDriver || isRequester);
+    return Boolean(isDriver || isOwner);
   }
   return false;
 }
@@ -90,7 +103,7 @@ export async function uploadDocument(actor: Actor, input: UploadInput) {
     throw Errors.validation({ documentType: ["نوع مدرک نامعتبر است"] });
   }
   const allowed = await canAccessEntity(actor, input.entityType, input.entityId, true, input.documentType);
-  if (!allowed) throw Errors.forbidden();
+  if (!allowed) throw Errors.forbidden("در این مرحله اجازهٔ بارگذاری این مدرک را ندارید. اگر سفر هنوز به شما نرسیده، اول بار را قبول کنید.");
   const slot = DOCUMENT_SLOTS.find((item) => item.type === input.documentType);
   const stored = await FileService.upload({
     buffer: input.buffer,

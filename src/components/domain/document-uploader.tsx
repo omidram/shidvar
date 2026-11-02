@@ -80,6 +80,7 @@ export function DocumentGallery({
       qc.invalidateQueries({ queryKey: ["docs", entityType, entityId] });
       if (jobKind) qc.invalidateQueries({ queryKey: ["job", entityId] });
     },
+    onError: (error: Error) => toast.error(formatApiError(error, "حذف مدرک ممکن نشد")),
   });
   const verify = useMutation({
     mutationFn: (input: { id: string; verification: "VERIFIED" | "REJECTED" }) =>
@@ -159,10 +160,10 @@ export function DocumentGallery({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">{title}</h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm leading-6 text-muted">
             {jobKind
-              ? "امضای الکترونیک روی گوشی، یا عکس سند امضاشده. فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت."
-              : "فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است. برای نمونه امضا می‌توانید امضای الکترونیک بگذارید."}
+              ? "رسید و بارنامه را با عکس یا PDF بفرستید. اگر روی کاغذ امضا شده، همان فایل کافی است. امضای الکترونیک جدا و اختیاری است."
+              : "فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است."}
           </p>
         </div>
         {q.data ? (
@@ -171,73 +172,61 @@ export function DocumentGallery({
           </span>
         ) : null}
       </div>
+      {jobKind ? <p className="text-sm font-bold">مدارک بار</p> : null}
       <div className="grid gap-3 md:grid-cols-2">
-        {items.map((slot) => {
+        {(jobKind ? items.filter((slot) => !slot.signable) : items).map((slot) => {
           const upload = allowUpload(slot);
-          const sign = allowSign(slot);
+          const sign = !jobKind && allowSign(slot);
           return (
-            <div key={slot.type} className="rounded-2xl border border-border p-4">
+            <div key={slot.type} className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">
                     {slot.label}
-                    {slot.required ? <span className="ms-1 text-danger">*</span> : null}
+                    {slot.required ? <span className="ms-1 text-danger">*</span> : <span className="ms-2 text-xs font-normal text-muted">اختیاری</span>}
                   </div>
-                  <p className="mt-1 text-xs text-muted">{slot.hint}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted">{slot.hint}</p>
                 </div>
-                {slot.document ? <StatusBadge status={slot.document.verification} /> : null}
+                {slot.document ? <StatusBadge status={slot.document.verification} /> : <span className="rounded-full bg-muted/15 px-2 py-1 text-[11px] text-muted">ارسال نشده</span>}
               </div>
               {slot.document?.isImage ? (
-                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 block">
-                  <img src={slot.document.url} alt={slot.label} className="h-36 w-full rounded-xl bg-white object-contain" />
+                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-xl border border-border bg-white">
+                  <img src={slot.document.url} alt={slot.label} className="h-40 w-full object-contain" />
                 </a>
               ) : slot.document ? (
-                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm text-primary">
+                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 block rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm font-semibold text-primary">
                   مشاهده {slot.document.originalName}
                 </a>
               ) : (
-                <p className="mt-3 text-sm text-muted">هنوز ثبت نشده</p>
+                <div className="mt-3 rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-muted">هنوز فایلی انتخاب نشده</div>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 {sign ? (
-                  <Button type="button" onClick={() => setSigning(slot)}>
+                  <Button type="button" variant="secondary" onClick={() => setSigning(slot)}>
                     امضای الکترونیک
                   </Button>
                 ) : null}
-                {upload && jobKind ? (
+                {upload ? (
                   <>
-                    <label className="inline-flex h-9 cursor-pointer items-center rounded-xl border border-border bg-background px-3 text-xs font-bold">
-                      عکس با دوربین
-                      <input
-                        type="file"
-                        accept={UPLOAD_ACCEPT_IMAGE}
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => onPick(slot.type, e.target.files?.[0])}
-                      />
+                    <label className="inline-flex h-10 cursor-pointer items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
+                      {slot.document ? "جایگزینی فایل" : "انتخاب عکس یا PDF"}
+                      <input type="file" accept={UPLOAD_ACCEPT} className="hidden" onChange={(e) => onPick(slot.type, e.target.files?.[0])} />
                     </label>
-                    <label className="inline-flex h-9 cursor-pointer items-center rounded-xl border border-border bg-background px-3 text-xs font-bold">
-                      {slot.document ? "جایگزینی فایل" : "انتخاب فایل"}
-                      <input
-                        type="file"
-                        accept={UPLOAD_ACCEPT}
-                        className="hidden"
-                        onChange={(e) => onPick(slot.type, e.target.files?.[0])}
-                      />
-                    </label>
+                    {jobKind ? (
+                      <label className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-border px-3 text-sm font-bold">
+                        دوربین
+                        <input
+                          type="file"
+                          accept={UPLOAD_ACCEPT_IMAGE}
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => onPick(slot.type, e.target.files?.[0])}
+                        />
+                      </label>
+                    ) : null}
                   </>
-                ) : upload ? (
-                  <label className="inline-flex h-9 cursor-pointer items-center rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground">
-                    {slot.document ? "جایگزینی" : "بارگذاری"}
-                    <input
-                      type="file"
-                      accept={UPLOAD_ACCEPT}
-                      className="hidden"
-                      onChange={(e) => onPick(slot.type, e.target.files?.[0])}
-                    />
-                  </label>
                 ) : null}
-                {slot.document && (upload || sign) ? (
+                {slot.document && upload ? (
                   <Button type="button" variant="secondary" onClick={() => remove.mutate(slot.document!.id)}>
                     حذف
                   </Button>
@@ -257,6 +246,47 @@ export function DocumentGallery({
           );
         })}
       </div>
+      {jobKind ? (
+        <div className="grid gap-3">
+          <div>
+            <p className="font-bold">امضای الکترونیک</p>
+            <p className="mt-1 text-sm text-muted">اجباری نیست. اگر امضا روی سند آپلودشده هست، این قسمت را خالی بگذارید.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {items.filter((slot) => slot.signable).map((slot) => {
+              const sign = allowSign(slot);
+              return (
+                <div key={slot.type} className="rounded-2xl border border-dashed border-border p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold">{slot.label}</div>
+                      <p className="mt-1 text-xs leading-5 text-muted">{slot.hint}</p>
+                    </div>
+                    <span className="rounded-full bg-muted/15 px-2 py-1 text-[11px] text-muted">اختیاری</span>
+                  </div>
+                  {slot.document?.isImage ? (
+                    <img src={slot.document.url} alt={slot.label} className="mt-3 h-24 w-full rounded-xl bg-white object-contain" />
+                  ) : (
+                    <p className="mt-3 text-sm text-muted">امضایی ثبت نشده</p>
+                  )}
+                  {sign ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button type="button" variant="secondary" onClick={() => setSigning(slot)}>
+                        {slot.document ? "امضای دوباره" : "ثبت امضا"}
+                      </Button>
+                      {slot.document ? (
+                        <Button type="button" variant="secondary" onClick={() => remove.mutate(slot.document!.id)}>
+                          حذف امضا
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       {signing ? (
         <SignatureCapture
           role={signing.signatureRole ?? "receiver"}
