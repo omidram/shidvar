@@ -602,6 +602,14 @@ export async function addTicketMessage(actor: Actor, id: string, input: z.infer<
   return getTicket(actor, id);
 }
 
+export async function purgeTickets(actor: Actor) {
+  assertPermission(actor, "tickets.manage");
+  const deletedMessages = await prisma.ticketMessage.deleteMany();
+  const deletedTickets = await prisma.supportTicket.deleteMany();
+  await writeAudit({ actor, action: "tickets.purged", entityType: "SupportTicket", entityId: "all", newValue: { tickets: deletedTickets.count, messages: deletedMessages.count } });
+  return { deleted: deletedTickets.count };
+}
+
 export async function updateTicketStatus(actor: Actor, id: string, input: z.infer<typeof ticketStatusSchema>) {
   assertPermission(actor, "tickets.manage");
   const ticket = await prisma.supportTicket.findUnique({ where: { id } });

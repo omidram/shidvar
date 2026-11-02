@@ -93,6 +93,9 @@ export function TrackingCard({ data, href }: { data: TrackingDto; href?: string 
         <StatusBadge status={data.status} />
       </div>
       <TrackingMap data={data} className="h-[380px] w-full" />
+      {isAssignedDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "CONFIRMED"].includes(data.status) ? (
+        <EndTripButton jobId={data.jobId} />
+      ) : null}
       <div className="grid gap-3 p-5 sm:grid-cols-4">
         <Meta label={t.tracking.remaining} value={`${formatNumber(data.remainingKm)} ${t.tracking.km}`} />
         <Meta label={t.tracking.eta} value={`${formatNumber(data.etaMinutes)} ${t.tracking.minutes}`} />
@@ -186,6 +189,35 @@ function TrackingConsentCard({ data, href }: { data: TrackingDto; href?: string 
         {consent.isPending ? t.common.loading : t.tracking.confirmConsent}
       </Button>
     </Card>
+  );
+}
+
+function EndTripButton({ jobId }: { jobId: string }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const endTrip = useMutation({
+    mutationFn: () => api(`/jobs/${jobId}/end`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success(t.job.endTrip);
+      void qc.invalidateQueries({ queryKey: ["tracking"] });
+      void qc.invalidateQueries({ queryKey: ["tracking-live"] });
+      void qc.invalidateQueries({ queryKey: ["job", jobId] });
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  return (
+    <div className="px-5 pb-2">
+      <Button
+        className="w-full"
+        disabled={endTrip.isPending}
+        onClick={() => {
+          if (window.confirm(t.job.endTripConfirm)) endTrip.mutate();
+        }}
+      >
+        {endTrip.isPending ? t.common.loading : t.job.endTrip}
+      </Button>
+    </div>
   );
 }
 

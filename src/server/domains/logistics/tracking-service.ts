@@ -2,7 +2,7 @@ import { prisma } from "@/server/db";
 import { Errors } from "@/server/errors";
 import type { Actor } from "@/server/rbac/actor";
 import { coordsForCity, type LatLng } from "@/lib/geo/city-coords";
-import { estimatedHours, etaMinutesFor, headingDeg, interpolate, remainingRoadKm, roadDistanceKm, roadFactor, routeWaypoints } from "@/lib/geo/route";
+import { estimatedHours, etaMinutesFor, headingDeg, interpolate, remainingRoadKm, roadDistanceKm, roadFactor, resolveDrivingRoute } from "@/lib/geo/route";
 import { evaluateLoadAcceptance, normalizeCity } from "@/server/logistics/load-rules";
 import { activeLoadDestinations, jobDestination } from "./load-guard";
 
@@ -109,7 +109,7 @@ function canSimulate(session: { status: string; consentStatus: string; deviceCon
 function presentTracking(
   actor: Actor,
   job: { assignedDriverId: string | null },
-  payload: ReturnType<typeof serializeSession>,
+  payload: Awaited<ReturnType<typeof serializeSession>>,
 ) {
   if (payload.waitingForDriver && actor.driverProfile?.id !== job.assignedDriverId) {
     return {
@@ -123,12 +123,13 @@ function presentTracking(
   return payload;
 }
 
-function serializeSession(
+async function serializeSession(
   job: Awaited<ReturnType<typeof loadTrackedJob>>,
   session: NonNullable<Awaited<ReturnType<typeof loadTrackedJob>>["trackingSession"]>,
 ) {
   const { origin, dest, originCity, destCity } = endpoints(job);
-  const route = routeWaypoints(originCity, destCity, origin, dest);
+  const resolved = await resolveDrivingRoute(originCity, destCity, origin, dest);
+  const route = resolved.points;
   const pings = session.pings.map((ping) => ({
     lat: Number(ping.latitude),
     lng: Number(ping.longitude),
@@ -139,7 +140,7 @@ function serializeSession(
   const current = session.lastLat != null && session.lastLng != null
     ? { lat: Number(session.lastLat), lng: Number(session.lastLng) }
     : pings.at(-1) ?? origin;
-  const factor = roadFactor(originCity, destCity);
+  const factor = roadFactor(originCity, destCity, resolved.fromRoads);
   const remaining = remainingRoadKm(route, current, factor);
   const speed = session.speedKmh != null ? Number(session.speedKmh) : null;
   return {
@@ -221,9 +222,10 @@ export async function startTrackingForJob(
     await assertDriverFreeForTrip(job.assignedDriverId, jobId);
   }
   const { origin, dest, originCity, destCity } = endpoints(job);
-  const route = routeWaypoints(originCity, destCity, origin, dest);
+  const resolved = await resolveDrivingRoute(originCity, destCity, origin, dest);
+  const route = resolved.points;
   const startedAt = opts?.startedAt ?? new Date();
-  const factor = roadFactor(originCity, destCity);
+  const factor = roadFactor(originCity, destCity, resolved.fromRoads);
   const progress = opts?.progress ?? progressFor(startedAt, route, job.status, factor);
   const here = interpolate(route, progress);
   const next = interpolate(route, Math.min(1, progress + 0.02));
@@ -315,8 +317,9 @@ async function advanceSession(jobId: string) {
   if (job.trackingSession.status === "COMPLETED") return job.trackingSession;
   if (!canSimulate(job.trackingSession)) return job.trackingSession;
   const { origin, dest, originCity, destCity } = endpoints(job);
-  const route = routeWaypoints(originCity, destCity, origin, dest);
-  const progress = progressFor(job.trackingSession.startedAt, route, job.status, roadFactor(originCity, destCity));
+  const resolved = await resolveDrivingRoute(originCity, destCity, origin, dest);
+  const route = resolved.points;
+  const progress = progressFor(job.trackingSession.startedAt, route, job.status, roadFactor(originCity, destCity, resolved.fromRoads));
   const here = interpolate(route, progress);
   const next = interpolate(route, Math.min(1, progress + 0.015));
   const heading = headingDeg(here, next);
@@ -349,7 +352,7 @@ export async function getJobTracking(actor: Actor, jobId: string) {
   }
   const fresh = await loadTrackedJob(jobId);
   if (!fresh.trackingSession) throw Errors.notFound("ردیابی برای این بار فعال نشده است");
-  return presentTracking(actor, fresh, serializeSession(fresh, fresh.trackingSession));
+  return presentTracking(actor, fresh, await serializeSession(fresh, fresh.trackingSession));
 }
 
 export async function consentJobTracking(
@@ -477,7 +480,7 @@ export async function listLiveTracking(actor: Actor) {
     if (canSimulate(session)) await advanceSession(session.jobId);
     const fresh = await loadTrackedJob(session.jobId);
     if (fresh.trackingSession) {
-      live.push(presentTracking(actor, fresh, serializeSession(fresh, fresh.trackingSession)));
+      live.push(presentTracking(actor, fresh, await serializeSession(fresh, fresh.trackingSession)));
     }
   }
   return live;

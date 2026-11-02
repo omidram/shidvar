@@ -14,6 +14,7 @@ import { ColdIcon, HeavyTruckIcon, TankerIcon, TruckIcon, VanIcon } from "@/comp
 import { VisualField } from "@/components/visual/visual-field";
 import { FeatureMedia } from "@/components/visual/feature-motion";
 import { Input } from "@/components/ui/input";
+import { IRAN_CITY_NAMES } from "@/lib/geo/city-coords";
 
 const VEHICLES = [
   { key: "VAN", icon: <VanIcon className="h-8 w-8" />, body: "تا ۵۰۰ کیلو" },
@@ -97,7 +98,12 @@ export default function HomePage() {
             <div className="mt-5 grid gap-3">
               <label className="grid gap-1.5 text-sm font-medium">
                 {t.landing.origin}
-                <Input value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                <Input list="home-origin-cities" value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                <datalist id="home-origin-cities">
+                  {IRAN_CITY_NAMES.map((city) => (
+                    <option key={city} value={city} />
+                  ))}
+                </datalist>
               </label>
               <div className="flex items-center gap-3 px-1">
                 <span className="h-px flex-1 bg-border" />
@@ -106,7 +112,12 @@ export default function HomePage() {
               </div>
               <label className="grid gap-1.5 text-sm font-medium">
                 {t.landing.destination}
-                <Input value={destination} onChange={(e) => setDestination(e.target.value)} />
+                <Input list="home-dest-cities" value={destination} onChange={(e) => setDestination(e.target.value)} />
+                <datalist id="home-dest-cities">
+                  {IRAN_CITY_NAMES.map((city) => (
+                    <option key={city} value={city} />
+                  ))}
+                </datalist>
               </label>
               <label className="grid gap-1.5 text-sm font-medium">
                 {t.landing.when}

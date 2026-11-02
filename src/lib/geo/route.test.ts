@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { coordsForCity } from "./city-coords";
+import { coordsForCity, IRAN_CITY_NAMES } from "./city-coords";
 import { etaMinutesFor, remainingRoadKm, roadDistanceKm, roadFactor, routeWaypoints } from "./route";
+
+describe("iran cities", () => {
+  it("lists a nationwide set of cities", () => {
+    expect(IRAN_CITY_NAMES.length).toBeGreaterThan(250);
+    expect(IRAN_CITY_NAMES).toContain("تهران");
+    expect(IRAN_CITY_NAMES).toContain("چابهار");
+    expect(IRAN_CITY_NAMES).toContain("یاسوج");
+  });
+});
 
 describe("road distance", () => {
   const route = routeWaypoints("تهران", "آمل");

@@ -22,6 +22,7 @@ import { DocumentGallery } from "@/components/domain/document-uploader";
 import { CargoBadges } from "@/components/domain/cargo-badges";
 import { Field, NativeSelect } from "@/components/ui/input";
 import { LoadAcceptDialog } from "@/components/domain/load-accept-dialog";
+import { CitySelect } from "@/components/domain/city-select";
 
 export { DashboardView } from "@/components/domain/dashboard-home";
 
@@ -309,8 +310,6 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const all = q.data ?? [];
   const cityOf = (job: JobDto, side: "from" | "to") =>
     (side === "from" ? job.originCity ?? job.pickup?.city : job.destinationCity ?? job.delivery?.city) ?? "";
-  const originOptions = [...new Set(all.map((job) => cityOf(job, "from")).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa"));
-  const destinationOptions = [...new Set(all.map((job) => cityOf(job, "to")).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa"));
   const rows = marketplace
     ? all.filter(
         (job) =>
@@ -324,26 +323,8 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
       <PageHeader title={marketplace ? t.job.incoming : t.job.title} description="صاحب بار، نوع محموله و مقصد را ببینید و تصمیم بگیرید." />
       {marketplace ? (
         <Card className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Field label="مبدأ">
-            <NativeSelect value={fromCity} onChange={(e) => setFromCity(e.target.value)}>
-              <option value="">همهٔ مبدأها</option>
-              {originOptions.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
-          <Field label="مقصد">
-            <NativeSelect value={toCity} onChange={(e) => setToCity(e.target.value)}>
-              <option value="">همهٔ مقصدها</option>
-              {destinationOptions.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
+          <CitySelect label="مبدأ" value={fromCity} onChange={setFromCity} placeholder="همهٔ مبدأها" />
+          <CitySelect label="مقصد" value={toCity} onChange={setToCity} placeholder="همهٔ مقصدها" />
           <Field label="نوع بار">
             <NativeSelect value={loadFilter} onChange={(e) => setLoadFilter(e.target.value as "" | "FULL" | "SHARED")}>
               <option value="">دربستی و روباری</option>
@@ -857,6 +838,17 @@ export function DriverJobView({ id }: { id: string }) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const endTrip = useMutation({
+    mutationFn: () => api(`/jobs/${id}/end`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("مسیر تمام شد و بار بسته شد");
+      qc.invalidateQueries({ queryKey: ["job", id] });
+      qc.invalidateQueries({ queryKey: ["tracking"] });
+      qc.invalidateQueries({ queryKey: ["tracking-live"] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const status = useMutation({
     mutationFn: (next: string) => api(`/jobs/${id}/status`, { method: "POST", body: JSON.stringify({ status: next }) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["job", id] }),
@@ -1050,6 +1042,21 @@ export function DriverJobView({ id }: { id: string }) {
             pending={pod.isPending}
             onSubmit={(payload) => pod.mutate(payload)}
           />
+        </Card>
+      ) : null}
+      {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "CONFIRMED"].includes(job.status) ? (
+        <Card className="grid gap-3">
+          <h2 className="font-bold">{t.job.endTrip}</h2>
+          <p className="text-sm text-muted">{t.job.endTripHint}</p>
+          <Button
+            className="w-full"
+            disabled={endTrip.isPending}
+            onClick={() => {
+              if (window.confirm(t.job.endTripConfirm)) endTrip.mutate();
+            }}
+          >
+            {endTrip.isPending ? t.common.loading : t.job.endTrip}
+          </Button>
         </Card>
       ) : null}
       {isDriver && job.status === "PROOF_SUBMITTED" ? (

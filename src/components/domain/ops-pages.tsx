@@ -71,7 +71,29 @@ export function SupportCenter({ initialTab = "tickets" }: { initialTab?: "ticket
   const disputes = useQuery({ queryKey: ["disputes"], queryFn: () => api<Dispute[]>("/disputes") });
   return (
     <div className="grid gap-6">
-      <PageHeader title={t.ops.supportTitle} description={t.ops.supportHint} />
+      <PageHeader
+        title={t.ops.supportTitle}
+        description={t.ops.supportHint}
+        actions={
+          me.data?.isPlatformStaff ? (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                if (!window.confirm(t.ops.purgeTicketsConfirm)) return;
+                try {
+                  await api("/admin/tickets/purge", { method: "POST" });
+                  toast.success(t.ops.ticketsPurged);
+                  void tickets.refetch();
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : t.common.error);
+                }
+              }}
+            >
+              {t.ops.purgeTickets}
+            </Button>
+          ) : null
+        }
+      />
       <div className="flex gap-2">
         <Button variant={tab === "tickets" ? "default" : "secondary"} onClick={() => setTab("tickets")}>
           {t.ops.tickets} ({tickets.data?.length ?? 0})

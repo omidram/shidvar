@@ -42,4 +42,10 @@ describe("job information release", () => {
     expect(canTransition(JOB_TRANSITIONS, "AT_PICKUP", "IN_TRANSIT")).toBe(false);
     expect(canTransition(JOB_TRANSITIONS, "LOADING", "LOADED")).toBe(true);
   });
+
+  it("lets the driver end the trip after arriving", () => {
+    expect(canTransition(JOB_TRANSITIONS, "AT_DESTINATION", "COMPLETED")).toBe(true);
+    expect(canTransition(JOB_TRANSITIONS, "DELIVERED", "COMPLETED")).toBe(true);
+    expect(canTransition(JOB_TRANSITIONS, "IN_TRANSIT", "COMPLETED")).toBe(false);
+  });
 });

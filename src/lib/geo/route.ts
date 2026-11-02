@@ -31,16 +31,32 @@ export function routeKey(origin: string, dest: string) {
   return `${origin}|${dest}`;
 }
 
-export function routeWaypoints(originCity?: string | null, destCity?: string | null, origin?: LatLng | null, dest?: LatLng | null): LatLng[] {
+export function corridorPoints(originCity?: string | null, destCity?: string | null, origin?: LatLng | null, dest?: LatLng | null): LatLng[] {
   const from = origin ?? coordsForCity(originCity);
   const to = dest ?? coordsForCity(destCity);
   if (!from || !to) return [from, to].filter(Boolean) as LatLng[];
-  const named = originCity && destCity ? CORRIDORS[routeKey(originCity, destCity)] : null;
-  const mid = (named ?? [])
-    .map(pointFor)
-    .filter((p): p is LatLng => Boolean(p));
-  const points = [from, ...mid.filter((p) => distanceKm(p, from) > 8 && distanceKm(p, to) > 8), to];
-  return densify(points, 18);
+  const named = originCity && destCity ? CORRIDORS[routeKey(originCity, destCity)] ?? CORRIDORS[routeKey(destCity, originCity)]?.slice().reverse() : null;
+  const mid = (named ?? []).map(pointFor).filter((p): p is LatLng => Boolean(p));
+  return [from, ...mid.filter((p) => distanceKm(p, from) > 8 && distanceKm(p, to) > 8), to];
+}
+
+export function routeWaypoints(originCity?: string | null, destCity?: string | null, origin?: LatLng | null, dest?: LatLng | null): LatLng[] {
+  return densify(corridorPoints(originCity, destCity, origin, dest), 18);
+}
+
+/** Prefer OSM driving geometry; otherwise the named highway corridor. */
+export async function resolveDrivingRoute(
+  originCity?: string | null,
+  destCity?: string | null,
+  origin?: LatLng | null,
+  dest?: LatLng | null,
+): Promise<{ points: LatLng[]; fromRoads: boolean }> {
+  const via = corridorPoints(originCity, destCity, origin, dest);
+  if (via.length < 2) return { points: via, fromRoads: false };
+  const { fetchDrivingRoute } = await import("./osrm");
+  const road = await fetchDrivingRoute(via.length > 8 ? [via[0], via[Math.floor(via.length / 2)], via[via.length - 1]] : via);
+  if (road && road.length > 8) return { points: road, fromRoads: true };
+  return { points: densify(via, 18), fromRoads: false };
 }
 
 export function interpolate(points: LatLng[], t: number): LatLng {
@@ -87,9 +103,10 @@ export function routeDistanceKm(points: LatLng[]) {
   return segmentLengths(points).reduce((sum, item) => sum + item, 0);
 }
 
-/** Roads are longer than the straight polyline: less so when we know the real corridor towns. */
-export function roadFactor(originCity?: string | null, destCity?: string | null) {
-  const known = originCity && destCity ? Boolean(CORRIDORS[routeKey(originCity, destCity)]) : false;
+/** Extra length vs the polyline. OSRM geometry is already on the road, so the factor is 1. */
+export function roadFactor(originCity?: string | null, destCity?: string | null, fromRoads = false) {
+  if (fromRoads) return 1;
+  const known = originCity && destCity ? Boolean(CORRIDORS[routeKey(originCity, destCity)] ?? CORRIDORS[routeKey(destCity, originCity)]) : false;
   return known ? 1.2 : 1.3;
 }
 

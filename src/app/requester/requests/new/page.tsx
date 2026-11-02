@@ -12,6 +12,7 @@ import { Field, Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { ShamsiDateInput } from "@/components/ui/shamsi-date-input";
 import { api } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
+import { CitySelect } from "@/components/domain/city-select";
 import { ColdIcon, HeavyTruckIcon, TankerIcon, TruckIcon, VanIcon } from "@/components/visual/icons";
 
 type Product = { id: string; nameEn: string; nameFa: string; categoryId: string; defaultUnit: string };
@@ -25,7 +26,6 @@ const VEHICLES: Array<{ key: VehicleKey; icon: React.ReactNode; body: string }> 
   { key: "REFRIGERATED", icon: <ColdIcon className="h-7 w-7" />, body: "زنجیره سرد" },
   { key: "TANKER", icon: <TankerIcon className="h-7 w-7" />, body: "مایعات و فله" },
 ];
-const CITIES = ["تهران", "آمل", "کرج", "اصفهان", "مشهد", "شیراز", "تبریز", "اهواز", "قم", "یزد", "کرمان", "بندرعباس", "ساری", "رشت", "ارومیه", "کرمانشاه", "همدان", "زاهدان"];
 
 function NewRequestForm() {
   const { t } = useI18n();
@@ -170,22 +170,8 @@ function NewRequestForm() {
 
       {step === 1 ? (
         <Card className="grid gap-4 md:grid-cols-2">
-          <Field label={t.request.originCity}>
-            <Input list="origin-cities" value={originCity} onChange={(e) => setOriginCity(e.target.value)} required />
-            <datalist id="origin-cities">
-              {CITIES.map((city) => (
-                <option key={city} value={city} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label={t.request.destinationCity}>
-            <Input list="dest-cities" value={destinationCity} onChange={(e) => setDestinationCity(e.target.value)} required />
-            <datalist id="dest-cities">
-              {CITIES.map((city) => (
-                <option key={city} value={city} />
-              ))}
-            </datalist>
-          </Field>
+          <CitySelect label={t.request.originCity} value={originCity} onChange={setOriginCity} required />
+          <CitySelect label={t.request.destinationCity} value={destinationCity} onChange={setDestinationCity} required />
           <Field label={`${t.request.originAddress} (${t.common.optional})`}>
             <Input value={originLine1} onChange={(e) => setOriginLine1(e.target.value)} placeholder="انبار مرکزی، تهران" />
           </Field>

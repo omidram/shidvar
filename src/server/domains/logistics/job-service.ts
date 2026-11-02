@@ -712,6 +712,49 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
   return getJob(actor, jobId);
 }
 
+const END_TRIP_FROM = ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "CONFIRMED"] as const;
+
+/** Driver closes the load after arriving, like tapping finish in Snapp. */
+export async function endDriverTrip(actor: Actor, jobId: string) {
+  const job = await loadJob(jobId);
+  const assigned = actor.driverProfile?.id === job.assignedDriverId;
+  if (!actor.isPlatformStaff && !assigned) throw Errors.forbidden("فقط رانندهٔ همین سفر می‌تواند مسیر را پایان دهد");
+  if (job.status === "COMPLETED") return getJob(actor, jobId);
+  if (!(END_TRIP_FROM as readonly string[]).includes(job.status)) {
+    throw Errors.conflict("پایان مسیر بعد از رسیدن به مقصد ممکن است");
+  }
+  assertTransition(JOB_TRANSITIONS, job.status, "COMPLETED");
+  await prisma.transportationJob.update({
+    where: { id: jobId, status: job.status, version: job.version },
+    data: { status: "COMPLETED", version: { increment: 1 } },
+  });
+  if (job.shipment) {
+    await prisma.shipment.update({ where: { id: job.shipment.id }, data: { status: "COMPLETED" } });
+  }
+  await prisma.procurementRequest.updateMany({
+    where: { id: job.order.requestId, status: { notIn: ["COMPLETED", "CANCELLED"] } },
+    data: { status: "COMPLETED", version: { increment: 1 } },
+  });
+  await prisma.order.updateMany({
+    where: { id: job.orderId, status: { notIn: ["COMPLETED", "CANCELLED"] } },
+    data: { status: "COMPLETED", version: { increment: 1 } },
+  });
+  await completeTracking(jobId);
+  if (job.assignedDriverId) {
+    await creditJobIncome(job.assignedDriverId, jobId);
+  }
+  await recordStatusChange({
+    entityType: "TransportationJob",
+    entityId: jobId,
+    from: job.status,
+    to: "COMPLETED",
+    actorId: actor.userId,
+    note: "پایان مسیر توسط راننده",
+  });
+  await writeAudit({ actor, action: "job.ended_by_driver", entityType: "TransportationJob", entityId: jobId });
+  return getJob(actor, jobId);
+}
+
 export async function rejectCargoJob(actor: Actor, jobId: string) {
   assertPermission(actor, "jobs.apply");
   const driver = requireApprovedDriver(actor);

@@ -35,7 +35,7 @@ import {
   reviewInfoRequestSchema,
 } from "@/server/domains/identity/info-request-service";
 import { listMarketplaceRequests, submitOffer, offerSchema, acceptOffer, rejectOffer, listOffers } from "@/server/domains/offers/offer-service";
-import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, getJob, listDriverMarketplace, listJobsForActor, rejectCargoJob, returnDeliveryDocs, selectDriver, submitPod, podSchema, updateJobStatus } from "@/server/domains/logistics/job-service";
+import { acceptCargoJob, applyToJob, confirmDelivery, confirmDriver, endDriverTrip, getJob, listDriverMarketplace, listJobsForActor, rejectCargoJob, returnDeliveryDocs, selectDriver, submitPod, podSchema, updateJobStatus } from "@/server/domains/logistics/job-service";
 import { consentJobTracking, getJobTracking, listLiveTracking, recordDriverPing } from "@/server/domains/logistics/tracking-service";
 import { dashboardFor, listNotifications, markNotificationRead } from "@/server/domains/dashboard/dashboard-service";
 import { reportsFor } from "@/server/domains/reports/report-service";
@@ -57,6 +57,7 @@ import {
   listJobMessages,
   listJobRatings,
   listTickets,
+  purgeTickets,
   rejectJobExtra,
   requestJobExtra,
   resolveDispute,
@@ -625,6 +626,13 @@ export const routes: RouteDefinition[] = [
   },
   {
     method: "POST",
+    path: "/jobs/:id/end",
+    async handler({ actor, params }) {
+      return endDriverTrip(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
     path: "/jobs/:id/apply",
     input: z.object({ notes: z.string().optional() }),
     async handler({ actor, params, body }) {
@@ -816,6 +824,14 @@ export const routes: RouteDefinition[] = [
     input: ticketMessageSchema,
     async handler({ actor, params, body }) {
       return addTicketMessage(requireActor(actor), params.id, body as z.infer<typeof ticketMessageSchema>);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/tickets/purge",
+    permissions: ["tickets.manage"],
+    async handler({ actor }) {
+      return purgeTickets(requireActor(actor));
     },
   },
   {

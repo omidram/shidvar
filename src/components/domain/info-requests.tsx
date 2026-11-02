@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { INFO_FIELDS, VEHICLE_OPTIONS } from "@/lib/info-fields";
-import { CITY_COORDS } from "@/lib/geo/city-coords";
+import { IRAN_CITY_NAMES } from "@/lib/geo/city-coords";
 
 export type InfoRequestRow = {
   id: string;
@@ -31,7 +31,7 @@ export const INFO_STATUS_LABEL: Record<InfoRequestRow["status"], string> = {
   CANCELLED: "لغو شد",
 };
 
-const CITIES = Object.keys(CITY_COORDS);
+const CITIES = IRAN_CITY_NAMES;
 
 function FieldInput({ fieldKey, value, onChange }: { fieldKey: string; value: string; onChange: (v: string) => void }) {
   const def = INFO_FIELDS.find((f) => f.key === fieldKey);
