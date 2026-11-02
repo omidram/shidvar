@@ -56,7 +56,14 @@ type JobDto = {
   assignedVehicle?: { plateNumber: string; vehicleType: string };
   requestNumber?: string | null;
   orderNumber?: string;
-  invoices?: Array<{ number: string }>;
+  invoices?: Array<{
+    number: string;
+    type?: string;
+    status?: string;
+    total?: number;
+    currencyCode?: string;
+    lines?: Array<{ description: string; quantity: number; unitPrice: number; lineTotal: number }>;
+  }>;
   signatures?: { issuer?: string | null; driver?: string | null; receiver?: string | null } | null;
 };
 
@@ -146,7 +153,8 @@ export function PrintDocumentPage({ kind, id }: { kind: string; id: string }) {
     queryFn: () => api<JobDto>(`/jobs/${invoice.data!.jobId}`),
     enabled: kind === "invoice" && Boolean(invoice.data?.jobId),
   });
-  const ready = (kind === "invoice" && invoice.data) || (kind === "request" && request.data) || (kind === "waybill" && job.data);
+  const active = kind === "invoice" ? invoice : kind === "request" ? request : job;
+  const ready = kind === "invoice" ? Boolean(invoice.data) && (!invoice.data?.jobId || invoiceJob.isFetched) : Boolean(active.data);
 
   useEffect(() => {
     if (ready && params.get("auto") === "1") {
@@ -156,16 +164,17 @@ export function PrintDocumentPage({ kind, id }: { kind: string; id: string }) {
   }, [ready, params]);
 
   return (
-    <div className={kind === "invoice" ? "print-invoice-root" : undefined}>
+    <div className={`print-doc ${kind === "invoice" ? "print-invoice-root" : ""}`}>
       <div className="no-print sticky top-0 z-10 flex justify-end gap-2 border-b border-border bg-white/95 p-3">
         <Button type="button" onClick={() => window.print()}>
           ذخیره PDF
         </Button>
       </div>
-      {kind === "invoice" && invoice.data ? <InvoiceSheet invoice={invoice.data} signatures={invoiceJob.data?.signatures} /> : null}
+      {kind === "invoice" && invoice.data ? <InvoiceSheet invoice={invoice.data} signatures={invoiceJob.data?.signatures} job={invoiceJob.data} /> : null}
       {kind === "request" && request.data ? <RequestSheet request={request.data} /> : null}
       {kind === "waybill" && job.data ? <WaybillSheet job={job.data} /> : null}
-      {!ready ? <p className="p-8">در حال آماده‌سازی سند…</p> : null}
+      {active.isError ? <p className="p-8">این خروجی برای حساب شما در دسترس نیست.</p> : null}
+      {!ready && !active.isError ? <p className="p-8">در حال آماده‌سازی سند…</p> : null}
     </div>
   );
 }
@@ -185,9 +194,30 @@ function PartyCell({ title, party }: { title: string; party: InvoiceDetail["issu
   );
 }
 
-function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatures?: JobDto["signatures"] }) {
+const APPROVED = new Set(["ISSUED", "SENT", "PAID", "PARTIALLY_PAID", "OVERDUE"]);
+
+function cleanLine(text: string) {
+  return text.replace(/^\[[A-Z_]+\]\s*/, "");
+}
+
+function approvedExtras(invoices: JobDto["invoices"]) {
+  return (invoices ?? []).filter((invoice) => invoice.type === "ADJUSTMENT" && invoice.status && APPROVED.has(invoice.status));
+}
+
+function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; signatures?: JobDto["signatures"]; job?: JobDto }) {
   const loadNumber = invoice.waybill || invoice.jobNumber || invoice.requestNumber || invoice.orderNumber;
-  const visibleLines = invoice.lines;
+  const present = new Set(invoice.lines.map((line) => cleanLine(line.description)));
+  const extraLines = approvedExtras(job?.invoices).flatMap((item) => {
+    const lines = item.lines?.length
+      ? item.lines
+      : [{ description: "هزینه اضافه", quantity: 1, unitPrice: item.total ?? 0, lineTotal: item.total ?? 0 }];
+    return lines
+      .map((line) => ({ ...line, description: cleanLine(line.description) }))
+      .filter((line) => line.description && !present.has(line.description));
+  });
+  const visibleLines = [...invoice.lines.map((line) => ({ ...line, description: cleanLine(line.description) })), ...extraLines];
+  const extraSum = extraLines.reduce((sum, line) => sum + Number(line.lineTotal || 0), 0);
+  const grandTotal = invoice.total + extraSum;
   const hidden = 0;
 
   return (
@@ -259,8 +289,8 @@ function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatu
           </tr>
         </thead>
         <tbody>
-          {visibleLines.map((line) => (
-            <tr key={line.id} className="border-b border-border">
+          {visibleLines.map((line, index) => (
+            <tr key={`${line.description}-${index}`} className="border-b border-border">
               <td className="px-2 py-1.5">{line.description}</td>
               <td className="px-2 py-1.5">{formatNumber(line.quantity)}</td>
               <td className="px-2 py-1.5">{formatMoney(line.unitPrice, invoice.currencyCode)}</td>
@@ -274,7 +304,7 @@ function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatu
       <div className="mt-2 ms-auto w-72 rounded-lg border border-ink/20 p-2 text-[12px]">
         <div className="flex justify-between">
           <span>جمع جزء</span>
-          <span className="font-semibold">{formatMoney(invoice.subtotal, invoice.currencyCode)}</span>
+          <span className="font-semibold">{formatMoney(invoice.subtotal + extraSum, invoice.currencyCode)}</span>
         </div>
         <div className="mt-1 flex justify-between">
           <span>مالیات</span>
@@ -282,7 +312,7 @@ function InvoiceSheet({ invoice, signatures }: { invoice: InvoiceDetail; signatu
         </div>
         <div className="mt-1 flex justify-between border-t border-ink pt-1 text-[13px] font-black">
           <span>جمع کل</span>
-          <span>{formatMoney(invoice.total, invoice.currencyCode)}</span>
+          <span>{formatMoney(grandTotal, invoice.currencyCode)}</span>
         </div>
       </div>
 
@@ -341,6 +371,41 @@ function RequestSheet({ request }: { request: RequestDto }) {
   );
 }
 
+function Charges({ job }: { job: JobDto }) {
+  const extras = approvedExtras(job.invoices);
+  if (!extras.length) return null;
+  const currency = job.currencyCode ?? extras[0]?.currencyCode ?? "IRR";
+  const fare = Number(job.compensationAmount ?? 0);
+  const rows = extras.flatMap((item) =>
+    item.lines?.length
+      ? item.lines.map((line) => ({ label: cleanLine(line.description), amount: Number(line.lineTotal) }))
+      : [{ label: "هزینه اضافه", amount: Number(item.total ?? 0) }],
+  );
+  const extraSum = rows.reduce((sum, row) => sum + row.amount, 0);
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-border text-muted">
+          <th className="py-2 text-start">هزینه‌های اضافه تأییدشده</th>
+          <th className="py-2 text-start">مبلغ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, index) => (
+          <tr key={`${row.label}-${index}`} className="border-b border-border/70">
+            <td className="py-2">{row.label}</td>
+            <td>{formatMoney(row.amount, currency)}</td>
+          </tr>
+        ))}
+        <tr>
+          <td className="py-2 font-bold">جمع کرایه و هزینه‌های اضافه</td>
+          <td className="font-bold">{formatMoney(fare + extraSum, currency)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
 function WaybillSheet({ job }: { job: JobDto }) {
   const loadNumber = job.waybill || job.number;
   const invoiceNumber = job.invoices?.[0]?.number;
@@ -371,6 +436,7 @@ function WaybillSheet({ job }: { job: JobDto }) {
       <Row label="ناوگان" value={job.requiredVehicleType ? statusFa(job.requiredVehicleType) : null} />
       <Row label="وزن" value={job.cargoWeight != null ? `${formatNumber(job.cargoWeight)} ${job.cargoUnit}` : null} />
       <Row label="کرایه" value={job.compensationAmount != null ? formatMoney(job.compensationAmount, job.currencyCode) : null} />
+      <Charges job={job} />
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-muted">

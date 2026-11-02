@@ -1,5 +1,6 @@
 export function invoiceHref(pathname: string, id: string) {
   if (pathname.startsWith("/admin")) return `/admin/invoices/${id}`;
+  if (pathname.startsWith("/driver")) return `/driver/invoices/${id}`;
   if (pathname.startsWith("/requester")) return `/requester/invoices/${id}`;
   return `/requester/invoices/${id}`;
 }

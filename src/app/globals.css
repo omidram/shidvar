@@ -550,9 +550,22 @@ a {
   }
 
   body,
+  .print-doc,
   .print-single-page {
     background: white !important;
+    color: #111111 !important;
     font-family: var(--font-vazir), "Vazirmatn", Tahoma, sans-serif !important;
+  }
+
+  .print-doc,
+  .print-doc * {
+    color: #111111 !important;
+  }
+
+  .print-doc .bg-ink,
+  .print-doc .bg-ink * {
+    background: #111111 !important;
+    color: #ffffff !important;
   }
 
   .print-single-page {

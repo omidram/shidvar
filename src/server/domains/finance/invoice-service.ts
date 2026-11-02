@@ -7,12 +7,15 @@ import { assertPermission } from "@/server/rbac/actor";
 
 function canSeeInvoice(
   actor: Actor,
-  invoice: { issuerCompanyId: string; recipientCompanyId: string },
+  invoice: {
+    issuerCompanyId: string;
+    recipientCompanyId: string;
+    order?: { jobs?: Array<{ assignedDriverId: string | null }> } | null;
+  },
 ) {
   if (actor.isPlatformStaff) return true;
-  return actor.memberships.some(
-    (m) => m.companyId === invoice.issuerCompanyId || m.companyId === invoice.recipientCompanyId,
-  );
+  if (actor.memberships.some((m) => m.companyId === invoice.issuerCompanyId || m.companyId === invoice.recipientCompanyId)) return true;
+  return Boolean(actor.driverProfile && invoice.order?.jobs?.some((job) => job.assignedDriverId === actor.driverProfile?.id));
 }
 
 function mapInvoice(invoice: {

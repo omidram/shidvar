@@ -134,6 +134,13 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor, un
           status: invoice.status,
           total: Number(invoice.total),
           currencyCode: invoice.currencyCode,
+          lines: invoice.lines.map((line) => ({
+            id: line.id,
+            description: line.description.replace(/^\[[A-Z_]+\]\s*/, ""),
+            quantity: Number(line.quantity),
+            unitPrice: Number(line.unitPrice),
+            lineTotal: Number(line.lineTotal),
+          })),
         }))
       : [],
     ...toDriverJobDto({
@@ -186,7 +193,7 @@ async function loadJob(id: string) {
   const job = await prisma.transportationJob.findUnique({
     where: { id },
     include: {
-      order: { include: { requesterCompany: true, supplierCompany: true, request: { include: { items: true } }, items: true, invoices: true } },
+      order: { include: { requesterCompany: true, supplierCompany: true, request: { include: { items: true } }, items: true, invoices: { include: { lines: true } } } },
       pickupWarehouse: { include: { address: true } },
       deliveryWarehouse: { include: { address: true } },
       applications: {
@@ -780,7 +787,19 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
   return getJob(actor, jobId);
 }
 
-const DELIVERY_REQUEST_FROM = ["AT_DESTINATION", "UNLOADING", "DELIVERED"] as const;
+const DELIVERY_REQUEST_FROM = [
+  "SCHEDULED",
+  "DRIVER_ASSIGNED",
+  "ARRIVING_AT_PICKUP",
+  "AT_PICKUP",
+  "LOADING",
+  "LOADED",
+  "IN_TRANSIT",
+  "ARRIVING_AT_DESTINATION",
+  "AT_DESTINATION",
+  "UNLOADING",
+  "DELIVERED",
+] as const;
 
 /** Driver asks the cargo owner to approve the waybill and delivery papers, then the trip closes. */
 export async function requestDelivery(actor: Actor, jobId: string) {

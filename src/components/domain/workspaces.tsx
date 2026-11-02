@@ -830,6 +830,7 @@ export function OrderDetailView({ id }: { id: string }) {
 }
 
 const DRIVER_STEPS = ["ARRIVING_AT_PICKUP", "AT_PICKUP", "LOADING", "LOADED", "IN_TRANSIT", "ARRIVING_AT_DESTINATION", "AT_DESTINATION", "UNLOADING", "DELIVERED"] as const;
+const DELIVERY_STATUSES = ["DRIVER_ASSIGNED", "SCHEDULED", ...DRIVER_STEPS] as const;
 
 export function DriverJobView({ id }: { id: string }) {
   const { t } = useI18n();
@@ -902,11 +903,23 @@ export function DriverJobView({ id }: { id: string }) {
           <div className="flex gap-2">
             <PdfExportButton kind="waybill" id={job.id} label="خروجی بارنامه" />
             {job.requestId ? <PdfExportButton kind="request" id={job.requestId} label="خروجی درخواست" /> : null}
-            {job.invoices?.[0]?.id ? <PdfExportButton kind="invoice" id={job.invoices[0].id} label={t.common.pdfExport} /> : null}
+            {(() => {
+              const invoice = job.invoices?.find((item) => item.type === "TRANSPORT") ?? job.invoices?.[0];
+              return invoice ? <PdfExportButton kind="invoice" id={invoice.id} label={t.common.pdfExport} /> : null;
+            })()}
           </div>
         }
       />
       <CargoBadges loadType={job.loadType} dispatchMode={job.dispatchMode} needsWaybill={job.needsWaybill} needsInsurance={job.needsInsurance} />
+      {isDriver && (DELIVERY_STATUSES as readonly string[]).includes(job.status) ? (
+        <Card className="grid gap-3">
+          <h2 className="font-bold">{t.job.requestDelivery}</h2>
+          <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
+          <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+            {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
+          </Button>
+        </Card>
+      ) : null}
       {confirmOpen ? (
         <LoadAcceptDialog job={job} busy={accept.isPending} onConfirm={() => accept.mutate()} onClose={() => setConfirmOpen(false)} />
       ) : null}
@@ -1043,34 +1056,25 @@ export function DriverJobView({ id }: { id: string }) {
         (job.status !== "DELIVERED" && (DRIVER_STEPS as readonly string[]).includes(job.status))) ? (
         <Button onClick={() => status.mutate(job.status === "DRIVER_ASSIGNED" ? "ARRIVING_AT_PICKUP" : next)}>{t.job.nextStatus}</Button>
       ) : null}
-      {["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"].includes(job.status) ? (
+      {(DELIVERY_STATUSES as readonly string[]).concat(["PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"]).includes(job.status) ? (
         <DocumentGallery
           kind="job"
           entityId={job.id}
           title={t.job.deliveryDocs}
           canUpload={(slot) => {
-            const open = ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
+            const open = (DELIVERY_STATUSES as readonly string[]).concat(["PROOF_SUBMITTED"]).includes(job.status);
             if (me.data?.isPlatformStaff && open) return true;
             if (slot.signatureRole === "issuer") return requester && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
-            return isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status);
+            return isDriver && (DELIVERY_STATUSES as readonly string[]).includes(job.status);
           }}
           canSign={(slot) => {
-            const open = ["AT_DESTINATION", "UNLOADING", "DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
+            const open = (DELIVERY_STATUSES as readonly string[]).concat(["PROOF_SUBMITTED"]).includes(job.status);
             if (me.data?.isPlatformStaff && open) return Boolean(slot.signable);
             if (slot.signatureRole === "issuer") return requester && ["DELIVERED", "PROOF_SUBMITTED"].includes(job.status);
-            return isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status);
+            return isDriver && (DELIVERY_STATUSES as readonly string[]).includes(job.status);
           }}
           context={{ number: job.number, waybill: job.waybill }}
         />
-      ) : null}
-      {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status) ? (
-        <Card className="grid gap-3">
-          <h2 className="font-bold">{t.job.requestDelivery}</h2>
-          <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
-          <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
-            {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
-          </Button>
-        </Card>
       ) : null}
       {isDriver && job.status === "PROOF_SUBMITTED" ? (
         <Card>

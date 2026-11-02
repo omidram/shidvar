@@ -158,7 +158,7 @@ export function InvoiceDetailView({ id }: { id: string }) {
                 <Link href={jobHref(pathname, invoice.jobId)}>{t.common.viewLoad}</Link>
               </Button>
             ) : null}
-            {invoice.requestId ? (
+            {invoice.requestId && !pathname.startsWith("/driver") ? (
               <Button asChild variant="secondary">
                 <Link href={requestHref(pathname, invoice.requestId)}>{t.common.viewRequest}</Link>
               </Button>

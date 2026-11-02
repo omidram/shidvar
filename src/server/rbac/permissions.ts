@@ -286,6 +286,7 @@ export const SYSTEM_ROLES: Record<
       "shipments.update",
       "documents.upload",
       "documents.read",
+      "invoices.read",
       "messages.read",
       "messages.send",
       "ratings.create",

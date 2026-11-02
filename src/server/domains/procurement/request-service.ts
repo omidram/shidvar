@@ -168,11 +168,14 @@ export async function getRequestForActor(actor: Actor, id: string) {
     },
   });
   if (!request) throw Errors.notFound();
+  const drives = Boolean(
+    actor.driverProfile && request.orders.some((order) => order.jobs.some((job) => job.assignedDriverId === actor.driverProfile?.id)),
+  );
   const owns = actor.memberships.some((m) => m.companyId === request.companyId);
   const matchedSupplier = request.matches.some((m) =>
     actor.memberships.some((mem) => mem.companyId === m.supplierCompanyId && m.eligible),
   );
-  if (!actor.isPlatformStaff && !owns && !matchedSupplier) throw Errors.notFound();
+  if (!actor.isPlatformStaff && !owns && !matchedSupplier && !drives) throw Errors.notFound();
   if (actor.isPlatformStaff || owns) return request;
   const supplierCompanyIds = actor.memberships.filter((m) => m.companyType === "SUPPLIER").map((m) => m.companyId);
   return {
