@@ -7,7 +7,7 @@ export function RegisterMotion() {
       <svg viewBox="0 0 560 640" className="absolute inset-0 h-full w-full">
         <defs>
           <linearGradient id="route-line" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#00b562" />
+            <stop offset="0%" stopColor="#2f6fe0" />
             <stop offset="100%" stopColor="#6ee7b7" />
           </linearGradient>
           <filter id="soft-glow" x="-40%" y="-40%" width="180%" height="180%">
@@ -33,15 +33,15 @@ export function RegisterMotion() {
           className="route-draw-slow"
           d="M92 430 C 150 360, 170 300, 230 250 S 360 180, 430 150"
           fill="none"
-          stroke="#00b562"
+          stroke="#2f6fe0"
           strokeOpacity="0.25"
           strokeWidth="14"
           strokeLinecap="round"
         />
 
         <g className="city-pulse" transform="translate(92 430)">
-          <circle r="28" fill="#00b562" opacity="0.12" />
-          <circle r="10" fill="#00b562" />
+          <circle r="28" fill="#2f6fe0" opacity="0.12" />
+          <circle r="10" fill="#2f6fe0" />
           <text x="18" y="6" fill="#f8fafc" fontSize="18" fontWeight="700">تهران</text>
         </g>
         <g className="city-pulse delay-long" transform="translate(430 150)">
@@ -51,7 +51,7 @@ export function RegisterMotion() {
         </g>
 
         <g filter="url(#soft-glow)">
-          <rect x="-34" y="-18" width="52" height="28" rx="8" fill="#00b562" />
+          <rect x="-34" y="-18" width="52" height="28" rx="8" fill="#2f6fe0" />
           <rect x="16" y="-10" width="22" height="20" rx="5" fill="#04210f" />
           <circle cx="-16" cy="14" r="6" fill="#0b1220" stroke="#bbf7d0" strokeWidth="2" />
           <circle cx="18" cy="14" r="6" fill="#0b1220" stroke="#bbf7d0" strokeWidth="2" />

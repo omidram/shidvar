@@ -20,20 +20,15 @@ function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
   root.style.colorScheme = theme;
-  localStorage.setItem("sc_theme", theme);
+  localStorage.setItem("shidro_theme", theme);
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
-    const stored = localStorage.getItem("sc_theme");
-    const next: Theme =
-      stored === "dark" || stored === "light"
-        ? stored
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+    const stored = localStorage.getItem("shidro_theme");
+    const next: Theme = stored === "dark" ? "dark" : "light";
     setThemeState(next);
     applyTheme(next);
   }, []);

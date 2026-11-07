@@ -70,7 +70,7 @@ export function TrackingMap({ data, className }: { data: TrackingMapData; classN
         opacity: 0.85,
       }).addTo(map);
       const traveledLine = L.polyline(asLatLngs(traveled.length > 1 ? traveled : []), {
-        color: "#00b562",
+        color: "#2f6fe0",
         weight: 6,
         opacity: 0.95,
       }).addTo(map);

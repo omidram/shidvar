@@ -58,7 +58,7 @@ export default function HomePage() {
         <video className="absolute inset-0 h-full w-full object-cover opacity-30" autoPlay muted loop playsInline poster="/media/loading-crew.jpg">
           <source src="/media/fleet.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-l from-ink via-ink/80 to-emerald-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-l from-ink via-ink/80 to-blue-950/45" />
         <div className="aurora-field pointer-events-none absolute inset-0">
           <span className="glow-orb glow-orb-a" />
           <span className="glow-orb glow-orb-b" />

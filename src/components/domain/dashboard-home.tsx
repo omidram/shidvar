@@ -12,6 +12,7 @@ import { formatMoney } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
+import { RoleGuide } from "@/components/domain/delivery-flow";
 
 type Dashboard = { portal: string; stats: Record<string, number | string | null> };
 
@@ -94,6 +95,8 @@ export function DashboardView() {
         title={name ? `${t.dash.hello} ${me.data?.firstName}` : t.common.dashboard}
         description={portal === "DRIVER" ? t.dash.driverHome : portal === "REQUESTER" ? t.dash.requesterHome : t.dash.adminHome}
       />
+      {portal === "DRIVER" ? <RoleGuide role="driver" /> : null}
+      {portal === "REQUESTER" ? <RoleGuide role="owner" /> : null}
       <QuickAccess title={t.dash.quick} actions={actions} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(stats)

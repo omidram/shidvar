@@ -16,6 +16,7 @@ import { DocumentGallery } from "@/components/domain/document-uploader";
 import { useMe } from "@/hooks/use-me";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 import { AdminCoinsPanel } from "@/components/domain/coins-view";
+import { DeliveryFlow } from "@/components/domain/delivery-flow";
 
 export type DriverProfile = {
   id: string;
@@ -125,6 +126,9 @@ export function DriverProfileView({ id }: { id: string }) {
                 </div>
                 <div className="mt-3">
                   <RouteLine from={load.originCity ?? t.job.pickup} to={load.destinationCity ?? t.job.delivery} />
+                </div>
+                <div className="mt-4 border-t border-border pt-4">
+                  <DeliveryFlow status={load.status} audience="driver" />
                 </div>
                 <p className="mt-2 text-sm text-muted">
                   {[load.originLine1, load.destinationLine1].filter(Boolean).join(" ← ") || "نشانی مسیر پس از جزئیات بار"}

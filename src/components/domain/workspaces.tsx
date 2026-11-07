@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { PdfExportButton } from "@/components/domain/pdf-export";
 import { TrackingPanel } from "@/components/domain/tracking-panel";
 import { JobOpsPanel } from "@/components/domain/ops-panels";
+import { DeliveryFlow, driverMove } from "@/components/domain/delivery-flow";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { CargoBadges } from "@/components/domain/cargo-badges";
 import { Field, NativeSelect } from "@/components/ui/input";
@@ -630,6 +631,20 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
         </Card>
       </div>
       <Card>
+        {job ? (
+          <DeliveryFlow status={job.status} audience={mode === "admin" ? "staff" : "owner"} />
+        ) : (
+          <>
+            <h2 className="font-bold">مراحل این بار</h2>
+            <p className="mt-2 text-sm leading-7">
+              {req.status === "DRAFT"
+                ? "این درخواست هنوز پیش‌نویس است. بعد از ارسال، مدیریت آن را بررسی می‌کند و به‌صورت همگانی یا VIP به راننده‌ها اعلام می‌کند."
+                : "درخواست ثبت شده است. مدیریت آن را اعلام می‌کند و بعد یک راننده می‌تواند بار را قبول کند."}
+            </p>
+          </>
+        )}
+      </Card>
+      <Card>
         <h2 className="mb-3 font-bold">مسیر و نشانی</h2>
         <RouteLine from={req.originCity ?? t.job.pickup} to={req.destinationCity ?? t.job.delivery} />
         <MetaGrid
@@ -888,12 +903,11 @@ export function DriverJobView({ id }: { id: string }) {
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const job = q.data;
+  const move = isDriver ? driverMove(job.status) : null;
   const mapUrl =
     job.detailsReleased && job.pickup?.latitude
       ? `https://www.openstreetmap.org/?mlat=${job.pickup.latitude}&mlon=${job.pickup.longitude}`
       : null;
-  const next = DRIVER_STEPS.find((step) => DRIVER_STEPS.indexOf(step) > DRIVER_STEPS.indexOf(job.status as (typeof DRIVER_STEPS)[number])) ?? DRIVER_STEPS[0];
-
   return (
     <div className="grid gap-4">
       <PageHeader
@@ -911,15 +925,30 @@ export function DriverJobView({ id }: { id: string }) {
         }
       />
       <CargoBadges loadType={job.loadType} dispatchMode={job.dispatchMode} needsWaybill={job.needsWaybill} needsInsurance={job.needsInsurance} />
-      {isDriver && (DELIVERY_STATUSES as readonly string[]).includes(job.status) ? (
-        <Card className="grid gap-3">
-          <h2 className="font-bold">{t.job.requestDelivery}</h2>
-          <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
-          <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
-            {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
+      <Card>
+        <DeliveryFlow status={job.status} audience={isDriver ? "driver" : "owner"} />
+        {move ? (
+          <Button className="mt-4 w-full" disabled={status.isPending} onClick={() => status.mutate(move.next)}>
+            {status.isPending ? t.common.loading : move.label}
           </Button>
-        </Card>
-      ) : null}
+        ) : null}
+        {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status) ? (
+          <div className="mt-4 grid gap-2 border-t border-border pt-4">
+            <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
+            <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+              {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
+            </Button>
+          </div>
+        ) : null}
+        {isDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Button onClick={() => setConfirmOpen(true)}>{t.common.accept}</Button>
+            <Button variant="secondary" onClick={() => reject.mutate()}>
+              {t.common.reject}
+            </Button>
+          </div>
+        ) : null}
+      </Card>
       {confirmOpen ? (
         <LoadAcceptDialog job={job} busy={accept.isPending} onConfirm={() => accept.mutate()} onClose={() => setConfirmOpen(false)} />
       ) : null}
@@ -1042,19 +1071,6 @@ export function DriverJobView({ id }: { id: string }) {
             ))}
           </div>
         </Card>
-      ) : null}
-      {isDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Button onClick={() => setConfirmOpen(true)}>{t.common.accept}</Button>
-          <Button variant="secondary" onClick={() => reject.mutate()}>
-            {t.common.reject}
-          </Button>
-        </div>
-      ) : null}
-      {isDriver &&
-      (job.status === "DRIVER_ASSIGNED" ||
-        (job.status !== "DELIVERED" && (DRIVER_STEPS as readonly string[]).includes(job.status))) ? (
-        <Button onClick={() => status.mutate(job.status === "DRIVER_ASSIGNED" ? "ARRIVING_AT_PICKUP" : next)}>{t.job.nextStatus}</Button>
       ) : null}
       {(DELIVERY_STATUSES as readonly string[]).concat(["PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"]).includes(job.status) ? (
         <DocumentGallery

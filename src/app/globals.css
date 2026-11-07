@@ -3,35 +3,35 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f3f6f4;
-  --foreground: #111827;
+  --background: #f4f7fb;
+  --foreground: #0e1726;
   --card: #ffffff;
-  --muted: #5b6b7a;
-  --border: #d5e4db;
-  --primary: #00b562;
-  --primary-foreground: #04210f;
-  --ink: #0b1220;
-  --accent: #7c3aed;
+  --muted: #5c6b80;
+  --border: #d7e0ec;
+  --primary: #0e56c4;
+  --primary-foreground: #ffffff;
+  --ink: #070b12;
+  --accent: #8a6410;
   --danger: #dc2626;
-  --glow: 0 181 98;
-  --surface-soft: #e7f4ec;
-  --glass: rgb(255 255 255 / 0.74);
+  --glow: 14 86 196;
+  --surface-soft: #e7eef9;
+  --glass: rgb(255 255 255 / 0.78);
 }
 
 .dark {
   --background: #070b12;
-  --foreground: #e8eef4;
-  --card: #111827;
-  --muted: #94a3b8;
-  --border: #1e2a36;
-  --primary: #22d37a;
-  --primary-foreground: #04210f;
+  --foreground: #e8eef8;
+  --card: #121a28;
+  --muted: #9aa8bd;
+  --border: #243044;
+  --primary: #2f6fe0;
+  --primary-foreground: #ffffff;
   --ink: #05080f;
-  --accent: #c4b5fd;
+  --accent: #e0b23a;
   --danger: #fb7185;
-  --glow: 34 211 122;
-  --surface-soft: #102018;
-  --glass: rgb(17 24 39 / 0.72);
+  --glow: 47 111 224;
+  --surface-soft: #172236;
+  --glass: rgb(18 26 40 / 0.78);
 }
 
 @theme {
@@ -146,7 +146,7 @@ a {
   inset: -18%;
   background:
     radial-gradient(42% 38% at 18% 18%, rgb(var(--glow) / 0.32), transparent 62%),
-    radial-gradient(36% 34% at 84% 12%, rgb(124 58 237 / 0.22), transparent 58%),
+    radial-gradient(36% 34% at 84% 12%, rgb(224 178 58 / 0.28), transparent 58%),
     radial-gradient(40% 36% at 72% 84%, rgb(14 165 233 / 0.16), transparent 62%);
   animation: aurora-drift 18s ease-in-out infinite alternate;
   pointer-events: none;
@@ -173,7 +173,7 @@ a {
   inset-inline-end: 6%;
   width: 7rem;
   height: 7rem;
-  background: rgb(167 139 250 / 0.24);
+  background: rgb(224 178 58 / 0.28);
   animation-delay: -3s;
 }
 
@@ -245,7 +245,7 @@ a {
 
 .feature-motion .doc-sheet span {
   font-size: 11px;
-  color: rgb(187 247 208);
+  color: rgb(244 214 140);
 }
 
 .feature-motion .coin {
@@ -287,9 +287,9 @@ a {
   inset-inline-start: 0.85rem;
   top: 0.8rem;
   border-radius: 999px;
-  border: 1px solid rgb(34 211 122 / 0.35);
-  background: rgb(4 33 15 / 0.55);
-  color: #bbf7d0;
+  border: 1px solid rgb(47 111 224 / 0.45);
+  background: rgb(7 17 36 / 0.55);
+  color: #d6e4ff;
   font-size: 10px;
   font-weight: 700;
   padding: 0.35rem 0.7rem;
@@ -319,8 +319,8 @@ a {
   width: 1rem;
   place-items: center;
   border-radius: 999px;
-  background: #22d37a;
-  color: #04210f;
+  background: #e0b23a;
+  color: #1a1404;
   font-size: 9px;
   font-weight: 800;
 }
@@ -369,7 +369,7 @@ a {
   height: 100%;
   width: 72%;
   border-radius: inherit;
-  background: #22d37a;
+  background: #2f6fe0;
   animation: income-fill 3.2s ease-in-out infinite;
 }
 

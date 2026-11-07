@@ -163,10 +163,17 @@ function NewRequestForm() {
       <div className="grid grid-cols-3 gap-2">
         {[t.request.stepRoute, t.request.stepItems, t.request.stepCargo].map((label, i) => (
           <div key={label} className={`rounded-2xl px-3 py-2 text-center text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
-            {label}
+            {i + 1}. {label}
           </div>
         ))}
       </div>
+      <p className="text-sm leading-7 text-muted">
+        {step === 1
+          ? "مبدأ، مقصد، تاریخ تحویل و کرایه را بنویسید."
+          : step === 2
+            ? "کالا و مقدار را مشخص کنید. راننده قبل از قبول همین فهرست را می‌بیند."
+            : "ماشین، فوریت، همگانی یا VIP، و دربستی یا روباری را انتخاب کنید. با ثبت، درخواست برای بررسی مدیریت می‌رود."}
+      </p>
 
       {step === 1 ? (
         <Card className="grid gap-4 md:grid-cols-2">

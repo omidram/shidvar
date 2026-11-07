@@ -179,7 +179,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
 
   return (
     <div className={cn("min-h-screen bg-background", mobile ? "pb-24" : "grid md:grid-cols-[280px_1fr]")}>
-      <aside className={cn("bg-ink p-5 text-white", mobile ? "hidden" : "sticky top-0 flex h-screen flex-col")}>
+      <aside className={cn("border-e-4 border-accent bg-ink p-5 text-white", mobile ? "hidden" : "sticky top-0 flex h-screen flex-col")}>
         <Link href={`/${portal}/dashboard`} className="block shrink-0">
           <BrandMark className="h-20" />
         </Link>

@@ -51,9 +51,9 @@ function DriverMotion() {
       <KenBurns src="/media/cargo-1.jpg" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgb(34_211_122_/_0.28),transparent_46%),linear-gradient(to_top,rgb(11_18_32_/_0.55),transparent)]" />
       <svg viewBox="0 0 360 180" className="absolute inset-0 h-full w-full">
-        <path className="income-path" d="M28 128 C 110 108, 170 92, 250 70" fill="none" stroke="#22d37a" strokeWidth="3" strokeDasharray="10 8" />
+        <path className="income-path" d="M28 128 C 110 108, 170 92, 250 70" fill="none" stroke="#e0b23a" strokeWidth="3" strokeDasharray="10 8" />
         <g filter="url(#soft-none)">
-          <rect x="-22" y="-12" width="40" height="22" rx="6" fill="#00b562" />
+          <rect x="-22" y="-12" width="40" height="22" rx="6" fill="#2f6fe0" />
           <rect x="16" y="-6" width="16" height="16" rx="4" fill="#04210f" />
           <circle cx="-10" cy="12" r="5" fill="#0b1220" stroke="#bbf7d0" strokeWidth="2" />
           <circle cx="18" cy="12" r="5" fill="#0b1220" stroke="#bbf7d0" strokeWidth="2" />
@@ -118,7 +118,7 @@ function WalletMotion() {
           </text>
         </g>
         <g className="coin coin-b">
-          <circle cx="108" cy="10" r="10" fill="#22d37a" />
+          <circle cx="108" cy="10" r="10" fill="#e0b23a" />
           <text x="108" y="14" textAnchor="middle" fill="#04210f" fontSize="9" fontWeight="800">
             ﷼
           </text>
@@ -130,7 +130,7 @@ function WalletMotion() {
           <rect width="224" height="96" rx="24" fill="#04140c" opacity="0.88" />
           <rect x="12" y="12" width="148" height="72" rx="18" fill="url(#wallet-face)" />
           <rect x="172" y="24" width="36" height="48" rx="12" fill="#f8fafc" />
-          <circle cx="190" cy="48" r="9" fill="#00b562" />
+          <circle cx="190" cy="48" r="9" fill="#2f6fe0" />
           <text x="26" y="42" fill="#04210f" fontSize="15" fontWeight="800">
             کیف پول ریالی
           </text>
@@ -151,15 +151,15 @@ function IncomeMotion() {
     <div className="feature-motion feature-motion-income absolute inset-0" aria-hidden>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_84%_8%,rgb(167_139_250_/_0.28),transparent_42%),radial-gradient(circle_at_10%_88%,rgb(34_211_122_/_0.26),transparent_40%),linear-gradient(180deg,#0b1220,#111827)]" />
       <svg viewBox="0 0 360 180" className="absolute inset-0 h-full w-full">
-        <path className="income-path" d="M28 128 C 90 118, 150 72, 210 86 S 300 48, 336 40" fill="none" stroke="#22d37a" strokeWidth="3" strokeDasharray="10 8" />
+        <path className="income-path" d="M28 128 C 90 118, 150 72, 210 86 S 300 48, 336 40" fill="none" stroke="#e0b23a" strokeWidth="3" strokeDasharray="10 8" />
         <circle className="income-dot" r="6" fill="#bbf7d0">
           <animateMotion dur="3.2s" repeatCount="indefinite" path="M28 128 C 90 118, 150 72, 210 86 S 300 48, 336 40" />
         </circle>
         <g transform="translate(28 78)">
-          <rect className="income-bar bar-a" x="0" y="18" width="16" height="52" rx="6" fill="#22d37a" />
+          <rect className="income-bar bar-a" x="0" y="18" width="16" height="52" rx="6" fill="#e0b23a" />
           <rect className="income-bar bar-b" x="26" y="8" width="16" height="62" rx="6" fill="#4ade80" />
           <rect className="income-bar bar-c" x="52" y="28" width="16" height="42" rx="6" fill="#86efac" />
-          <rect className="income-bar bar-d" x="78" y="2" width="16" height="68" rx="6" fill="#00b562" />
+          <rect className="income-bar bar-d" x="78" y="2" width="16" height="68" rx="6" fill="#2f6fe0" />
         </g>
       </svg>
       <div className="income-row income-in">+ کرایه سفر</div>

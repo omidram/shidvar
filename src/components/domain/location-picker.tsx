@@ -23,7 +23,7 @@ export function LocationPicker({ value, onChange, className }: { value: LatLng |
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(map);
       const icon = L.divIcon({
         className: "",
-        html: '<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:#00b562;transform:rotate(-45deg);border:3px solid #0b1220"></div>',
+        html: '<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:#2f6fe0;transform:rotate(-45deg);border:3px solid #0b1220"></div>',
         iconSize: [22, 22],
         iconAnchor: [11, 22],
       });

@@ -101,7 +101,7 @@ export function ProfitLossPanel() {
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(value) => formatMoney(Number(value ?? 0))} />
-                <Bar dataKey="income" name="درآمد" fill="#00b562" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="income" name="درآمد" fill="#2f6fe0" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="driverCost" name="هزینه" fill="#0b1220" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="profit" name="سود / زیان" fill="#f59e0b" radius={[6, 6, 0, 0]} />
               </BarChart>

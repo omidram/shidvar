@@ -94,7 +94,7 @@ export function ReportsView({ compact }: { compact?: boolean }) {
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Bar dataKey="requests" name={t.reports.requests} fill="#00b562" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="requests" name={t.reports.requests} fill="#2f6fe0" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="jobs" name={t.reports.jobs} fill="#0b1220" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
