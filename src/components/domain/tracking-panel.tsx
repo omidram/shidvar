@@ -16,6 +16,7 @@ import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
 import { readPhonePosition, useDriverGps } from "@/hooks/use-driver-gps";
 import type { TrackingMapData } from "@/components/domain/tracking-map";
+import { DeliveryFlow, driverMove } from "@/components/domain/delivery-flow";
 
 const TrackingMap = dynamic(() => import("@/components/domain/tracking-map").then((m) => m.TrackingMap), {
   ssr: false,
@@ -58,27 +59,57 @@ export function TrackingPanel({ jobId }: { jobId: string }) {
   });
   if (q.isLoading) return <Card><p>{t.common.loading}</p></Card>;
   if (q.isError || !q.data) return null;
-  return <TrackingCard data={q.data} />;
+  return <TrackingCard data={q.data} showFlow={false} />;
 }
 
-export function TrackingCard({ data, href }: { data: TrackingDto; href?: string }) {
+function flowAudience(pathname: string): "driver" | "owner" | "staff" {
+  if (pathname.startsWith("/driver")) return "driver";
+  if (pathname.startsWith("/admin")) return "staff";
+  return "owner";
+}
+
+export function TrackingCard({ data, href, showFlow = true }: { data: TrackingDto; href?: string; showFlow?: boolean }) {
   const { t } = useI18n();
   const me = useMe();
   const pathname = usePathname();
+  const qc = useQueryClient();
+  const [mapOpen, setMapOpen] = useState(false);
   const isAssignedDriver = Boolean(me.data?.driverProfile?.id && data.driver?.id === me.data.driverProfile.id);
   useDriverGps(data.jobId, Boolean(isAssignedDriver && data.active && data.deviceConsent));
   const link = href ?? jobHref(pathname, data.jobId);
+  const audience = flowAudience(pathname);
+  const move = isAssignedDriver ? driverMove(data.status) : null;
+  const advance = useMutation({
+    mutationFn: (next: string) => api(`/jobs/${data.jobId}/status`, { method: "POST", body: JSON.stringify({ status: next }) }),
+    onSuccess: () => {
+      toast.success("مرحله ثبت شد");
+      void qc.invalidateQueries({ queryKey: ["tracking-live"] });
+      void qc.invalidateQueries({ queryKey: ["tracking", data.jobId] });
+      void qc.invalidateQueries({ queryKey: ["job", data.jobId] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const requestDelivery = useMutation({
+    mutationFn: () => api(`/jobs/${data.jobId}/request-delivery`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success(t.job.requestDeliverySent);
+      void qc.invalidateQueries({ queryKey: ["tracking-live"] });
+      void qc.invalidateQueries({ queryKey: ["job", data.jobId] });
+      void qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   if (data.waitingForDriver && isAssignedDriver) {
-    return <TrackingConsentCard data={data} href={link} />;
+    return <TrackingConsentCard data={data} href={link} audience={audience} />;
   }
   if (data.waitingForDriver) {
-    return <TrackingWaitingCard data={data} href={link} />;
+    return <TrackingWaitingCard data={data} href={link} audience={audience} />;
   }
 
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="flex flex-wrap items-start justify-between gap-3 p-5">
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs font-bold text-primary">{data.deviceConsent ? t.tracking.phoneSource : t.tracking.live}</div>
           <Link href={link} className="mt-1 block text-lg font-black hover:underline">
@@ -92,18 +123,50 @@ export function TrackingCard({ data, href }: { data: TrackingDto; href?: string 
         </div>
         <StatusBadge status={data.status} />
       </div>
-      <TrackingMap data={data} className="h-[380px] w-full" />
-      <div className="grid gap-3 p-5 sm:grid-cols-4">
+      {showFlow ? (
+        <div className="mt-5">
+          <DeliveryFlow status={data.status} audience={audience} />
+        </div>
+      ) : null}
+      {showFlow && move ? (
+        <Button className="mt-4 w-full" disabled={advance.isPending} onClick={() => advance.mutate(move.next)}>
+          {advance.isPending ? t.common.loading : move.label}
+        </Button>
+      ) : null}
+      {showFlow && isAssignedDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(data.status) ? (
+        <Button className="mt-3 w-full" variant="secondary" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+          {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
+        </Button>
+      ) : null}
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
         <Meta label={t.tracking.remaining} value={`${formatNumber(data.remainingKm)} ${t.tracking.km}`} />
         <Meta label={t.tracking.eta} value={`${formatNumber(data.etaMinutes)} ${t.tracking.minutes}`} />
         <Meta label={t.tracking.speed} value={data.speedKmh != null ? `${formatNumber(data.speedKmh)} ${t.tracking.kmh}` : "—"} />
         <Meta label={t.tracking.updated} value={formatDateTime(data.lastAt)} />
       </div>
+      <Button className="mt-4 w-full" variant="secondary" onClick={() => setMapOpen(true)}>
+        نمایش نقشه
+      </Button>
+      {mapOpen ? <ExpandedMap data={data} onClose={() => setMapOpen(false)} /> : null}
     </Card>
   );
 }
 
-function TrackingWaitingCard({ data, href }: { data: TrackingDto; href?: string }) {
+function ExpandedMap({ data, onClose }: { data: TrackingMapData; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] bg-background p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="font-bold">نقشه مسیر</h2>
+        <Button variant="secondary" onClick={onClose}>
+          بستن نقشه
+        </Button>
+      </div>
+      <TrackingMap data={data} className="h-full min-h-0 w-full" />
+    </div>
+  );
+}
+
+function TrackingWaitingCard({ data, href, audience }: { data: TrackingDto; href?: string; audience: "driver" | "owner" | "staff" }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const link = href ?? jobHref(pathname, data.jobId);
@@ -122,12 +185,15 @@ function TrackingWaitingCard({ data, href }: { data: TrackingDto; href?: string 
         </div>
         <StatusBadge status={data.status} />
       </div>
+      <div className="mt-5">
+        <DeliveryFlow status={data.status} audience={audience} />
+      </div>
       <p className="mt-4 text-sm leading-7 text-muted">{t.tracking.waitingHint}</p>
     </Card>
   );
 }
 
-function TrackingConsentCard({ data, href }: { data: TrackingDto; href?: string }) {
+function TrackingConsentCard({ data, href, audience }: { data: TrackingDto; href?: string; audience: "driver" | "owner" | "staff" }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const qc = useQueryClient();
@@ -168,6 +234,9 @@ function TrackingConsentCard({ data, href }: { data: TrackingDto; href?: string 
           </p>
         </div>
         <StatusBadge status={data.status} />
+      </div>
+      <div className="mt-5">
+        <DeliveryFlow status={data.status} audience={audience} />
       </div>
       <p className="mt-4 text-sm leading-7 text-muted">{t.tracking.consentBody}</p>
       <label className="mt-4 flex items-start gap-3 rounded-2xl bg-background px-4 py-3 text-sm">

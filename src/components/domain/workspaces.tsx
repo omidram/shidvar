@@ -18,7 +18,7 @@ import { usePathname } from "next/navigation";
 import { PdfExportButton } from "@/components/domain/pdf-export";
 import { TrackingPanel } from "@/components/domain/tracking-panel";
 import { JobOpsPanel } from "@/components/domain/ops-panels";
-import { DeliveryFlow, driverMove } from "@/components/domain/delivery-flow";
+import { DeliveryFlow, driverMove, flowTitle } from "@/components/domain/delivery-flow";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { CargoBadges } from "@/components/domain/cargo-badges";
 import { Field, NativeSelect } from "@/components/ui/input";
@@ -150,7 +150,7 @@ export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; m
                   return (
                     <p className={`mt-2 text-sm ${relation.broken ? "text-danger" : "text-muted"}`}>
                       {relation.driverName
-                        ? `راننده: ${relation.driverName}${relation.job ? ` · ${relation.job.number} · ${statusFa(relation.job.status)}` : ""}`
+                        ? `راننده: ${relation.driverName}${relation.job ? ` · ${relation.job.number} · ${flowTitle(relation.job.status)}` : ""}`
                         : relation.vipName
                           ? `راننده VIP انتخاب‌شده: ${relation.vipName} · هنوز بار را قبول نکرده`
                           : "راننده‌ای به این بار وصل نشده"}
@@ -289,6 +289,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const [fromCity, setFromCity] = useState("");
   const [toCity, setToCity] = useState("");
   const [loadFilter, setLoadFilter] = useState<"" | "FULL" | "SHARED">("");
+  const [applied, setApplied] = useState({ fromCity: "", toCity: "", loadFilter: "" as "" | "FULL" | "SHARED" });
   const accept = useMutation({
     mutationFn: (id: string) => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),
     onSuccess: () => {
@@ -325,27 +326,45 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const rows = marketplace
     ? all.filter(
         (job) =>
-          (!fromCity || cityOf(job, "from") === fromCity) &&
-          (!toCity || cityOf(job, "to") === toCity) &&
-          (!loadFilter || (job.loadType ?? "FULL") === loadFilter),
+          (!applied.fromCity || cityOf(job, "from") === applied.fromCity) &&
+          (!applied.toCity || cityOf(job, "to") === applied.toCity) &&
+          (!applied.loadFilter || (job.loadType ?? "FULL") === applied.loadFilter),
       )
     : all;
   return (
     <div>
       <PageHeader title={marketplace ? t.job.incoming : t.job.title} description="صاحب بار، نوع محموله و مقصد را ببینید و تصمیم بگیرید." />
       {marketplace ? (
-        <Card className="mb-4 grid gap-3 sm:grid-cols-4">
-          <CitySelect label="مبدأ" value={fromCity} onChange={setFromCity} placeholder="همهٔ مبدأها" />
-          <CitySelect label="مقصد" value={toCity} onChange={setToCity} placeholder="همهٔ مقصدها" />
-          <Field label="نوع بار">
-            <NativeSelect value={loadFilter} onChange={(e) => setLoadFilter(e.target.value as "" | "FULL" | "SHARED")}>
-              <option value="">دربستی و روباری</option>
-              <option value="FULL">دربستی</option>
-              <option value="SHARED">روباری</option>
-            </NativeSelect>
-          </Field>
-          <div className="flex items-end text-sm text-muted">
-            {formatNumber(rows.length)} بار در این مسیر
+        <Card className="mb-4 grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <CitySelect label="مبدأ" value={fromCity} onChange={setFromCity} placeholder="همهٔ مبدأها" />
+            <CitySelect label="مقصد" value={toCity} onChange={setToCity} placeholder="همهٔ مقصدها" />
+            <Field label="نوع بار">
+              <NativeSelect value={loadFilter} onChange={(e) => setLoadFilter(e.target.value as "" | "FULL" | "SHARED")}>
+                <option value="">دربستی و روباری</option>
+                <option value="FULL">دربستی</option>
+                <option value="SHARED">روباری</option>
+              </NativeSelect>
+            </Field>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => setApplied({ fromCity, toCity, loadFilter })}
+            >
+              جستجو
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setFromCity("");
+                setToCity("");
+                setLoadFilter("");
+                setApplied({ fromCity: "", toCity: "", loadFilter: "" });
+              }}
+            >
+              پاک کردن
+            </Button>
+            <span className="text-sm text-muted">{formatNumber(rows.length)} بار</span>
           </div>
         </Card>
       ) : null}
@@ -374,6 +393,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
               <div className="mt-4">
                 <RouteLine from={job.originCity ?? job.pickup?.city ?? t.job.pickup} to={job.destinationCity ?? job.delivery?.city ?? t.job.delivery} />
               </div>
+              {!marketplace ? <p className="mt-3 text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p> : null}
               {job.cargoOwner ? (
                 <p className="mt-3 text-sm">
                   {t.common.cargoOwner}: {job.cargoOwner.name}

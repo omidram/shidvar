@@ -37,6 +37,13 @@ export function deliveryStep(status: string) {
   return { index: index[status] ?? 0, finished: false, cancelled: false };
 }
 
+export function flowTitle(status: string) {
+  const progress = deliveryStep(status);
+  if (progress.cancelled) return "لغو شده";
+  if (progress.finished) return "سفر تمام شد";
+  return STEPS[progress.index]?.title ?? "قبول بار";
+}
+
 export function driverMove(status: string): { next: string; label: string } | null {
   const moves: Record<string, { next: string; label: string }> = {
     SCHEDULED: { next: "ARRIVING_AT_PICKUP", label: "حرکت به سمت بارگیری" },
@@ -90,33 +97,53 @@ function nowText(status: string, audience: Audience, finished: boolean, cancelle
     : "راننده به مقصد رسیده و در حال تحویل بار است.";
 }
 
+function stepState(status: string, index: number) {
+  const progress = deliveryStep(status);
+  if (progress.cancelled) return "later" as const;
+  if (progress.finished || index < progress.index) return "done" as const;
+  if (index === progress.index) return "now" as const;
+  return "later" as const;
+}
+
 export function DeliveryFlow({ status, audience = "staff" }: { status: string; audience?: Audience }) {
   const progress = deliveryStep(status);
+  const note = nowText(status, audience, progress.finished, progress.cancelled);
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-bold">مراحل این بار</h2>
         <span className="text-xs text-muted">{progress.finished ? "تمام‌شده" : progress.cancelled ? "لغو" : `مرحله ${progress.index + 1} از ${STEPS.length}`}</span>
       </div>
-      <ol className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <ol className="mt-3 grid gap-2">
         {STEPS.map((step, index) => {
-          const state = progress.cancelled ? "later" : progress.finished || index < progress.index ? "done" : index === progress.index ? "now" : "later";
+          const state = stepState(status, index);
           return (
             <li
               key={step.id}
               className={cn(
-                "rounded-2xl border px-2 py-2 text-center text-xs leading-5",
-                state === "now" && "border-primary bg-primary font-bold text-primary-foreground",
-                state === "done" && "border-accent/50 bg-accent/15 font-semibold",
-                state === "later" && "border-border bg-background text-muted",
+                "flex items-center gap-3 rounded-2xl px-3 py-2.5",
+                state === "now" && "bg-primary text-primary-foreground",
+                state === "done" && "bg-accent/15 text-foreground",
+                state === "later" && "bg-background text-muted",
               )}
             >
-              {index + 1}. {step.title}
+              <span
+                className={cn(
+                  "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold",
+                  state === "now" && "bg-white/20",
+                  state === "done" && "bg-accent text-white",
+                  state === "later" && "bg-border text-muted",
+                )}
+              >
+                {state === "done" ? "✓" : index + 1}
+              </span>
+              <span className="font-semibold">{step.title}</span>
+              <span className="ms-auto text-xs">{state === "now" ? "الان" : state === "done" ? "انجام شد" : ""}</span>
             </li>
           );
         })}
       </ol>
-      <p className="mt-3 text-sm leading-7">{nowText(status, audience, progress.finished, progress.cancelled)}</p>
+      <p className={cn("mt-3 rounded-2xl px-4 py-3 text-sm leading-7", progress.cancelled ? "bg-red-50 text-red-800" : "bg-primary/10")}>{note}</p>
     </div>
   );
 }
