@@ -130,7 +130,13 @@ BEGIN
   DELETE FROM "CommissionRule";
 
   UPDATE "Company" SET "verifiedById" = NULL WHERE "verifiedById" IS NOT NULL AND NOT ("verifiedById" = ANY(admin_ids));
-  UPDATE "Role" SET "companyId" = NULL WHERE "companyId" IS NOT NULL AND NOT ("companyId" = ANY(keep_company_ids));
+  DELETE FROM "UserRole" WHERE "roleId" IN (
+    SELECT id FROM "Role" WHERE "companyId" IS NOT NULL AND NOT ("companyId" = ANY(keep_company_ids))
+  );
+  DELETE FROM "RolePermission" WHERE "roleId" IN (
+    SELECT id FROM "Role" WHERE "companyId" IS NOT NULL AND NOT ("companyId" = ANY(keep_company_ids))
+  );
+  DELETE FROM "Role" WHERE "companyId" IS NOT NULL AND NOT ("companyId" = ANY(keep_company_ids));
 
   DELETE FROM "UserRole" WHERE NOT ("userId" = ANY(admin_ids));
   DELETE FROM "Membership" WHERE NOT ("userId" = ANY(admin_ids));

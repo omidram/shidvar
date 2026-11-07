@@ -98,7 +98,6 @@ import { getAllRules } from "@/server/settings/rules";
 import { assertPermission } from "@/server/rbac/actor";
 import { buildOpenApi } from "@/server/http/openapi";
 import { AppError, Errors } from "@/server/errors";
-import { runBlankSlate } from "@/server/maintenance/run-blank";
 import type { CompanyStatus } from "@prisma/client";
 
 function clientMeta(req: Request) {
@@ -839,17 +838,6 @@ export const routes: RouteDefinition[] = [
     input: ticketMessageSchema,
     async handler({ actor, params, body }) {
       return addTicketMessage(requireActor(actor), params.id, body as z.infer<typeof ticketMessageSchema>);
-    },
-  },
-  {
-    method: "POST",
-    path: "/admin/blank-slate",
-    permissions: ["companies.update"],
-    input: z.object({ confirm: z.literal("پاک شود") }),
-    async handler({ actor }) {
-      if (!requireActor(actor).isSuperAdmin) throw Errors.forbidden();
-      const output = runBlankSlate();
-      return { cleared: true, output };
     },
   },
   {
