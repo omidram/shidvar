@@ -139,14 +139,26 @@ BEGIN
   DELETE FROM "CredentialChallenge";
   DELETE FROM "Company" WHERE NOT (id = ANY(keep_company_ids));
   DELETE FROM "User" WHERE NOT (id = ANY(admin_ids));
+
+  INSERT INTO "SystemSetting" ("key", "value")
+  VALUES ('blank.applied', '{"ok":true}'::jsonb)
+  ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value";
 END $$;
 `;
 
 try {
+  const force = process.env.SHIDVAR_BLANK_FORCE === "1";
+  if (!force) {
+    const marker = await prisma.systemSetting.findUnique({ where: { key: "blank.applied" } });
+    if (marker) {
+      console.log("Blank slate already applied. Skipping.");
+      process.exit(0);
+    }
+  }
   const before = await prisma.user.count();
   await prisma.$executeRawUnsafe(sql);
   const admins = await prisma.user.findMany({
-    select: { email: true, phone: true, firstName: true, lastName: true },
+    select: { email: true, firstName: true, lastName: true },
   });
   const storageDir = path.resolve(root, process.env.STORAGE_LOCAL_PATH || "./storage/private");
   const removedFiles = emptyDir(storageDir);

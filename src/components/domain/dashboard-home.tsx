@@ -11,7 +11,9 @@ import { api, liveInterval } from "@/lib/api";
 import { formatMoney } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { RoleGuide } from "@/components/domain/delivery-flow";
 
 type Dashboard = { portal: string; stats: Record<string, number | string | null> };
@@ -95,6 +97,7 @@ export function DashboardView() {
         title={name ? `${t.dash.hello} ${me.data?.firstName}` : t.common.dashboard}
         description={portal === "DRIVER" ? t.dash.driverHome : portal === "REQUESTER" ? t.dash.requesterHome : t.dash.adminHome}
       />
+      {portal === "PLATFORM" ? <BlankSlateCard /> : null}
       {portal === "DRIVER" ? <RoleGuide role="driver" /> : null}
       {portal === "REQUESTER" ? <RoleGuide role="owner" /> : null}
       <QuickAccess title={t.dash.quick} actions={actions} />
@@ -113,6 +116,37 @@ export function DashboardView() {
       {portal === "REQUESTER" || portal === "DRIVER" || portal === "PLATFORM" ? <DashboardLiveTracking /> : null}
       {richHome || portal === "PLATFORM" ? <ReportsView compact /> : null}
     </div>
+  );
+}
+
+function BlankSlateCard() {
+  const qc = useQueryClient();
+  const blank = useMutation({
+    mutationFn: () => api("/admin/blank-slate", { method: "POST", body: JSON.stringify({ confirm: "پاک شود" }) }),
+    onSuccess: async () => {
+      toast.success("سامانه خالی شد. فقط حساب مدیر مانده است.");
+      await qc.invalidateQueries();
+      window.location.reload();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  return (
+    <section className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-950">
+      <h2 className="text-lg font-black">خالی کردن سامانه</h2>
+      <p className="mt-2 text-sm leading-7">
+        سفارش‌ها، صاحب‌های بار، راننده‌ها، اعلان‌ها، لاگ‌ها و فایل‌های آپلودشده پاک می‌شوند. فقط حساب مدیر می‌ماند.
+      </p>
+      <Button
+        className="mt-4"
+        variant="danger"
+        disabled={blank.isPending}
+        onClick={() => {
+          if (window.confirm("همهٔ داده‌ها پاک شود و فقط مدیر بماند؟")) blank.mutate();
+        }}
+      >
+        {blank.isPending ? "در حال پاک‌سازی…" : "پاک کردن همه چیز"}
+      </Button>
+    </section>
   );
 }
 
