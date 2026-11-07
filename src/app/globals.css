@@ -64,6 +64,70 @@ body {
   min-height: 100%;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9aafc8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #9aafc8;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #2f6fe0;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark * {
+  scrollbar-color: #3d5270 transparent;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #3d5270;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #e0b23a;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.portal-scroll {
+  scrollbar-color: #e0b23a transparent;
+}
+
+.portal-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.portal-scroll::-webkit-scrollbar-thumb {
+  background: #e0b23a;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.portal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #2f6fe0;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
 body,
 button,
 input,

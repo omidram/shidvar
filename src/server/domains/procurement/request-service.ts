@@ -335,8 +335,36 @@ export async function publishRequest(actor: Actor, id: string) {
   return getRequestForActor(actor, id);
 }
 
+const OWNER_CANCELLABLE = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "MATCHING", "TRANSPORT_PENDING"] as const;
+
 export async function cancelRequest(actor: Actor, id: string, reason: string) {
+  const request = await prisma.procurementRequest.findUnique({
+    where: { id },
+    include: { orders: { include: { jobs: { select: { id: true, assignedDriverId: true } } } } },
+  });
+  if (!request) throw Errors.notFound();
+  if (!actor.isPlatformStaff && !actor.memberships.some((m) => m.companyId === request.companyId)) {
+    throw Errors.notFound();
+  }
+  if (request.orders.some((order) => order.jobs.some((job) => job.assignedDriverId))) {
+    throw Errors.conflict("راننده این بار را قبول کرده است. تا قبل از قبول راننده می‌توانید درخواست را لغو کنید");
+  }
+  if (!(OWNER_CANCELLABLE as readonly string[]).includes(request.status)) {
+    throw Errors.conflict("این درخواست دیگر قابل لغو نیست");
+  }
   const updated = await moveRequest(actor, id, "CANCELLED", "requests.cancel");
+  const jobIds = request.orders.flatMap((order) => order.jobs.map((job) => job.id));
+  if (jobIds.length) {
+    await prisma.transportationJob.updateMany({
+      where: { id: { in: jobIds }, assignedDriverId: null },
+      data: { status: "CANCELLED" },
+    });
+    await prisma.driverMatch.updateMany({ where: { jobId: { in: jobIds } }, data: { eligible: false } });
+  }
+  await prisma.order.updateMany({
+    where: { requestId: id, status: { notIn: ["COMPLETED", "CANCELLED"] } },
+    data: { status: "CANCELLED" },
+  });
   await prisma.cancellation.create({
     data: { entityType: "ProcurementRequest", entityId: id, reason, actorId: actor.userId },
   });

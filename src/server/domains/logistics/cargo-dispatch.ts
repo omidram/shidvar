@@ -38,6 +38,42 @@ async function warehouseForCity(companyId: string, city: string, line1?: string 
   });
 }
 
+async function offerToEveryApprovedDriver(jobId: string, jobNumber: string) {
+  const drivers = await prisma.driverProfile.findMany({
+    where: { status: "APPROVED" },
+    select: { id: true, userId: true },
+  });
+  for (const driver of drivers) {
+    const existing = await prisma.driverMatch.findUnique({
+      where: { jobId_driverId: { jobId, driverId: driver.id } },
+      select: { notifiedAt: true },
+    });
+    await prisma.driverMatch.upsert({
+      where: { jobId_driverId: { jobId, driverId: driver.id } },
+      create: {
+        jobId,
+        driverId: driver.id,
+        score: 60,
+        breakdown: { public: true, notify: true },
+        eligible: true,
+        notifiedAt: new Date(),
+      },
+      update: { eligible: true, breakdown: { public: true, notify: true }, notifiedAt: existing?.notifiedAt ?? new Date() },
+    });
+    if (!existing?.notifiedAt) {
+      await prisma.notification.create({
+        data: {
+          userId: driver.userId,
+          eventType: "job.matched",
+          title: "بار همگانی برای شما",
+          body: `بار ${jobNumber} برای همه راننده‌ها اعلام شده است. جزئیات را ببینید و قبول یا رد کنید.`,
+          payload: { jobId, kind: "job.matched", public: true },
+        },
+      });
+    }
+  }
+}
+
 async function offerToVipDriver(jobId: string, jobNumber: string, driverId: string) {
   const driver = await prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true } });
   if (!driver) return;
@@ -70,6 +106,7 @@ export async function redispatchOpenJob(requestId: string) {
     await offerToVipDriver(job.id, job.number, request.vipDriverId);
   } else {
     await runDriverMatching(job.id);
+    await offerToEveryApprovedDriver(job.id, job.number);
   }
   return job;
 }
@@ -141,6 +178,7 @@ export async function dispatchCargoToDrivers(requestId: string) {
     await offerToVipDriver(job.id, job.number, request.vipDriverId);
   } else {
     await runDriverMatching(job.id);
+    await offerToEveryApprovedDriver(job.id, job.number);
   }
   await prisma.transportationJob.update({
     where: { id: job.id, status: "MATCHING" },

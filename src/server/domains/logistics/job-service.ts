@@ -254,9 +254,40 @@ export async function revealOwnerContact(actor: Actor, jobId: string) {
   return getJob(actor, jobId);
 }
 
+async function ensurePublicOffers(driverId: string) {
+  const jobs = await prisma.transportationJob.findMany({
+    where: {
+      assignedDriverId: null,
+      status: { in: ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"] },
+      order: { request: { dispatchMode: "NORMAL" } },
+    },
+    select: { id: true },
+  });
+  const rejected = await prisma.driverApplication.findMany({
+    where: { driverId, status: "REJECTED", jobId: { in: jobs.map((job) => job.id) } },
+    select: { jobId: true },
+  });
+  const rejectedIds = new Set(rejected.map((row) => row.jobId));
+  for (const job of jobs) {
+    if (rejectedIds.has(job.id)) continue;
+    await prisma.driverMatch.upsert({
+      where: { jobId_driverId: { jobId: job.id, driverId } },
+      create: {
+        jobId: job.id,
+        driverId,
+        score: 60,
+        breakdown: { public: true, notify: true },
+        eligible: true,
+      },
+      update: { eligible: true },
+    });
+  }
+}
+
 export async function listDriverMarketplace(actor: Actor) {
   assertPermission(actor, "marketplace.driver.read");
   const driver = requireApprovedDriver(actor);
+  await ensurePublicOffers(driver.id);
   const matches = await prisma.driverMatch.findMany({
     where: { driverId: driver.id, eligible: true },
     include: { job: true },

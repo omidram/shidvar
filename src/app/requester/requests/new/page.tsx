@@ -78,10 +78,11 @@ function NewRequestForm() {
     setLines(next);
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (step < 3) {
-      setStep(step + 1);
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    if (step < 3 || submitter?.dataset.intent !== "create") {
+      if (step < 3) setStep(step + 1);
       return;
     }
     if (dispatchMode === "VIP" && !vipDriverId) {
@@ -153,8 +154,8 @@ function NewRequestForm() {
                 {t.common.next}
               </Button>
             ) : (
-              <Button type="submit" disabled={saving}>
-                {saving ? t.common.loading : t.common.submit}
+              <Button type="submit" data-intent="create" disabled={saving}>
+                {saving ? t.common.loading : "ثبت درخواست"}
               </Button>
             )}
           </div>
@@ -162,9 +163,14 @@ function NewRequestForm() {
       />
       <div className="grid grid-cols-3 gap-2">
         {[t.request.stepRoute, t.request.stepItems, t.request.stepCargo].map((label, i) => (
-          <div key={label} className={`rounded-2xl px-3 py-2 text-center text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
+          <button
+            key={label}
+            type="button"
+            onClick={() => setStep(i + 1)}
+            className={`rounded-2xl px-3 py-2 text-center text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
+          >
             {i + 1}. {label}
-          </div>
+          </button>
         ))}
       </div>
       <p className="text-sm leading-7 text-muted">

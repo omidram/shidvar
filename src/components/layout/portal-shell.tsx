@@ -187,7 +187,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
         <p className="shrink-0 text-xs text-white/40">
           {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.requester : t.auth.driver}
         </p>
-        <nav className="mt-8 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
+        <nav className="portal-scroll mt-8 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto pe-1">
           {menuItems.map((item) => {
             const Icon = ICONS[item.key];
             const active =

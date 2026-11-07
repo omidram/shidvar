@@ -369,7 +369,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
         </Card>
       ) : null}
       {rows.length === 0 ? (
-        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "وقتی باری در ناحیه شما آزاد شود اینجا ظاهر می‌شود."} />
+        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "بارهای همگانی بعد از اعلام مدیریت اینجا دیده می‌شوند. هنوز باری برای شما اعلام نشده."} />
       ) : (
         <div className="grid gap-3">
           {rows.map((job) => (
@@ -489,7 +489,7 @@ function AnnouncePanel({
         body: JSON.stringify({ dispatchMode, vipDriverId: dispatchMode === "VIP" ? vipDriverId : undefined }),
       }),
     onSuccess: () => {
-      toast.success(dispatchMode === "VIP" ? "بار به راننده VIP اعلام شد" : "بار به رانندگان محدوده اعلام شد");
+      toast.success(dispatchMode === "VIP" ? "بار به راننده VIP اعلام شد" : "بار برای همه رانندگان اعلام شد");
       qc.invalidateQueries({ queryKey: ["request", requestId] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -600,6 +600,15 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
     mutationFn: () => api(`/requests/${id}/submit`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["request", id] }),
   });
+  const cancel = useMutation({
+    mutationFn: () => api(`/requests/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason: "لغو توسط صاحب بار" }) }),
+    onSuccess: () => {
+      toast.success("درخواست لغو شد");
+      qc.invalidateQueries({ queryKey: ["request", id] });
+      qc.invalidateQueries({ queryKey: ["requests"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
@@ -608,6 +617,10 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
   const invoices = req.orders?.flatMap((order) => order.invoices ?? []) ?? [];
   const driver = job?.assignedDriver;
   const vehicle = driver?.vehicles?.[0]?.vehicle ?? job?.assignedVehicle;
+  const canCancel =
+    mode !== "admin" &&
+    !driver &&
+    ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "MATCHING", "TRANSPORT_PENDING"].includes(req.status);
 
   return (
     <div className="grid gap-6">
@@ -619,6 +632,17 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             <PdfExportButton kind="request" id={req.id} label={t.common.pdfExport} />
             {job?.id ? <PdfExportButton kind="waybill" id={job.id} label="خروجی بارنامه" /> : null}
             {mode !== "supplier" && req.status === "DRAFT" ? <Button onClick={() => submit.mutate()}>{t.common.submit}</Button> : null}
+            {canCancel ? (
+              <Button
+                variant="danger"
+                disabled={cancel.isPending}
+                onClick={() => {
+                  if (window.confirm("این درخواست لغو شود؟ تا وقتی راننده بار را قبول نکرده می‌توانید لغو کنید.")) cancel.mutate();
+                }}
+              >
+                {cancel.isPending ? t.common.loading : "لغو درخواست"}
+              </Button>
+            ) : null}
           </div>
         }
       />
