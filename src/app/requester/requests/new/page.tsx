@@ -288,8 +288,8 @@ function NewRequestForm() {
             <h2 className="font-bold">نوع اعلام بار</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <ChoiceTile
-                title="معمولی"
-                body="به همه رانندگان تأییدشده محدوده اعلام می‌شود"
+                title="همگانی"
+                body="به رانندگان تأییدشده به‌صورت عمومی اعلام می‌شود"
                 icon={<Users className="h-6 w-6" />}
                 active={dispatchMode === "NORMAL"}
                 onClick={() => setDispatchMode("NORMAL")}

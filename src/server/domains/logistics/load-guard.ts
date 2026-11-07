@@ -35,8 +35,22 @@ export async function jobDestination(jobId: string) {
 }
 
 export async function checkDriverLoad(driverId: string, jobId: string): Promise<LoadCheck> {
-  const [active, target] = await Promise.all([activeLoadDestinations(driverId, jobId), jobDestination(jobId)]);
-  return evaluateLoadAcceptance(active, target);
+  const [active, target, job, match] = await Promise.all([
+    activeLoadDestinations(driverId, jobId),
+    jobDestination(jobId),
+    prisma.transportationJob.findUnique({
+      where: { id: jobId },
+      select: { order: { select: { request: { select: { dispatchMode: true, vipDriverId: true } } } } },
+    }),
+    prisma.driverMatch.findUnique({
+      where: { jobId_driverId: { jobId, driverId } },
+      select: { breakdown: true },
+    }),
+  ]);
+  const request = job?.order.request;
+  const breakdown = match?.breakdown as { vip?: boolean } | null;
+  const assignedByAdmin = Boolean((request?.dispatchMode === "VIP" && request.vipDriverId === driverId) || breakdown?.vip);
+  return evaluateLoadAcceptance(active, target, assignedByAdmin);
 }
 
 export async function assertDriverCanTakeLoad(driverId: string, jobId: string) {

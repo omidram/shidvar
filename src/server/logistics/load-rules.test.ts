@@ -6,13 +6,17 @@ describe("evaluateLoadAcceptance", () => {
     expect(evaluateLoadAcceptance([], "اصفهان")).toMatchObject({ allowed: true, roobar: false });
   });
 
-  it("allows a roobar load with the same destination", () => {
-    expect(evaluateLoadAcceptance(["اصفهان"], " اصفهان ")).toMatchObject({ allowed: true, roobar: true });
+  it("blocks a public same-destination load while the driver is busy", () => {
+    expect(evaluateLoadAcceptance(["اصفهان"], " اصفهان ", false).allowed).toBe(false);
+  });
+
+  it("allows an admin-assigned roobar with the same destination", () => {
+    expect(evaluateLoadAcceptance(["اصفهان"], " اصفهان ", true)).toMatchObject({ allowed: true, roobar: true });
   });
 
   it("treats Arabic yeh and kaf as Persian", () => {
-    expect(evaluateLoadAcceptance(["كرمان"], "کرمان")).toMatchObject({ allowed: true, roobar: true });
-    expect(evaluateLoadAcceptance(["زاهدان"], "زاهدان")).toMatchObject({ allowed: true });
+    expect(evaluateLoadAcceptance(["كرمان"], "کرمان", true)).toMatchObject({ allowed: true, roobar: true });
+    expect(evaluateLoadAcceptance(["زاهدان"], "زاهدان").allowed).toBe(false);
   });
 
   it("blocks a load with a different destination", () => {

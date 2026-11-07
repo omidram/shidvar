@@ -8,6 +8,7 @@ export type TrackingMapData = {
   origin: LatLng;
   dest: LatLng;
   current: LatLng;
+  located?: boolean;
   heading?: number | null;
   route: LatLng[];
   trail: Array<LatLng & { at?: string }>;
@@ -51,10 +52,11 @@ export function TrackingMap({ data, className }: { data: TrackingMapData; classN
       await import("leaflet/dist/leaflet.css");
       if (cancelled || !host.current) return;
 
-      const snapIndex = nearestOnRoute(line, data.current);
-      const snapped = line[snapIndex] ?? data.current;
-      const traveled = line.slice(0, snapIndex + 1);
-      const remaining = line.slice(snapIndex);
+      const showTruck = data.located !== false;
+      const snapIndex = showTruck ? nearestOnRoute(line, data.current) : 0;
+      const snapped = showTruck ? (line[snapIndex] ?? data.current) : line[0]!;
+      const traveled = showTruck ? line.slice(0, snapIndex + 1) : [];
+      const remaining = showTruck ? line.slice(snapIndex) : line;
 
       const map = L.map(host.current, { zoomControl: true, attributionControl: true }).setView([snapped.lat, snapped.lng], 13);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -67,7 +69,7 @@ export function TrackingMap({ data, className }: { data: TrackingMapData; classN
         weight: 6,
         opacity: 0.85,
       }).addTo(map);
-      const traveledLine = L.polyline(asLatLngs(traveled.length > 1 ? traveled : [line[0], snapped]), {
+      const traveledLine = L.polyline(asLatLngs(traveled.length > 1 ? traveled : []), {
         color: "#00b562",
         weight: 6,
         opacity: 0.95,
@@ -77,6 +79,8 @@ export function TrackingMap({ data, className }: { data: TrackingMapData; classN
       L.circleMarker([data.dest.lat, data.dest.lng], { radius: 8, color: "#6d28d9", fillColor: "#6d28d9", fillOpacity: 1 }).addTo(map);
 
       const truck = L.marker([snapped.lat, snapped.lng], {
+        opacity: showTruck ? 1 : 0,
+        interactive: showTruck,
         icon: L.divIcon({
           className: "tracking-truck",
           html: `<div style="transform:rotate(${data.heading ?? 0}deg)" class="grid h-10 w-10 place-items-center rounded-full bg-primary text-lg shadow-lg">🚚</div>`,
@@ -94,18 +98,25 @@ export function TrackingMap({ data, className }: { data: TrackingMapData; classN
       mapRef.current?.map.remove();
       mapRef.current = null;
     };
-  }, [road, data.origin.lat, data.origin.lng, data.dest.lat, data.dest.lng]);
+  }, [road, data.located, data.origin.lat, data.origin.lng, data.dest.lat, data.dest.lng]);
 
   useEffect(() => {
     const inst = mapRef.current;
     const line = road.length > 1 ? road : [data.origin, data.dest];
     if (!inst || line.length < 2) return;
+    const showTruck = data.located !== false;
+    inst.truck.setOpacity(showTruck ? 1 : 0);
+    if (!showTruck) {
+      inst.traveled.setLatLngs([]);
+      inst.remaining.setLatLngs(asLatLngs(line));
+      return;
+    }
     const snapIndex = nearestOnRoute(line, data.current);
     const snapped = line[snapIndex] ?? data.current;
     inst.truck.setLatLng([snapped.lat, snapped.lng]);
     inst.traveled.setLatLngs(asLatLngs(line.slice(0, snapIndex + 1)));
     inst.remaining.setLatLngs(asLatLngs(line.slice(snapIndex)));
-  }, [data.current.lat, data.current.lng, road]);
+  }, [data.located, data.current.lat, data.current.lng, road]);
 
   return <div ref={host} dir="ltr" className={className ?? "h-[420px] w-full overflow-hidden rounded-3xl"} />;
 }

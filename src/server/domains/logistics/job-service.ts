@@ -842,13 +842,18 @@ export async function requestDelivery(actor: Actor, jobId: string) {
     await tx.shipment.update({ where: { id: job.shipment!.id }, data: { status: "PROOF_SUBMITTED" } });
   });
   const owners = await cargoOwnerUserIds(job);
-  if (owners.length) {
+  const staff = await prisma.userRole.findMany({
+    where: { role: { portal: "PLATFORM" } },
+    select: { userId: true },
+  });
+  const recipients = [...new Set([...owners, ...staff.map((row) => row.userId)])];
+  if (recipients.length) {
     await prisma.notification.createMany({
-      data: owners.map((userId) => ({
+      data: recipients.map((userId) => ({
         userId,
         eventType: "job.pod",
-        title: "درخواست تحویل بار",
-        body: `راننده مدارک ${job.number} را فرستاده و منتظر تأیید شماست`,
+        title: "مدارک تحویل برای تأیید",
+        body: `راننده مدارک ${job.number} را فرستاد. پس از تأیید مدیریت یا صاحب بار، سفر بسته می‌شود.`,
         payload: { jobId, kind: "job.pod" },
       })),
     });

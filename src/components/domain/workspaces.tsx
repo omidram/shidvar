@@ -421,7 +421,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
               {marketplace && job.loadCheck?.reason ? <p className="mt-2 text-sm text-danger">{job.loadCheck.reason}</p> : null}
               {marketplace && job.loadCheck?.roobar ? (
                 <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
-                  این بار هم‌مقصد با بار فعلی شما ({job.loadCheck.activeDestination}) است و می‌توانید آن را روباری قبول کنید.
+                  این بار را مدیریت مخصوص شما و هم‌مقصد با بار فعلی ({job.loadCheck.activeDestination}) تخصیص داده است. می‌توانید آن را به‌صورت روبار قبول کنید.
                 </p>
               ) : null}
             </Card>
@@ -488,7 +488,7 @@ function AnnouncePanel({
             onClick={() => setDispatchMode(value)}
             className={`rounded-full px-4 py-2 text-sm ${dispatchMode === value ? "bg-ink text-white" : "bg-background"}`}
           >
-            {value === "VIP" ? "VIP — راننده مشخص" : "معمولی — رانندگان محدوده"}
+            {value === "VIP" ? "VIP — تخصیص به یک راننده" : "همگانی — همه رانندگان"}
           </button>
         ))}
       </div>
@@ -640,7 +640,7 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             { label: t.common.email, value: req.company?.email },
             { label: "تاریخ ثبت", value: formatDateTime(req.createdAt) },
             { label: "تاریخ انتشار", value: formatDateTime(req.publishedAt) },
-            { label: "نوع اعلام", value: req.dispatchMode === "VIP" ? "VIP (راننده مشخص)" : "معمولی (رانندگان محدوده)" },
+            { label: "نوع اعلام", value: req.dispatchMode === "VIP" ? "VIP (تخصیص به یک راننده)" : "همگانی" },
             {
               label: "راننده VIP",
               value: req.vipDriver ? `${req.vipDriver.user.firstName} ${req.vipDriver.user.lastName}`.trim() : null,

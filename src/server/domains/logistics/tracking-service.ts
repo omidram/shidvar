@@ -115,6 +115,7 @@ function presentTracking(
     return {
       ...payload,
       current: payload.origin,
+      located: false,
       trail: [] as typeof payload.trail,
       speedKmh: null,
       lastAt: null,
@@ -137,7 +138,9 @@ async function serializeSession(
     heading: num(ping.heading),
     at: ping.recordedAt.toISOString(),
   }));
-  const current = session.lastLat != null && session.lastLng != null
+  const located =
+    session.consentStatus === "GRANTED" && session.deviceConsent && session.lastLat != null && session.lastLng != null;
+  const current = located
     ? { lat: Number(session.lastLat), lng: Number(session.lastLng) }
     : pings.at(-1) ?? origin;
   const factor = roadFactor(originCity, destCity, resolved.fromRoads);
@@ -170,6 +173,7 @@ async function serializeSession(
         }
       : null,
     plate: job.assignedVehicle?.plateNumber ?? null,
+    located,
     current,
     heading: num(session.heading),
     speedKmh: num(session.speedKmh),
