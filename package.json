@@ -20,6 +20,7 @@
     "db:ensure": "node scripts/ensure-schema.mjs",
     "db:up": "tsx scripts/dev-postgres.ts",
     "db:seed": "tsx --tsconfig tsconfig.json prisma/seed.ts",
+    "db:blank": "node scripts/blank-slate.mjs",
     "db:studio": "prisma studio",
     "package:win": "node scripts/package-windows.mjs",
     "postinstall": "prisma generate"
