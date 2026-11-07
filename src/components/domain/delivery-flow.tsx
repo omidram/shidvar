@@ -46,18 +46,47 @@ export function flowTitle(status: string) {
 
 export function driverMove(status: string): { next: string; label: string } | null {
   const moves: Record<string, { next: string; label: string }> = {
-    SCHEDULED: { next: "ARRIVING_AT_PICKUP", label: "حرکت به سمت بارگیری" },
-    DRIVER_ASSIGNED: { next: "ARRIVING_AT_PICKUP", label: "حرکت به سمت بارگیری" },
-    ARRIVING_AT_PICKUP: { next: "AT_PICKUP", label: "به محل بارگیری رسیدم" },
-    AT_PICKUP: { next: "LOADING", label: "بارگیری را شروع کردم" },
-    LOADING: { next: "LOADED", label: "بارگیری تمام شد" },
-    LOADED: { next: "IN_TRANSIT", label: "به سمت مقصد حرکت کردم" },
-    IN_TRANSIT: { next: "ARRIVING_AT_DESTINATION", label: "نزدیک مقصد هستم" },
-    ARRIVING_AT_DESTINATION: { next: "AT_DESTINATION", label: "به مقصد رسیدم" },
-    AT_DESTINATION: { next: "UNLOADING", label: "تخلیه را شروع کردم" },
+    SCHEDULED: { next: "ARRIVING_AT_PICKUP", label: "بروید بار را بردارید" },
+    DRIVER_ASSIGNED: { next: "ARRIVING_AT_PICKUP", label: "بروید بار را بردارید" },
+    ARRIVING_AT_PICKUP: { next: "AT_PICKUP", label: "رسیدم محل بارگیری" },
+    AT_PICKUP: { next: "LOADING", label: "دارم بار می‌زنم" },
+    LOADING: { next: "LOADED", label: "بار را زدم" },
+    LOADED: { next: "IN_TRANSIT", label: "راه افتادم سمت مقصد" },
+    IN_TRANSIT: { next: "ARRIVING_AT_DESTINATION", label: "نزدیک مقصدم" },
+    ARRIVING_AT_DESTINATION: { next: "AT_DESTINATION", label: "رسیدم مقصد" },
+    AT_DESTINATION: { next: "UNLOADING", label: "دارم خالی می‌کنم" },
     UNLOADING: { next: "DELIVERED", label: "بار را تحویل دادم" },
   };
   return moves[status] ?? null;
+}
+
+const TASK_RANK: Record<string, number> = {
+  DELIVERED: 0,
+  DISPUTED: 1,
+  UNLOADING: 2,
+  AT_DESTINATION: 3,
+  ARRIVING_AT_DESTINATION: 4,
+  IN_TRANSIT: 5,
+  LOADED: 6,
+  LOADING: 7,
+  AT_PICKUP: 8,
+  ARRIVING_AT_PICKUP: 9,
+  DRIVER_ASSIGNED: 10,
+  SCHEDULED: 10,
+  SUPPLIER_CONFIRMED: 10,
+  DRIVER_SELECTED: 10,
+};
+
+export function driverTaskLabel(status: string) {
+  if (status === "DELIVERED") return "عکس رسید و بارنامه را بفرستید";
+  if (status === "DISPUTED") return "مدارک را دوباره بفرستید";
+  if (status === "PROOF_SUBMITTED") return "منتظر تأیید مدارک هستید";
+  if (["DRIVER_SELECTED", "SUPPLIER_CONFIRMED"].includes(status)) return "بروید بار را بردارید";
+  return driverMove(status)?.label ?? "سفر را ادامه دهید";
+}
+
+export function driverTaskRank(status: string) {
+  return TASK_RANK[status] ?? 50;
 }
 
 function nowText(status: string, audience: Audience, finished: boolean, cancelled: boolean) {
@@ -77,8 +106,8 @@ function nowText(status: string, audience: Audience, finished: boolean, cancelle
       ? "مدارک برای صاحب بار و مدیریت فرستاده شد. تا تأیید یکی از آن‌ها سفر باز می‌ماند."
       : "مدارک تحویل رسیده است. اگر درست‌اند تأیید کنید تا سفر بسته شود.",
     DELIVERED: driver
-      ? "بار تحویل شد. عکس بارنامه و رسید را بارگذاری کنید، بعد درخواست تأیید را بفرستید."
-      : "راننده بار را تحویل داده و باید مدارک را بفرستد.",
+      ? "بار را دادید. این سفر همین‌جا می‌ماند. دو عکس بفرستید: رسید و بارنامه. بعد دکمهٔ فرستادن را بزنید."
+      : "راننده بار را تحویل داده و باید عکس مدارک را بفرستد.",
   };
   if (byStatus[status]) return byStatus[status];
   const step = deliveryStep(status).index;

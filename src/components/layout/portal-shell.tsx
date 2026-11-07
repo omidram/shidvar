@@ -37,6 +37,7 @@ import { BrandMark } from "@/components/visual/icons";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useMe } from "@/hooks/use-me";
 import { notificationHref, notificationTitle, type NotificationPayload } from "@/lib/portal-links";
+import { driverTaskLabel, driverTaskRank } from "@/components/domain/delivery-flow";
 
 const ICONS = {
   dashboard: LayoutDashboard,
@@ -126,6 +127,52 @@ const NAV = {
     { href: "/driver/settings", key: "settings" as const },
   ],
 };
+
+function DriverNextTask() {
+  const jobs = useQuery({
+    queryKey: ["jobs", "/jobs"],
+    queryFn: () => api<Array<{ id: string; status: string }>>("/jobs"),
+    refetchInterval: 15000,
+  });
+  const open = (jobs.data ?? []).filter((job) => !["COMPLETED", "CANCELLED", "CONFIRMED"].includes(job.status));
+  const current = [...open].sort((a, b) => driverTaskRank(a.status) - driverTaskRank(b.status))[0];
+  const offers = useQuery({
+    queryKey: ["jobs", "/marketplace/jobs"],
+    queryFn: () => api<Array<{ id: string }>>("/marketplace/jobs"),
+    enabled: jobs.isSuccess && !current,
+    refetchInterval: 15000,
+  });
+  if (current) {
+    const onTrip = ["LOADED", "IN_TRANSIT", "ARRIVING_AT_DESTINATION", "AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(current.status);
+    const href =
+      current.status === "DELIVERED"
+        ? "/driver/active-trip#delivery-docs"
+        : onTrip
+          ? "/driver/active-trip"
+          : `/driver/jobs/${current.id}#delivery-docs`;
+    return (
+      <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
+          <span className="block truncate text-base font-black">{driverTaskLabel(current.status)}</span>
+        </span>
+        <ChevronLeft className="h-5 w-5 shrink-0" />
+      </Link>
+    );
+  }
+  if ((offers.data ?? []).length) {
+    return (
+      <Link href="/driver/jobs" className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
+          <span className="block truncate text-base font-black">یک بار جدید آمده. ببینید و قبول یا رد کنید</span>
+        </span>
+        <ChevronLeft className="h-5 w-5 shrink-0" />
+      </Link>
+    );
+  }
+  return null;
+}
 
 export function PortalShell({ portal, children }: { portal: keyof typeof NAV; children: React.ReactNode }) {
   const { t } = useI18n();
@@ -234,7 +281,8 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
         </Button>
       </aside>
       <div>
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-8">
+        <header className="sticky top-0 z-20 grid gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-8">
+          <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{me.data ? displayName : t.common.loading}</p>
             <p className="truncate text-xs text-muted">{me.data?.email ?? me.data?.phone}</p>
@@ -273,8 +321,10 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 {unread}
               </span>
             ) : null}
-          </button>
+            </button>
           </div>
+          </div>
+          {portal === "driver" ? <DriverNextTask /> : null}
         </header>
         {openNotes ? (
           <div className="mx-4 mt-3 rounded-3xl border border-border bg-card p-4 card-shadow md:mx-8">

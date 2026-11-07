@@ -54,6 +54,7 @@ export function DocumentGallery({
   canVerify = false,
   canSign,
   context,
+  plain,
 }: {
   kind: DocumentSlot["kinds"][number];
   entityId: string;
@@ -62,6 +63,7 @@ export function DocumentGallery({
   canVerify?: boolean;
   canSign?: (slot: DocumentSlot) => boolean;
   context?: { number?: string; waybill?: string | null };
+  plain?: boolean;
 }) {
   const qc = useQueryClient();
   const me = useMe();
@@ -161,18 +163,20 @@ export function DocumentGallery({
         <div>
           <h2 className="text-lg font-bold">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-muted">
-            {jobKind
-              ? "رسید و بارنامه را با عکس یا PDF بفرستید. اگر روی کاغذ امضا شده، همان فایل کافی است. امضای الکترونیک جدا و اختیاری است."
-              : "فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است."}
+            {plain
+              ? "دو عکس کافی است: رسید و بارنامه. اگر روی کاغذ امضا شده، همان عکس را بفرستید."
+              : jobKind
+                ? "رسید و بارنامه را با عکس یا PDF بفرستید. اگر روی کاغذ امضا شده، همان فایل کافی است. امضای الکترونیک جدا و اختیاری است."
+                : "فقط PDF یا JPEG (JPG)، تا ۲۰ مگابایت. موارد ستاره‌دار الزامی است."}
           </p>
         </div>
         {q.data ? (
           <span className={`text-sm font-semibold ${q.data.items.some((slot) => slot.required) && !q.data.complete ? "text-danger" : "text-primary"}`}>
-            {!q.data.items.some((slot) => slot.required) ? "بارگذاری اختیاری است" : q.data.complete ? "مدارک کامل است" : "مدارک ناقص است"}
+            {!q.data.items.some((slot) => slot.required) ? "بارگذاری اختیاری است" : q.data.complete ? (plain ? "هر دو عکس رسید" : "مدارک کامل است") : plain ? "هنوز عکس کم است" : "مدارک ناقص است"}
           </span>
         ) : null}
       </div>
-      {jobKind ? <p className="text-sm font-bold">مدارک بار</p> : null}
+      {jobKind && !plain ? <p className="text-sm font-bold">مدارک بار</p> : null}
       <div className="grid gap-3 md:grid-cols-2">
         {(jobKind ? items.filter((slot) => !slot.signable) : items).map((slot) => {
           const upload = allowUpload(slot);
@@ -208,13 +212,13 @@ export function DocumentGallery({
                 ) : null}
                 {upload ? (
                   <>
-                    <label className="inline-flex h-10 cursor-pointer items-center rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
-                      {slot.document ? "جایگزینی فایل" : "انتخاب عکس یا PDF"}
+                    <label className="inline-flex h-12 cursor-pointer items-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground">
+                      {slot.document ? "عکس را عوض کن" : "انتخاب عکس یا PDF"}
                       <input type="file" accept={UPLOAD_ACCEPT} className="hidden" onChange={(e) => onPick(slot.type, e.target.files?.[0])} />
                     </label>
                     {jobKind ? (
-                      <label className="inline-flex h-10 cursor-pointer items-center rounded-xl border border-border px-3 text-sm font-bold">
-                        دوربین
+                      <label className="inline-flex h-12 cursor-pointer items-center rounded-xl border border-border px-4 text-base font-bold">
+                        عکس با دوربین
                         <input
                           type="file"
                           accept={UPLOAD_ACCEPT_IMAGE}
@@ -246,7 +250,7 @@ export function DocumentGallery({
           );
         })}
       </div>
-      {jobKind ? (
+      {jobKind && !plain ? (
         <div className="grid gap-3">
           <div>
             <p className="font-bold">امضای الکترونیک</p>

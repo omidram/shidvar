@@ -483,11 +483,72 @@ export async function listLiveTracking(actor: Actor) {
     if (!canSeeJob(actor, session.job)) continue;
     if (canSimulate(session)) await advanceSession(session.jobId);
     const fresh = await loadTrackedJob(session.jobId);
+    if (actor.driverProfile && ["PROOF_SUBMITTED", "CONFIRMED", "COMPLETED", "CANCELLED"].includes(fresh.status)) continue;
     if (fresh.trackingSession) {
       live.push(presentTracking(actor, fresh, await serializeSession(fresh, fresh.trackingSession)));
     }
   }
+
+  if (actor.driverProfile) {
+    const seen = new Set(live.map((row) => row.jobId));
+    const waitingDocs = await prisma.transportationJob.findMany({
+      where: { assignedDriverId: actor.driverProfile.id, status: "DELIVERED" },
+      select: { id: true },
+    });
+    for (const row of waitingDocs) {
+      if (seen.has(row.id)) continue;
+      const fresh = await loadTrackedJob(row.id);
+      if (fresh.trackingSession) {
+        live.unshift(presentTracking(actor, fresh, await serializeSession(fresh, fresh.trackingSession)));
+      } else {
+        live.unshift(await presentStoppedTrip(fresh));
+      }
+    }
+  }
   return live;
+}
+
+async function presentStoppedTrip(job: Awaited<ReturnType<typeof loadTrackedJob>>) {
+  const { origin, dest, originCity, destCity } = endpoints(job);
+  return {
+    jobId: job.id,
+    jobNumber: job.number,
+    waybill: job.shipment?.trackingNumber ?? null,
+    status: job.status,
+    sessionStatus: "COMPLETED",
+    consentStatus: "GRANTED",
+    needsConsent: false,
+    waitingForDriver: false,
+    deviceConsent: false,
+    source: "pending",
+    active: false,
+    origin,
+    dest,
+    originCity,
+    destCity,
+    originLabel: [originCity, job.pickupWarehouse?.address.line1].filter(Boolean).join(" · "),
+    destLabel: [destCity, job.deliveryWarehouse?.address.line1].filter(Boolean).join(" · "),
+    cargoOwner: job.order.requesterCompany.tradeName,
+    driver: job.assignedDriver
+      ? {
+          id: job.assignedDriver.id,
+          name: `${job.assignedDriver.user.firstName} ${job.assignedDriver.user.lastName}`.trim(),
+          phone: job.assignedDriver.user.phone,
+        }
+      : null,
+    plate: job.assignedVehicle?.plateNumber ?? null,
+    located: false,
+    current: dest,
+    heading: null,
+    speedKmh: null,
+    lastAt: null,
+    startedAt: job.updatedAt.toISOString(),
+    remainingKm: 0,
+    etaMinutes: 0,
+    routeKm: 0,
+    route: [origin, dest],
+    trail: [] as Array<{ lat: number; lng: number; at?: string }>,
+  };
 }
 
 async function demoteOpenTrip(jobId: string) {

@@ -17,6 +17,7 @@ import { useMe } from "@/hooks/use-me";
 import { readPhonePosition, useDriverGps } from "@/hooks/use-driver-gps";
 import type { TrackingMapData } from "@/components/domain/tracking-map";
 import { DeliveryFlow, driverMove } from "@/components/domain/delivery-flow";
+import { DocumentGallery } from "@/components/domain/document-uploader";
 
 const TrackingMap = dynamic(() => import("@/components/domain/tracking-map").then((m) => m.TrackingMap), {
   ssr: false,
@@ -90,15 +91,50 @@ export function TrackingCard({ data, href, showFlow = true }: { data: TrackingDt
     onError: (error: Error) => toast.error(error.message),
   });
   const requestDelivery = useMutation({
-    mutationFn: () => api(`/jobs/${data.jobId}/request-delivery`, { method: "POST" }),
-    onSuccess: () => {
-      toast.success(t.job.requestDeliverySent);
+    mutationFn: () => api<{ status: string }>(`/jobs/${data.jobId}/request-delivery`, { method: "POST" }),
+    onSuccess: (job) => {
+      toast.success(job.status === "PROOF_SUBMITTED" ? t.job.requestDeliverySent : "سفر باز ماند. عکس رسید و بارنامه را بفرستید.");
       void qc.invalidateQueries({ queryKey: ["tracking-live"] });
+      void qc.invalidateQueries({ queryKey: ["tracking", data.jobId] });
       void qc.invalidateQueries({ queryKey: ["job", data.jobId] });
+      void qc.invalidateQueries({ queryKey: ["docs"] });
       void qc.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  if (isAssignedDriver && data.status === "DELIVERED") {
+    return (
+      <Card id="delivery-docs">
+        <p className="text-sm font-bold text-primary">بار را تحویل دادید</p>
+        <h2 className="mt-1 text-2xl font-black">حالا دو عکس بفرستید</h2>
+        <p className="mt-2 text-base leading-7">
+          رسید و بارنامه را با دوربین بگیرید. تا عکس‌ها را نفرستید، این بار در سفرهای فعال می‌ماند.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          {data.originCity} ← {data.destCity}
+          {data.waybill ? ` · ${data.waybill}` : ` · ${data.jobNumber}`}
+        </p>
+        <div className="mt-4">
+          <DocumentGallery
+            kind="job"
+            entityId={data.jobId}
+            title="عکس مدارک"
+            canUpload={(slot) => !slot.signable}
+            canSign={() => false}
+            plain
+            context={{ number: data.jobNumber, waybill: data.waybill }}
+          />
+        </div>
+        <Button className="mt-4 h-14 w-full text-base" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+          {requestDelivery.isPending ? t.common.loading : "عکس‌ها را فرستادم"}
+        </Button>
+        <Button asChild className="mt-2 w-full" variant="secondary">
+          <Link href={link}>جزئیات این بار</Link>
+        </Button>
+      </Card>
+    );
+  }
 
   if (data.waitingForDriver && isAssignedDriver) {
     return <TrackingConsentCard data={data} href={link} audience={audience} />;
@@ -129,14 +165,12 @@ export function TrackingCard({ data, href, showFlow = true }: { data: TrackingDt
         </div>
       ) : null}
       {showFlow && move ? (
-        <Button className="mt-4 w-full" disabled={advance.isPending} onClick={() => advance.mutate(move.next)}>
+        <Button className="mt-4 h-14 w-full text-base" disabled={advance.isPending} onClick={() => advance.mutate(move.next)}>
           {advance.isPending ? t.common.loading : move.label}
         </Button>
       ) : null}
-      {showFlow && isAssignedDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(data.status) ? (
-        <Button className="mt-3 w-full" variant="secondary" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
-          {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
-        </Button>
+      {showFlow && move ? (
+        <p className="mt-3 text-center text-sm text-muted">یک دکمه را بزنید. لازم نیست جای دیگری بروید.</p>
       ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-4">
         <Meta label={t.tracking.remaining} value={`${formatNumber(data.remainingKm)} ${t.tracking.km}`} />

@@ -931,10 +931,11 @@ export function DriverJobView({ id }: { id: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
   const requestDelivery = useMutation({
-    mutationFn: () => api(`/jobs/${id}/request-delivery`, { method: "POST" }),
-    onSuccess: () => {
-      toast.success(t.job.requestDeliverySent);
+    mutationFn: () => api<{ status: string }>(`/jobs/${id}/request-delivery`, { method: "POST" }),
+    onSuccess: (updated) => {
+      toast.success(updated.status === "PROOF_SUBMITTED" ? t.job.requestDeliverySent : "سفر باز ماند. عکس رسید و بارنامه را پایین صفحه بفرستید.");
       qc.invalidateQueries({ queryKey: ["job", id] });
+      qc.invalidateQueries({ queryKey: ["tracking-live"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -972,15 +973,15 @@ export function DriverJobView({ id }: { id: string }) {
       <Card>
         <DeliveryFlow status={job.status} audience={isDriver ? "driver" : "owner"} />
         {move ? (
-          <Button className="mt-4 w-full" disabled={status.isPending} onClick={() => status.mutate(move.next)}>
+          <Button className="mt-4 h-14 w-full text-base" disabled={status.isPending} onClick={() => status.mutate(move.next)}>
             {status.isPending ? t.common.loading : move.label}
           </Button>
         ) : null}
-        {isDriver && ["AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(job.status) ? (
+        {isDriver && job.status === "DELIVERED" ? (
           <div className="mt-4 grid gap-2 border-t border-border pt-4">
-            <p className="text-sm text-muted">{t.job.requestDeliveryHint}</p>
-            <Button className="w-full" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
-              {requestDelivery.isPending ? t.common.loading : t.job.requestDelivery}
+            <p className="text-base leading-7">عکس رسید و بارنامه را پایین همین صفحه بفرستید. این بار تا آن موقع در سفرهای فعال می‌ماند.</p>
+            <Button className="h-14 w-full text-base" disabled={requestDelivery.isPending} onClick={() => requestDelivery.mutate()}>
+              {requestDelivery.isPending ? t.common.loading : "عکس‌ها را فرستادم"}
             </Button>
           </div>
         ) : null}
@@ -1117,6 +1118,7 @@ export function DriverJobView({ id }: { id: string }) {
         </Card>
       ) : null}
       {(DELIVERY_STATUSES as readonly string[]).concat(["PROOF_SUBMITTED", "COMPLETED", "CONFIRMED", "DISPUTED"]).includes(job.status) ? (
+        <div id="delivery-docs" className="scroll-mt-28">
         <DocumentGallery
           kind="job"
           entityId={job.id}
@@ -1135,6 +1137,7 @@ export function DriverJobView({ id }: { id: string }) {
           }}
           context={{ number: job.number, waybill: job.waybill }}
         />
+        </div>
       ) : null}
       {isDriver && job.status === "PROOF_SUBMITTED" ? (
         <Card>

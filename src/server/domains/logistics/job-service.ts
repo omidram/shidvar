@@ -540,7 +540,7 @@ export async function updateJobStatus(actor: Actor, jobId: string, to: Transport
   if (TRACKING_LIVE_STATUSES.includes(to as (typeof TRACKING_LIVE_STATUSES)[number]) || to === "LOADED") {
     await startTrackingForJob(jobId, { seedTrail: false });
   }
-  if (["DELIVERED", "PROOF_SUBMITTED", "CONFIRMED", "COMPLETED", "CANCELLED"].includes(to)) {
+  if (["PROOF_SUBMITTED", "CONFIRMED", "COMPLETED", "CANCELLED"].includes(to)) {
     await completeTracking(jobId);
   }
   await recordStatusChange({
@@ -847,7 +847,19 @@ export async function requestDelivery(actor: Actor, jobId: string) {
     where: { entityType: "TransportationJob", entityId: jobId, documentType: { in: [...JOB_DELIVERY_DOC_TYPES] } },
   });
   const ready = JOB_DELIVERY_DOC_TYPES.every((type) => docs.some((doc) => doc.documentType === type && doc.verification !== "REJECTED"));
-  if (!ready) throw Errors.conflict("اول بارنامه و مدارک تحویل را بارگذاری کنید");
+  if (!ready) {
+    if (job.status !== "DELIVERED") {
+      assertTransition(JOB_TRANSITIONS, job.status, "DELIVERED");
+      await prisma.transportationJob.update({
+        where: { id: jobId, status: job.status },
+        data: { status: "DELIVERED", version: { increment: 1 } },
+      });
+      if (job.shipment) {
+        await prisma.shipment.update({ where: { id: job.shipment.id }, data: { status: "DELIVERED" } });
+      }
+    }
+    return getJob(actor, jobId);
+  }
   assertTransition(JOB_TRANSITIONS, job.status, "PROOF_SUBMITTED");
   await prisma.$transaction(async (tx) => {
     for (const item of job.shipment!.items) {
@@ -889,6 +901,7 @@ export async function requestDelivery(actor: Actor, jobId: string) {
       })),
     });
   }
+  await completeTracking(jobId);
   await writeAudit({ actor, action: "delivery.requested", entityType: "TransportationJob", entityId: jobId });
   return getJob(actor, jobId);
 }
