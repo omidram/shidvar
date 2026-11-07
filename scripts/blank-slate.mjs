@@ -31,10 +31,10 @@ const prisma = new PrismaClient();
 const sql = `
 DO $$
 DECLARE
-  admin_ids uuid[];
-  keep_company_ids uuid[];
+  admin_ids text[];
+  keep_company_ids text[];
 BEGIN
-  SELECT array_agg(u.id) INTO admin_ids
+  SELECT array_agg(u.id::text) INTO admin_ids
   FROM "User" u
   JOIN "UserRole" ur ON ur."userId" = u.id
   JOIN "Role" r ON r.id = ur."roleId"
@@ -48,17 +48,17 @@ BEGIN
     SELECT 1 FROM "User"
     WHERE id = ANY(admin_ids) AND email IN ('shidroadmin', 'admin@shidvar.local')
   ) THEN
-    SELECT array_agg(id) INTO admin_ids
+    SELECT array_agg(id::text) INTO admin_ids
     FROM "User"
     WHERE id = ANY(admin_ids) AND email IN ('shidroadmin', 'admin@shidvar.local');
   END IF;
 
-  SELECT array_agg(DISTINCT m."companyId") INTO keep_company_ids
+  SELECT array_agg(DISTINCT m."companyId"::text) INTO keep_company_ids
   FROM "Membership" m
   WHERE m."userId" = ANY(admin_ids);
 
   IF keep_company_ids IS NULL THEN
-    SELECT array_agg(id) INTO keep_company_ids FROM "Company" WHERE type = 'PLATFORM';
+    SELECT array_agg(id::text) INTO keep_company_ids FROM "Company" WHERE type = 'PLATFORM';
   END IF;
   IF keep_company_ids IS NULL THEN
     RAISE EXCEPTION 'Admin has no company. Blank slate aborted.';

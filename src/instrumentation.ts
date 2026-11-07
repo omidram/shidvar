@@ -4,8 +4,8 @@ export async function register() {
   const { existsSync } = await import("node:fs");
   const path = await import("node:path");
   const candidates = [
-    path.join(process.cwd(), "scripts", "blank-slate.mjs"),
     path.join(process.cwd(), "..", "..", "scripts", "blank-slate.mjs"),
+    path.join(process.cwd(), "scripts", "blank-slate.mjs"),
   ];
   const script = candidates.find((file) => existsSync(file));
   if (!script) {
