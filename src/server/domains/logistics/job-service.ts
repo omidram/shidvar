@@ -254,29 +254,53 @@ export async function revealOwnerContact(actor: Actor, jobId: string) {
   return getJob(actor, jobId);
 }
 
+const OPEN_OFFER_STATUSES = ["MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED"] as const;
+
 async function ensurePublicOffers(driverId: string) {
   const jobs = await prisma.transportationJob.findMany({
     where: {
       assignedDriverId: null,
-      status: { in: ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"] },
-      order: { request: { dispatchMode: "NORMAL" } },
+      status: { in: [...OPEN_OFFER_STATUSES] },
+      order: {
+        request: {
+          OR: [{ dispatchMode: "NORMAL" }, { dispatchMode: "VIP", vipDriverId: driverId }],
+        },
+      },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      status: true,
+      order: { select: { request: { select: { dispatchMode: true, announcedAt: true, vipDriverId: true } } } },
+    },
+  });
+  const visible = jobs.filter((job) => {
+    const request = job.order.request;
+    if (!request) return false;
+    if (request.dispatchMode === "VIP") return request.vipDriverId === driverId;
+    if (job.status === "OFFERED_TO_DRIVERS" || job.status === "DRIVER_APPLIED") return true;
+    return Boolean(request.announcedAt);
   });
   const rejected = await prisma.driverApplication.findMany({
-    where: { driverId, status: "REJECTED", jobId: { in: jobs.map((job) => job.id) } },
+    where: { driverId, status: "REJECTED", jobId: { in: visible.map((job) => job.id) } },
     select: { jobId: true },
   });
   const rejectedIds = new Set(rejected.map((row) => row.jobId));
-  for (const job of jobs) {
+  for (const job of visible) {
     if (rejectedIds.has(job.id)) continue;
+    if (job.status === "MATCHING") {
+      await prisma.transportationJob.updateMany({
+        where: { id: job.id, status: "MATCHING", assignedDriverId: null },
+        data: { status: "OFFERED_TO_DRIVERS" },
+      });
+    }
+    const vip = job.order.request?.dispatchMode === "VIP";
     await prisma.driverMatch.upsert({
       where: { jobId_driverId: { jobId: job.id, driverId } },
       create: {
         jobId: job.id,
         driverId,
-        score: 60,
-        breakdown: { public: true, notify: true },
+        score: vip ? 100 : 60,
+        breakdown: { public: !vip, vip, notify: true },
         eligible: true,
       },
       update: { eligible: true },
@@ -295,7 +319,7 @@ export async function listDriverMarketplace(actor: Actor) {
   });
   const cards = [];
   for (const match of matches) {
-    if (!["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(match.job.status)) continue;
+    if (!(OPEN_OFFER_STATUSES as readonly string[]).includes(match.job.status)) continue;
     const declined = await prisma.driverApplication.findUnique({
       where: { jobId_driverId: { jobId: match.job.id, driverId: driver.id } },
     });
@@ -756,11 +780,35 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
   assertPermission(actor, "jobs.apply");
   const driver = requireApprovedDriver(actor);
   const job = await loadJob(jobId);
+  const request = job.order.request;
+  const open = (OPEN_OFFER_STATUSES as readonly string[]).includes(job.status) && !job.assignedDriverId;
+  const publicOffer = Boolean(open && request && request.dispatchMode !== "VIP" && (request.announcedAt || job.status !== "MATCHING"));
+  const vipOffer = Boolean(open && request?.dispatchMode === "VIP" && request.vipDriverId === driver.id);
   const match = await prisma.driverMatch.findUnique({
     where: { jobId_driverId: { jobId, driverId: driver.id } },
   });
-  if (!match?.eligible) throw Errors.forbidden("این بار برای شما ارسال نشده است");
-  if (!["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) || job.assignedDriverId) {
+  if (!match?.eligible) {
+    if (!publicOffer && !vipOffer) throw Errors.forbidden("این بار برای شما ارسال نشده است");
+    await prisma.driverMatch.upsert({
+      where: { jobId_driverId: { jobId, driverId: driver.id } },
+      create: {
+        jobId,
+        driverId: driver.id,
+        score: vipOffer ? 100 : 60,
+        breakdown: { public: publicOffer, vip: vipOffer },
+        eligible: true,
+      },
+      update: { eligible: true },
+    });
+  }
+  if (job.status === "MATCHING") {
+    await prisma.transportationJob.updateMany({
+      where: { id: jobId, status: "MATCHING", assignedDriverId: null },
+      data: { status: "OFFERED_TO_DRIVERS" },
+    });
+  }
+  const fresh = await prisma.transportationJob.findUnique({ where: { id: jobId }, select: { status: true, assignedDriverId: true } });
+  if (!fresh || !["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(fresh.status) || fresh.assignedDriverId) {
     throw Errors.conflict("این بار دیگر قابل قبول نیست");
   }
   await assertDriverCanTakeLoad(driver.id, jobId);

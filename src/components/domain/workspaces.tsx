@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState, ErrorState, FilterBar, MetaGrid, PageHeader, RouteLine, SimpleTable, Timeline } from "@/components/domain/chrome";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate, formatDateTime, formatMoney, formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -284,7 +284,11 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const { t } = useI18n();
   const qc = useQueryClient();
   const path = marketplace ? "/marketplace/jobs" : "/jobs";
-  const q = useQuery({ queryKey: ["jobs", path], queryFn: () => api<JobDto[]>(path) });
+  const q = useQuery({
+    queryKey: ["jobs", path],
+    queryFn: () => api<JobDto[]>(path),
+    refetchInterval: marketplace ? liveInterval(15000) : false,
+  });
   const [confirmJob, setConfirmJob] = useState<JobDto | null>(null);
   const [fromCity, setFromCity] = useState("");
   const [toCity, setToCity] = useState("");
@@ -369,7 +373,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
         </Card>
       ) : null}
       {rows.length === 0 ? (
-        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "بارهای همگانی بعد از اعلام مدیریت اینجا دیده می‌شوند. هنوز باری برای شما اعلام نشده."} />
+        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "بار همگانی همین‌جا، قبل از قبول شما، دیده می‌شود. هنوز مدیریت باری برای راننده‌ها اعلام نکرده است."} />
       ) : (
         <div className="grid gap-3">
           {rows.map((job) => (
@@ -424,7 +428,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {job.matchScore != null ? <span className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">{t.request.score}: {job.matchScore}</span> : null}
-                {marketplace && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
+                {marketplace && ["MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
                   <>
                     <Button disabled={job.loadCheck?.allowed === false} onClick={() => setConfirmJob(job)}>
                       {t.common.accept}
@@ -526,7 +530,7 @@ function AnnouncePanel({
         </NativeSelect>
       ) : null}
       <div>
-        <Button disabled={announce.isPending || (dispatchMode === "VIP" && !vipDriverId)} onClick={() => announce.mutate()}>
+        <Button type="button" disabled={announce.isPending || (dispatchMode === "VIP" && !vipDriverId)} onClick={() => announce.mutate()}>
           {announce.isPending ? "در حال اعلام…" : "اعلام بار"}
         </Button>
       </div>
@@ -617,10 +621,11 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
   const invoices = req.orders?.flatMap((order) => order.invoices ?? []) ?? [];
   const driver = job?.assignedDriver;
   const vehicle = driver?.vehicles?.[0]?.vehicle ?? job?.assignedVehicle;
+  const driverHasAccepted = Boolean(driver) || Boolean(job && !["CREATED", "MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "CANCELLED"].includes(job.status));
   const canCancel =
     mode !== "admin" &&
-    !driver &&
-    ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "MATCHING", "TRANSPORT_PENDING"].includes(req.status);
+    !driverHasAccepted &&
+    ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "MATCHING", "SUPPLIER_RESPONDED", "SUPPLIER_SELECTED", "TRANSPORT_PENDING"].includes(req.status);
 
   return (
     <div className="grid gap-6">
@@ -634,6 +639,7 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             {mode !== "supplier" && req.status === "DRAFT" ? <Button onClick={() => submit.mutate()}>{t.common.submit}</Button> : null}
             {canCancel ? (
               <Button
+                type="button"
                 variant="danger"
                 disabled={cancel.isPending}
                 onClick={() => {
@@ -646,10 +652,25 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
           </div>
         }
       />
+      {canCancel ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-danger/30">
+          <p className="text-sm leading-7">تا وقتی راننده این بار را قبول نکرده، حتی بعد از اعلام مدیریت، می‌توانید درخواست را لغو کنید.</p>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={cancel.isPending}
+            onClick={() => {
+              if (window.confirm("این درخواست لغو شود؟")) cancel.mutate();
+            }}
+          >
+            {cancel.isPending ? t.common.loading : "لغو درخواست"}
+          </Button>
+        </Card>
+      ) : null}
       <CargoBadges dispatchMode={req.dispatchMode} needsWaybill={req.needsWaybill} needsInsurance={req.needsInsurance} />
       {mode === "admin" &&
       (["SUBMITTED", "UNDER_REVIEW", "PUBLISHED"].includes(req.status) ||
-        (req.status === "TRANSPORT_PENDING" && job && !job.assignedDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status))) ? (
+        (req.status === "TRANSPORT_PENDING" && job && !job.assignedDriver && ["MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status))) ? (
         <AnnouncePanel
           requestId={req.id}
           initialMode={req.dispatchMode ?? "NORMAL"}
@@ -985,7 +1006,7 @@ export function DriverJobView({ id }: { id: string }) {
             </Button>
           </div>
         ) : null}
-        {isDriver && ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
+        {isDriver && ["MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(job.status) ? (
           <div className="mt-4 grid grid-cols-2 gap-3">
             <Button onClick={() => setConfirmOpen(true)}>{t.common.accept}</Button>
             <Button variant="secondary" onClick={() => reject.mutate()}>

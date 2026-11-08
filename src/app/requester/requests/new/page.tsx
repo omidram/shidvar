@@ -78,13 +78,12 @@ function NewRequestForm() {
     setLines(next);
   }
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    if (step < 3 || submitter?.dataset.intent !== "create") {
-      if (step < 3) setStep(step + 1);
-      return;
-    }
+  }
+
+  async function createRequest() {
+    if (step !== 3) return;
     if (dispatchMode === "VIP" && !vipDriverId) {
       toast.error("برای بار VIP یک راننده انتخاب کنید");
       return;
@@ -154,7 +153,7 @@ function NewRequestForm() {
                 {t.common.next}
               </Button>
             ) : (
-              <Button type="submit" data-intent="create" disabled={saving}>
+              <Button type="button" disabled={saving} onClick={() => void createRequest()}>
                 {saving ? t.common.loading : "ثبت درخواست"}
               </Button>
             )}

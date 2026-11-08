@@ -1,6 +1,5 @@
 import { prisma } from "@/server/db";
 import { nextNumber } from "@/server/numbering";
-import { runDriverMatching } from "@/server/domains/matching/run-driver-matching";
 import { CITY_COORDS } from "@/lib/geo/city-coords";
 
 async function warehouseForCity(companyId: string, city: string, line1?: string | null) {
@@ -102,11 +101,20 @@ export async function redispatchOpenJob(requestId: string) {
   const job = request?.orders.flatMap((o) => o.jobs).find((j) => ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "MATCHING"].includes(j.status) && !j.assignedDriverId);
   if (!request || !job) return null;
   await prisma.driverMatch.updateMany({ where: { jobId: job.id }, data: { eligible: false } });
-  if (request.dispatchMode === "VIP" && request.vipDriverId) {
-    await offerToVipDriver(job.id, job.number, request.vipDriverId);
-  } else {
-    await runDriverMatching(job.id);
-    await offerToEveryApprovedDriver(job.id, job.number);
+  if (job.status === "MATCHING") {
+    await prisma.transportationJob.updateMany({
+      where: { id: job.id, status: "MATCHING", assignedDriverId: null },
+      data: { status: "OFFERED_TO_DRIVERS" },
+    });
+  }
+  try {
+    if (request.dispatchMode === "VIP" && request.vipDriverId) {
+      await offerToVipDriver(job.id, job.number, request.vipDriverId);
+    } else {
+      await offerToEveryApprovedDriver(job.id, job.number);
+    }
+  } catch (error) {
+    console.error("Announcing the load to drivers failed", error);
   }
   return job;
 }
@@ -117,7 +125,27 @@ export async function dispatchCargoToDrivers(requestId: string) {
     include: { items: true, company: true, orders: { include: { jobs: true } } },
   });
   if (!request) return null;
-  if (request.orders.some((o) => o.jobs.length)) return request.orders[0];
+  if (request.orders.some((order) => order.jobs.length)) {
+    const existing = request.orders.flatMap((order) => order.jobs).find((job) => !job.assignedDriverId);
+    if (existing && ["CREATED", "MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED"].includes(existing.status)) {
+      if (["CREATED", "MATCHING"].includes(existing.status)) {
+        await prisma.transportationJob.updateMany({
+          where: { id: existing.id, assignedDriverId: null },
+          data: { status: "OFFERED_TO_DRIVERS" },
+        });
+      }
+      try {
+        if (request.dispatchMode === "VIP" && request.vipDriverId) {
+          await offerToVipDriver(existing.id, existing.number, request.vipDriverId);
+        } else {
+          await offerToEveryApprovedDriver(existing.id, existing.number);
+        }
+      } catch (error) {
+        console.error("Announcing the load to drivers failed", error);
+      }
+    }
+    return request.orders[0];
+  }
 
   const originCity = request.originCity ?? "تهران";
   const destinationCity = request.destinationCity ?? "آمل";
@@ -155,7 +183,7 @@ export async function dispatchCargoToDrivers(requestId: string) {
     data: {
       number: await nextNumber("JOB"),
       orderId: order.id,
-      status: "MATCHING",
+      status: "OFFERED_TO_DRIVERS",
       pickupWarehouseId: pickup.id,
       deliveryWarehouseId: delivery.id,
       cargoWeight: weight,
@@ -174,16 +202,15 @@ export async function dispatchCargoToDrivers(requestId: string) {
     data: { status: "TRANSPORT_PENDING", destinationWarehouseId: delivery.id, version: { increment: 1 } },
   });
 
-  if (request.dispatchMode === "VIP" && request.vipDriverId) {
-    await offerToVipDriver(job.id, job.number, request.vipDriverId);
-  } else {
-    await runDriverMatching(job.id);
-    await offerToEveryApprovedDriver(job.id, job.number);
+  try {
+    if (request.dispatchMode === "VIP" && request.vipDriverId) {
+      await offerToVipDriver(job.id, job.number, request.vipDriverId);
+    } else {
+      await offerToEveryApprovedDriver(job.id, job.number);
+    }
+  } catch (error) {
+    console.error("Announcing the load to drivers failed", error);
   }
-  await prisma.transportationJob.update({
-    where: { id: job.id, status: "MATCHING" },
-    data: { status: "OFFERED_TO_DRIVERS", version: { increment: 1 } },
-  });
 
   return { order, job };
 }

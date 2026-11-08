@@ -335,18 +335,30 @@ export async function publishRequest(actor: Actor, id: string) {
   return getRequestForActor(actor, id);
 }
 
-const OWNER_CANCELLABLE = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "MATCHING", "TRANSPORT_PENDING"] as const;
+const OWNER_CANCELLABLE = [
+  "DRAFT",
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "PUBLISHED",
+  "MATCHING",
+  "SUPPLIER_RESPONDED",
+  "SUPPLIER_SELECTED",
+  "TRANSPORT_PENDING",
+] as const;
 
 export async function cancelRequest(actor: Actor, id: string, reason: string) {
   const request = await prisma.procurementRequest.findUnique({
     where: { id },
-    include: { orders: { include: { jobs: { select: { id: true, assignedDriverId: true } } } } },
+    include: { orders: { include: { jobs: { select: { id: true, assignedDriverId: true, status: true } } } } },
   });
   if (!request) throw Errors.notFound();
   if (!actor.isPlatformStaff && !actor.memberships.some((m) => m.companyId === request.companyId)) {
     throw Errors.notFound();
   }
-  if (request.orders.some((order) => order.jobs.some((job) => job.assignedDriverId))) {
+  const taken = request.orders.some((order) =>
+    order.jobs.some((job) => job.assignedDriverId || !["CREATED", "MATCHING", "OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "CANCELLED"].includes(job.status)),
+  );
+  if (taken) {
     throw Errors.conflict("راننده این بار را قبول کرده است. تا قبل از قبول راننده می‌توانید درخواست را لغو کنید");
   }
   if (!(OWNER_CANCELLABLE as readonly string[]).includes(request.status)) {
