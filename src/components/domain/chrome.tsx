@@ -6,7 +6,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
         {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
       </div>
       {actions}
@@ -33,8 +33,8 @@ export function ErrorState({ message }: { message: string }) {
 
 export function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return (
-    <div className="overflow-x-auto rounded-3xl border border-border bg-card card-shadow">
-      <table className="w-full min-w-[640px] text-sm">
+    <div className="max-w-full overflow-x-auto rounded-3xl border border-border bg-card card-shadow">
+      <table className="w-full min-w-[36rem] text-sm">
         <thead className="border-b border-border bg-background text-start text-muted">
           <tr>
             {headers.map((h) => (

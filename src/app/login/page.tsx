@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
@@ -38,6 +38,31 @@ function LoginForm() {
     toast.success(t.auth.loginTitle);
     window.location.replace(safeInternalPath(params.get("next")) || homePath(me));
   }
+
+  useEffect(() => {
+    if (!challenge) return;
+    const fill = (code: string) => setOtp(code.replace(/[^\d]/g, "").slice(0, 6));
+    const host = window as Window & { __shidroFillOtp?: (code: string) => void; Shidro?: { requestOtp?: () => void } };
+    host.__shidroFillOtp = fill;
+    if (challenge.channel === "SMS") host.Shidro?.requestOtp?.();
+    const credentials = navigator.credentials as CredentialsContainer & { get: (options: CredentialRequestOptions & { otp?: { transport: string[] } }) => Promise<(Credential & { code?: string }) | null> };
+    if (challenge.channel !== "SMS" || !window.isSecureContext || !("OTPCredential" in window)) {
+      return () => {
+        delete host.__shidroFillOtp;
+      };
+    }
+    const ac = new AbortController();
+    credentials
+      .get({ otp: { transport: ["sms"] }, signal: ac.signal })
+      .then((cred) => {
+        if (cred?.code) fill(cred.code);
+      })
+      .catch(() => undefined);
+    return () => {
+      ac.abort();
+      delete host.__shidroFillOtp;
+    };
+  }, [challenge]);
 
   function showOtp(result: LoginResponse) {
     setChallenge(result);
@@ -117,12 +142,16 @@ function LoginForm() {
             {challenge ? (
               <Field label={t.auth.otpCode}>
                 <Input
+                  id="shidro-otp"
+                  name="one-time-code"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
                   inputMode="numeric"
                   autoComplete="one-time-code"
+                  autoFocus
                   required
                 />
+                {challenge.channel === "SMS" ? <p className="text-xs leading-6 text-muted">اگر پیامک روی همین گوشی بیاید، کد خودش در این جا نوشته می‌شود.</p> : null}
               </Field>
             ) : (
               <>

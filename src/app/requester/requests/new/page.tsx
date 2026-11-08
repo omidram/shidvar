@@ -180,7 +180,7 @@ function NewRequestForm() {
             key={label}
             type="button"
             onClick={() => setStep(i + 1)}
-            className={`rounded-2xl px-3 py-2 text-center text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
+            className={`rounded-2xl px-2 py-2 text-center text-xs leading-5 sm:text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
           >
             {i + 1}. {label}
           </button>

@@ -14,6 +14,7 @@ import {
   FileText,
   LayoutDashboard,
   MapPinned,
+  Menu,
   PackageSearch,
   PlusCircle,
   Settings,
@@ -223,10 +224,15 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const router = useRouter();
   const me = useMe();
   const [openNotes, setOpenNotes] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [navReady, setNavReady] = useState(false);
   useEffect(() => {
     setNavReady(true);
   }, []);
+  useEffect(() => {
+    setMenuOpen(false);
+    setOpenNotes(false);
+  }, [pathname]);
   const notes = useQuery({
     queryKey: ["notifications"],
     queryFn: () =>
@@ -257,7 +263,9 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const items = NAV[portal];
   const pinned = portal === "admin" ? items.filter((item) => item.key === "adminProfile" || item.key === "settings") : [];
   const menuItems = portal === "admin" ? items.filter((item) => item.key !== "adminProfile" && item.key !== "settings") : items;
-  const mobile = portal === "driver";
+  const phoneShell = portal === "driver" || portal === "requester" || portal === "supplier";
+  const dockKeys = portal === "driver" ? ["dashboard", "jobs", "activeTrip", "wallet"] : ["dashboard", "requests", "newRequest", "jobs"];
+  const dock = items.filter((item) => dockKeys.includes(item.key));
   const unread = (notes.data ?? []).filter((n) => !n.readAt).length;
   const hasCoins = portal === "requester" || portal === "driver";
   const coins = useQuery({
@@ -270,8 +278,21 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const displayName = me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() || me.data.phone || me.data.email || "" : "";
 
   return (
-    <div className={cn("min-h-screen bg-background", mobile ? "pb-24" : "grid md:grid-cols-[280px_1fr]")}>
-      <aside className={cn("border-e-4 border-accent bg-ink p-5 text-white", mobile ? "hidden" : "sticky top-0 flex h-screen flex-col")}>
+    <div className={cn("min-h-screen max-w-full bg-background", phoneShell ? "pb-24 lg:grid lg:grid-cols-[280px_1fr] lg:pb-0" : "grid md:grid-cols-[280px_1fr]")}>
+      {phoneShell && menuOpen ? (
+        <button type="button" className="fixed inset-0 z-30 bg-black/50 lg:hidden" aria-label="بستن منو" onClick={() => setMenuOpen(false)} />
+      ) : null}
+      <aside
+        className={cn(
+          "border-e-4 border-accent bg-ink p-5 text-white",
+          phoneShell
+            ? cn(
+                "fixed inset-y-0 start-0 z-40 h-screen w-[min(20rem,88vw)] flex-col shadow-2xl lg:sticky lg:z-auto lg:flex lg:w-full lg:max-w-none lg:shadow-none",
+                menuOpen ? "flex" : "hidden lg:flex",
+              )
+            : "sticky top-0 flex h-screen flex-col",
+        )}
+      >
         <Link href={`/${portal}/dashboard`} className="block shrink-0">
           <BrandMark className="h-20" />
         </Link>
@@ -288,6 +309,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setMenuOpen(false)}
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
                   active ? "bg-primary text-primary-foreground" : "text-white/80 hover:bg-white/10",
@@ -325,18 +347,30 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
           {t.common.signOut}
         </Button>
       </aside>
-      <div>
-        <header className="sticky top-0 z-20 grid gap-3 border-b border-border bg-card/80 px-4 py-3 backdrop-blur md:px-8">
-          <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
+      <div className="min-w-0">
+        <header className="sticky top-0 z-20 grid max-w-full gap-3 overflow-x-clip border-b border-border bg-card/80 px-3 py-3 backdrop-blur sm:px-4 md:px-8">
+          <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {phoneShell ? (
+              <button
+                type="button"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-border bg-card lg:hidden"
+                aria-label="منو"
+                onClick={() => setMenuOpen(true)}
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            ) : null}
+            <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{me.data ? displayName : t.common.loading}</p>
             <p className="truncate text-xs text-muted">{me.data?.email ?? me.data?.phone}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {hasCoins && coins.data ? (
               <Link
                 href={`/${portal}/coins`}
-                className="flex h-11 items-center gap-1.5 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-3 text-sm font-bold text-amber-700 dark:text-amber-300"
+                className="flex h-11 max-w-28 items-center gap-1.5 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-2.5 text-sm font-bold text-amber-700 sm:max-w-none sm:px-3 dark:text-amber-300"
                 aria-label={t.menu.coins}
               >
                 <Coins className="h-4 w-4" />
@@ -350,7 +384,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 {t.menu.settings}
               </Link>
             ) : null}
-            <Button variant="secondary" className="h-11 px-3" onClick={() => void signOut()}>
+            <Button variant="secondary" className="hidden h-11 px-3 lg:inline-flex" onClick={() => void signOut()}>
               <LogOut className="h-4 w-4" />
               {t.common.signOut}
             </Button>
@@ -413,26 +447,35 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             </div>
           </div>
         ) : null}
-        <main className="p-4 md:p-8">{children}</main>
+        <main className="min-w-0 p-3 sm:p-4 md:p-8">{children}</main>
       </div>
-      {mobile ? (
-        <nav className={cn("fixed bottom-0 inset-x-0 grid border-t border-border bg-card p-2", items.length > 6 ? "grid-cols-7" : "grid-cols-6")}>
-          {items.map((item) => {
+      {phoneShell ? (
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card px-1 py-1 lg:hidden">
+          {dock.map((item) => {
             const Icon = ICONS[item.key];
+            const active = navReady && (pathname === item.href || (item.href !== `/${portal}/dashboard` && pathname.startsWith(item.href)));
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "grid place-items-center gap-1 rounded-2xl py-2 text-[11px]",
-                  navReady && pathname === item.href && "bg-primary/10 text-primary",
+                  "grid min-w-0 place-items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold leading-4",
+                  active && "bg-primary/10 text-primary",
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {t.menu[item.key]}
+                <span className="max-w-full truncate">{t.menu[item.key]}</span>
               </Link>
             );
           })}
+          <button
+            type="button"
+            className="grid min-w-0 place-items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold leading-4"
+            onClick={() => setMenuOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+            منو
+          </button>
         </nav>
       ) : null}
     </div>
