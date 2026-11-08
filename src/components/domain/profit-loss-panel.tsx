@@ -94,12 +94,12 @@ export function ProfitLossPanel() {
             <StatCard label={data.totals.profit < 0 ? "زیان" : "سود"} value={formatMoney(Math.abs(data.totals.profit))} />
             <StatCard label="بار تکمیل‌شده" value={formatNumber(data.totals.jobs)} />
           </div>
-          <div className="h-64" dir="ltr">
+          <div className="h-64 min-w-0 w-full overflow-hidden" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.rows}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10 }} />
+                <YAxis width={36} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(value) => formatMoney(Number(value ?? 0))} />
                 <Bar dataKey="income" name="درآمد" fill="#2f6fe0" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="driverCost" name="هزینه" fill="#0b1220" radius={[6, 6, 0, 0]} />

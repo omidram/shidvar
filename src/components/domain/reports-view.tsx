@@ -91,12 +91,12 @@ export function ReportsView({ compact }: { compact?: boolean }) {
       <div className={`grid gap-4 ${compact ? "lg:grid-cols-2" : "lg:grid-cols-[1.4fr_1fr]"}`}>
         <Card>
           <h3 className="font-bold">{t.reports.monthly}</h3>
-          <div className="mt-4 h-64" dir="ltr">
+          <div className="mt-4 h-64 min-w-0 w-full overflow-hidden" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.series} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+                <YAxis width={36} tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Bar dataKey="requests" name={t.reports.requests} fill="#2f6fe0" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="jobs" name={t.reports.jobs} fill="#0b1220" radius={[6, 6, 0, 0]} />

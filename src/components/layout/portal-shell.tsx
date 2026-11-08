@@ -155,7 +155,7 @@ function DriverNextTask() {
       <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
         <span className="min-w-0">
           <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
-          <span className="block truncate text-base font-black">{driverTaskLabel(current.status)}</span>
+          <span className="block text-base font-black leading-6">{driverTaskLabel(current.status)}</span>
         </span>
         <ChevronLeft className="h-5 w-5 shrink-0" />
       </Link>
@@ -166,7 +166,7 @@ function DriverNextTask() {
       <Link href="/driver/jobs" className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
         <span className="min-w-0">
           <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
-          <span className="block truncate text-base font-black">یک بار جدید آمده. ببینید و قبول یا رد کنید</span>
+          <span className="block text-base font-black leading-6">یک بار جدید آمده. ببینید و قبول یا رد کنید</span>
         </span>
         <ChevronLeft className="h-5 w-5 shrink-0" />
       </Link>
@@ -193,7 +193,7 @@ function OwnerNextTask() {
       <Link href={ownerTaskHref(current.id, current.status)} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
         <span className="min-w-0">
           <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
-          <span className="block truncate text-base font-black">{ownerTaskLabel(current.status)}</span>
+          <span className="block text-base font-black leading-6">{ownerTaskLabel(current.status)}</span>
         </span>
         <ChevronLeft className="h-5 w-5 shrink-0" />
       </Link>
@@ -211,7 +211,7 @@ function OwnerNextTask() {
     <Link href={`/requester/requests/${pending.id}`} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
       <span className="min-w-0">
         <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
-        <span className="block truncate text-base font-black">{label}</span>
+        <span className="block text-base font-black leading-6">{label}</span>
       </span>
       <ChevronLeft className="h-5 w-5 shrink-0" />
     </Link>
@@ -366,7 +366,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             <p className="truncate text-xs text-muted">{me.data?.email ?? me.data?.phone}</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
             {hasCoins && coins.data ? (
               <Link
                 href={`/${portal}/coins`}
@@ -447,7 +447,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             </div>
           </div>
         ) : null}
-        <main className="min-w-0 p-3 sm:p-4 md:p-8">{children}</main>
+        <main className="min-w-0 max-w-full overflow-x-clip p-3 sm:p-4 md:p-8">{children}</main>
       </div>
       {phoneShell ? (
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card px-1 py-1 lg:hidden">

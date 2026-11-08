@@ -235,12 +235,12 @@ export default function DriverWalletPage() {
 
       <Card>
         <h2 className="font-bold">گزارش مالی شش ماه اخیر</h2>
-        <div className="mt-4 h-64">
+        <div className="mt-4 h-64 min-w-0 w-full overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.report.series}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="label" fontSize={12} />
-              <YAxis fontSize={11} tickFormatter={(v) => formatNumber(v)} />
+              <YAxis width={36} fontSize={10} tickFormatter={(v) => formatNumber(v)} />
               <Tooltip formatter={(value) => formatMoney(Number(value ?? 0))} />
               <Bar dataKey="income" name="ورود پول" fill="#16a34a" radius={6} />
               <Bar dataKey="expense" name="هزینه" fill="#d97706" radius={6} />

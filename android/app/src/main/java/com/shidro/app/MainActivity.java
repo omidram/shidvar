@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
     private String geoOrigin;
     private GeolocationPermissions.Callback geoCallback;
     private BroadcastReceiver otpReceiver;
+    private String pendingOtp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +68,8 @@ public class MainActivity extends Activity {
         settings.setTextZoom(100);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setLoadsImagesAutomatically(true);
+        settings.setBlockNetworkImage(false);
         web.setHorizontalScrollBarEnabled(false);
         if (Build.VERSION.SDK_INT >= 26) web.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_YES);
         web.addJavascriptInterface(new Bridge(this), "Shidro");
@@ -284,12 +287,20 @@ public class MainActivity extends Activity {
     }
 
     private void deliverOtp(String code) {
-        if (web == null) return;
+        pendingOtp = code;
+        pushPendingOtp();
+    }
+
+    private void pushPendingOtp() {
+        if (web == null || pendingOtp == null) return;
         String url = web.getUrl();
         if (url == null || !url.contains("/login")) return;
+        final String code = pendingOtp;
         web.evaluateJavascript(
-            "(function(){if(typeof window.__shidroFillOtp==='function'){window.__shidroFillOtp('" + code + "');}})()",
-            null
+            "(function(){if(typeof window.__shidroFillOtp==='function'){window.__shidroFillOtp('" + code + "');return 'ok';}return 'wait';})()",
+            value -> {
+                if (value != null && value.contains("ok")) pendingOtp = null;
+            }
         );
     }
 
@@ -302,6 +313,8 @@ public class MainActivity extends Activity {
             else if (c >= '٠' && c <= '٩') c = (char) ('0' + (c - '٠'));
             normalized.append(c);
         }
+        Matcher bound = Pattern.compile("#(\\d{6})(?!\\d)").matcher(normalized);
+        if (bound.find()) return bound.group(1);
         Matcher matcher = OTP.matcher(normalized);
         return matcher.find() ? matcher.group(1) : null;
     }
@@ -316,7 +329,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void requestOtp() {
             MainActivity host = activity.get();
-            if (host != null) host.runOnUiThread(host::armOtp);
+            if (host != null) host.runOnUiThread(() -> {
+                host.armOtp();
+                host.pushPendingOtp();
+            });
         }
     }
 }

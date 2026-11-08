@@ -68,21 +68,62 @@ body {
   overflow-x: clip;
 }
 
-img,
+img:not(.leaflet-tile):not(.leaflet-marker-icon):not(.leaflet-marker-shadow),
 video,
 svg,
-canvas {
+canvas,
+iframe {
   max-width: 100%;
 }
 
+.leaflet-container {
+  width: 100% !important;
+  max-width: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+@keyframes shidro-otp-onauto {
+  from {
+    outline-color: transparent;
+  }
+  to {
+    outline-color: transparent;
+  }
+}
+
+#shidro-otp:-webkit-autofill {
+  animation: shidro-otp-onauto 0.01s;
+}
+
 @layer base {
-  main .grid > * {
+  main,
+  main .grid > *,
+  main .flex,
+  main .flex > * {
     min-width: 0;
   }
 
   main .flex {
-    min-width: 0;
     flex-wrap: wrap;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    min-width: 0;
   }
 }
 

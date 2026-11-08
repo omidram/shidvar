@@ -130,27 +130,34 @@ export async function sendLoginSmsOtp(phone: string, code: string, host?: string
 
   const boundHost = webotpHost(host);
   if (boundHost) {
-    const bound = await postSms(
-      config.smsOtp.apiUrl,
-      { code: smsOtpBoundCode(digits, boundHost), mobile, template: config.smsOtp.template },
-      8_000,
-    );
-    if (bound && smsOtpAccepted(bound.status, bound.payload)) {
-      logger.info("sms_otp_sent", { mobile: masked, channel: "otp-bound" });
-      return true;
-    }
-
+    // SmsOTP reports success even when it keeps only the digits, so Chrome's Allow
+    // button has no @host line to read. A custom message must go out first.
     const serviceUrl = serviceSmsUrl(config.smsOtp.apiUrl);
     if (serviceUrl) {
       const service = await postSms(
         serviceUrl,
         { message: loginOtpSmsText(digits, boundHost), mobiles: [mobile] },
-        4_000,
+        8_000,
       );
       if (service && serviceSmsAccepted(service.status, service.payload)) {
         logger.info("sms_otp_sent", { mobile: masked, channel: "service" });
         return true;
       }
+      logger.warn("sms_service_rejected", {
+        status: service?.status ?? 0,
+        code: service?.payload.code,
+        message: service?.payload.message,
+      });
+    }
+
+    const bound = await postSms(
+      config.smsOtp.apiUrl,
+      { code: smsOtpBoundCode(digits, boundHost), mobile, template: config.smsOtp.template },
+      6_000,
+    );
+    if (bound && smsOtpAccepted(bound.status, bound.payload)) {
+      logger.info("sms_otp_sent", { mobile: masked, channel: "otp-bound" });
+      return true;
     }
   }
 

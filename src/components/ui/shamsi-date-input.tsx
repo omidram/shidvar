@@ -28,7 +28,7 @@ export function ShamsiDateInput({
   }
 
   return (
-    <div className={cn("grid grid-cols-3 gap-2", className)}>
+    <div className={cn("grid min-w-0 grid-cols-3 gap-2", className)}>
       <NativeSelect
         required={required}
         disabled={disabled}

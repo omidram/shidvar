@@ -30,6 +30,16 @@ function otpDigits(value: string) {
   return normalized.replace(/\D/g, "").slice(0, 6);
 }
 
+const otpRequests = new Map<string, AbortController>();
+
+function writeOtpInput(code: string) {
+  const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
+  if (!el) return;
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  if (setter) setter.call(el, code);
+  else el.value = code;
+}
+
 function LoginForm() {
   const { t } = useI18n();
   const params = useSearchParams();
@@ -54,13 +64,14 @@ function LoginForm() {
     const fill = (raw: string) => {
       const code = otpDigits(raw);
       if (code.length < 4) return;
-      const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
-      if (el && el.value !== code) el.value = code;
+      writeOtpInput(code);
       setOtp(code);
     };
     const host = window as Window & { __shidroFillOtp?: (code: string) => void; Shidro?: { requestOtp?: () => void } };
     host.__shidroFillOtp = fill;
-    host.Shidro?.requestOtp?.();
+    const askNative = () => host.Shidro?.requestOtp?.();
+    askNative();
+    const retryNative = window.setTimeout(askNative, 700);
     const watch = window.setInterval(() => {
       const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
       const code = otpDigits(el?.value ?? "");
@@ -72,11 +83,17 @@ function LoginForm() {
       const code = otpDigits(el.value);
       if (code.length === 6) fill(code);
     };
+    const onAuto = (event: AnimationEvent) => {
+      if (event.animationName !== "shidro-otp-onauto") return;
+      const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
+      if (el) fill(el.value);
+    };
     document.addEventListener("input", onField, true);
     document.addEventListener("change", onField, true);
-    let ac: AbortController | undefined;
-    if (window.isSecureContext && "OTPCredential" in window) {
-      ac = new AbortController();
+    document.addEventListener("animationstart", onAuto, true);
+    if (window.isSecureContext && "OTPCredential" in window && !otpRequests.has(challengeId)) {
+      const ac = new AbortController();
+      otpRequests.set(challengeId, ac);
       const credentials = navigator.credentials as CredentialsContainer & {
         get: (options: CredentialRequestOptions & { otp?: { transport: string[] } }) => Promise<(Credential & { code?: string }) | null>;
       };
@@ -89,10 +106,17 @@ function LoginForm() {
     }
     return () => {
       window.clearInterval(watch);
+      window.clearTimeout(retryNative);
       document.removeEventListener("input", onField, true);
       document.removeEventListener("change", onField, true);
-      ac?.abort();
-      delete host.__shidroFillOtp;
+      document.removeEventListener("animationstart", onAuto, true);
+      const id = challengeId;
+      window.setTimeout(() => {
+        if (document.getElementById("shidro-otp")) return;
+        otpRequests.get(id)?.abort();
+        otpRequests.delete(id);
+        if (host.__shidroFillOtp === fill) delete host.__shidroFillOtp;
+      }, 400);
     };
   }, [challengeId, challengeChannel]);
 
@@ -177,18 +201,24 @@ function LoginForm() {
               ? `${challenge.channel === "SMS" ? t.auth.otpSentSms : t.auth.otpSentEmail} ${challenge.destination ?? ""}`
               : t.auth.loginHint}
           </p>
-          <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
+          <form className="mt-6 grid gap-4" onSubmit={onSubmit} autoComplete="on">
             {challenge ? (
-              <Field label={t.auth.otpCode}>
+              <Field label={t.auth.otpCode} htmlFor="shidro-otp">
                 <Input
                   key={challenge.challengeId}
                   id="shidro-otp"
                   name="one-time-code"
+                  type="text"
                   defaultValue={otp}
                   onChange={(e) => {
                     const next = otpDigits(e.target.value);
-                    if (e.target.value !== next) e.target.value = next;
                     setOtp(next);
+                    if (e.target.value !== next) {
+                      const el = e.target;
+                      window.requestAnimationFrame(() => {
+                        if (el.value !== next) writeOtpInput(next);
+                      });
+                    }
                   }}
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -198,7 +228,9 @@ function LoginForm() {
                   autoFocus
                   required
                 />
-                {challenge.channel === "SMS" ? <p className="text-xs leading-6 text-muted">اگر پیامک روی همین گوشی بیاید، کد خودش در این جا نوشته می‌شود.</p> : null}
+                {challenge.channel === "SMS" ? (
+                  <p className="text-xs leading-6 text-muted">اگر پیامک روی همین گوشی بیاید و Allow را بزنید، شش رقم در همین کادر می‌نشیند. پیامک قبلی این کار را نمی‌کند؛ یک کد تازه بگیرید.</p>
+                ) : null}
               </Field>
             ) : (
               <>

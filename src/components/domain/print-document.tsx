@@ -95,17 +95,17 @@ function Sheet({
 }) {
   return (
     <article className="mx-auto w-full min-w-0 max-w-[210mm] bg-white p-4 sm:p-8 print:p-0">
-      <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
-        <div>
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+        <div className="min-w-0">
           <BrandMark />
-          <h1 className="mt-4 text-2xl font-black">{title}</h1>
+          <h1 className="mt-4 break-words text-2xl font-black">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
           <div className="mt-2 text-sm">
             <span className="text-muted">شماره سند </span>
             <span className="font-black">{number}</span>
           </div>
         </div>
-        <div className="flex shrink-0 items-start gap-3">
+        <div className="flex min-w-0 flex-wrap items-start gap-3">
           {(codes ?? []).map((code) => (
             <QrMark key={code.label} value={code.value} label={code.label} size={86} />
           ))}
@@ -126,7 +126,7 @@ function Row({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4 border-b border-border/70 py-2 text-sm">
       <span className="text-muted">{label}</span>
-      <span className="font-semibold">{value}</span>
+      <span className="min-w-0 break-words text-end font-semibold">{value}</span>
     </div>
   );
 }
@@ -181,9 +181,9 @@ export function PrintDocumentPage({ kind, id }: { kind: string; id: string }) {
 
 function PartyCell({ title, party }: { title: string; party: InvoiceDetail["issuer"] }) {
   return (
-    <section className="rounded-lg border border-border p-2.5">
+    <section className="min-w-0 rounded-lg border border-border p-2.5">
       <h2 className="mb-1 text-[11px] font-black text-muted">{title}</h2>
-      <p className="text-[13px] font-bold leading-5">{party.name}</p>
+      <p className="break-words text-[13px] font-bold leading-5">{party.name}</p>
       {party.legalName && party.legalName !== party.name ? <p className="text-[11px] leading-4">{party.legalName}</p> : null}
       <p className="mt-1 text-[11px] leading-4 text-muted">
         {[party.phone, party.taxId ? `شناسه ${party.taxId}` : null, party.registrationNumber ? `ثبت ${party.registrationNumber}` : null]
@@ -222,7 +222,7 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
 
   return (
     <article className="print-single-page mx-auto w-full min-w-0 max-w-[210mm] bg-white p-4 text-[12px] leading-5 sm:p-5 print:p-0">
-      <header className="flex items-start justify-between gap-3 border-b-2 border-ink pb-2">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-2">
         <div className="min-w-0">
           <BrandMark />
           <h1 className="mt-2 text-xl font-black leading-7">صورتحساب حمل</h1>
@@ -230,13 +230,13 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
             {statusFa(invoice.type)} · {statusFa(invoice.status)} · شرکت شیدوَر تجارت ایرانیان
           </p>
         </div>
-        <div className="flex shrink-0 items-start gap-2">
+        <div className="flex min-w-0 flex-wrap items-start gap-2">
           <QrMark value={qrPayload("invoice", invoice.number)} label={`صورتحساب ${invoice.number}`} size={72} />
           {loadNumber ? <QrMark value={qrPayload("load", loadNumber)} label={`بار ${loadNumber}`} size={72} /> : null}
         </div>
       </header>
 
-      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 border-b border-border pb-2 text-[11px] sm:grid-cols-4">
+      <div className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1 border-b border-border pb-2 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <span className="text-muted">شماره صورتحساب</span>
           <div className="font-black">{invoice.number}</div>
@@ -255,12 +255,12 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <PartyCell title="صادرکننده" party={invoice.issuer} />
         <PartyCell title="گیرنده" party={invoice.recipient} />
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
+      <div className="mt-2 grid grid-cols-1 gap-2 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg bg-background px-2 py-1.5">
           <div className="text-muted">مسیر</div>
           <div className="font-bold">{[invoice.originCity, invoice.destinationCity].filter(Boolean).join(" ← ") || "—"}</div>

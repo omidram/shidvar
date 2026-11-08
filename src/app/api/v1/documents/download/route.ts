@@ -10,13 +10,16 @@ export async function GET(req: NextRequest) {
     const id = req.nextUrl.searchParams.get("id");
     if (!id) return Response.json(fail("VALIDATION_ERROR", "شناسه مدرک لازم است"), { status: 400 });
     const file = await getDocumentForDownload(actor, id);
-    return new Response(new Uint8Array(file.buffer), {
-      headers: {
-        "Content-Type": file.mimeType,
-        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
-        "Cache-Control": "private, max-age=120",
-      },
-    });
+    const bytes = new Uint8Array(file.buffer.byteLength);
+    bytes.set(file.buffer);
+    const mimeType = file.mimeType || "application/octet-stream";
+    const headers: Record<string, string> = {
+      "Content-Type": mimeType,
+      "Content-Length": String(bytes.byteLength),
+      "Cache-Control": "private, max-age=120",
+    };
+    if (mimeType.includes("pdf")) headers["Content-Disposition"] = 'inline; filename="file.pdf"';
+    return new Response(bytes, { headers });
   } catch (error) {
     if (error instanceof AppError) {
       return Response.json(fail(error.code, error.message, error.fields), { status: error.status });

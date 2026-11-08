@@ -45,13 +45,13 @@ export function CitySelect({
           onBlur={() => setTimeout(() => setOpen(false), 160)}
         />
         {open ? (
-          <ul className="absolute z-40 mt-1 max-h-56 w-full overflow-auto rounded-2xl border border-border bg-card py-1 shadow-lg">
+          <ul className="absolute z-40 mt-1 max-h-56 w-full max-w-full overflow-auto rounded-2xl border border-border bg-card py-1 shadow-lg">
             {options.length ? (
               options.map((city) => (
                 <li key={city}>
                   <button
                     type="button"
-                    className="w-full px-3 py-2 text-start text-sm hover:bg-primary/10"
+                    className="w-full break-words px-3 py-2 text-start text-sm hover:bg-primary/10"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       onChange(city);

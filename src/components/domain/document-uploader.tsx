@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -47,23 +47,85 @@ export async function uploadFile(input: { file: File; documentType: string; enti
 }
 
 function DocPreview({ doc, label, tall = true }: { doc: DocRow; label: string; tall?: boolean }) {
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState<{ status: "loading" | "ready" | "error"; url?: string; kind?: "image" | "pdf" | "file"; message?: string }>({
+    status: "loading",
+  });
+  const box = tall ? "h-80" : "h-48";
+
+  useEffect(() => {
+    const ac = new AbortController();
+    let objectUrl = "";
+    setState({ status: "loading" });
+    (async () => {
+      try {
+        const res = await fetch(doc.url, { credentials: "include", signal: ac.signal, cache: "no-store" });
+        if (!res.ok) {
+          let message = "این فایل روی گوشی باز نشد";
+          const text = await res.text();
+          try {
+            const body = JSON.parse(text) as { error?: { message?: string } };
+            if (body.error?.message) message = body.error.message;
+          } catch {
+            /* the body was not an error payload */
+          }
+          throw new Error(message);
+        }
+        const typeHeader = (res.headers.get("content-type") || doc.mimeType || "").split(";")[0]?.trim().toLowerCase() ?? "";
+        const raw = await res.blob();
+        const typed = raw.type ? raw : new Blob([raw], { type: typeHeader || "application/octet-stream" });
+        if (ac.signal.aborted) return;
+        objectUrl = URL.createObjectURL(typed);
+        if (ac.signal.aborted) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        const kind = typeHeader.startsWith("image/") || doc.isImage ? "image" : typeHeader.includes("pdf") ? "pdf" : "file";
+        setState({ status: "ready", url: objectUrl, kind });
+      } catch (error) {
+        if (ac.signal.aborted) return;
+        setState({ status: "error", message: error instanceof Error ? error.message : "این فایل روی گوشی باز نشد" });
+      }
+    })();
+    return () => {
+      ac.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [doc.id, doc.url, doc.mimeType, doc.isImage]);
+
   return (
     <div className="mt-3 grid min-w-0 gap-2">
-      {doc.isImage && !failed ? (
-        <a href={doc.url} target="_blank" rel="noreferrer" className="block min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-white">
+      {state.status === "loading" ? (
+        <div className={`grid place-items-center rounded-xl border border-border bg-white text-sm text-muted ${box}`}>در حال باز کردن فایل…</div>
+      ) : null}
+      {state.status === "ready" && state.kind === "image" && state.url ? (
+        <a href={state.url} target="_blank" rel="noreferrer" className="block min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-white">
           <img
-            src={doc.url}
+            src={state.url}
             alt={label}
-            className={`mx-auto block h-auto w-full max-w-full object-contain ${tall ? "max-h-80" : "max-h-48"}`}
-            onError={() => setFailed(true)}
+            className={`mx-auto block w-full bg-white object-contain ${box}`}
+            onError={() => setState((current) => ({ status: "error", message: "نمایش تصویر روی این گوشی ممکن نشد", url: current.url }))}
           />
         </a>
       ) : null}
-      <a href={doc.url} target="_blank" rel="noreferrer" className="break-all text-sm font-semibold text-primary">
-        دیدن {label}
-        {doc.originalName ? ` · ${doc.originalName}` : ""}
-      </a>
+      {state.status === "ready" && state.kind === "pdf" && state.url ? (
+        <iframe title={label} src={state.url} className={`w-full max-w-full rounded-xl border border-border bg-white ${box}`} />
+      ) : null}
+      {state.status === "error" ? <p className="rounded-xl bg-red-50 px-3 py-2 text-sm leading-6 text-danger">{state.message}</p> : null}
+      {state.url ? (
+        <a
+          href={state.url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-4 text-center text-base font-bold text-primary-foreground"
+        >
+          باز کردن {label}
+        </a>
+      ) : (
+        <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-4 text-center text-base font-bold">
+          دانلود {label}
+        </a>
+      )}
+      {doc.originalName ? <p className="break-all text-xs text-muted">{doc.originalName}</p> : null}
     </div>
   );
 }

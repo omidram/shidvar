@@ -108,7 +108,7 @@ export default function DriverSettingsPage() {
               type="button"
               onClick={() => setDraft({ ...draft, prefs: { ...draft.prefs, defaultVehicle: vehicle } })}
               className={cn(
-                "rounded-2xl border px-3 py-3 text-sm font-semibold",
+                "min-w-0 break-words rounded-2xl border px-3 py-3 text-center text-sm font-semibold leading-6",
                 draft.prefs.defaultVehicle === vehicle ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background",
               )}
             >

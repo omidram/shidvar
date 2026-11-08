@@ -174,13 +174,13 @@ function NewRequestForm() {
           </div>
         }
       />
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         {[t.request.stepRoute, t.request.stepItems, t.request.stepCargo].map((label, i) => (
           <button
             key={label}
             type="button"
             onClick={() => setStep(i + 1)}
-            className={`rounded-2xl px-2 py-2 text-center text-xs leading-5 sm:text-sm ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
+            className={`min-w-0 break-words rounded-2xl px-3 py-3 text-center text-sm leading-6 ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
           >
             {i + 1}. {label}
           </button>

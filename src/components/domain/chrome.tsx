@@ -48,7 +48,7 @@ export function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactN
           {rows.map((row, i) => (
             <tr key={i} className="border-b border-border last:border-0">
               {row.map((cell, j) => (
-                <td key={j} className="px-4 py-3 align-top">
+                <td key={j} className="break-words px-4 py-3 align-top">
                   {cell}
                 </td>
               ))}
@@ -98,7 +98,7 @@ export function ChoiceTile({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative grid min-h-[168px] content-start gap-4 rounded-[28px] border p-5 text-start transition",
+        "relative grid min-h-[168px] min-w-0 max-w-full content-start gap-4 rounded-[28px] border p-5 text-start transition",
         active
           ? "border-primary bg-primary text-primary-foreground shadow-[0_16px_40px_-20px_rgb(0_181_98_/_0.7)]"
           : "border-border bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
@@ -124,8 +124,8 @@ export function ChoiceTile({
         {icon}
       </div>
       <div>
-        <div className="text-base font-bold">{title}</div>
-        {body ? <div className={cn("mt-1 text-sm", active ? "text-ink/70" : "text-muted")}>{body}</div> : null}
+        <div className="break-words text-base font-bold">{title}</div>
+        {body ? <div className={cn("mt-1 break-words text-sm", active ? "text-ink/70" : "text-muted")}>{body}</div> : null}
       </div>
     </button>
   );
