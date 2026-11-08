@@ -10,6 +10,7 @@ import { getRule } from "@/server/settings/rules";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
 import { sendLoginSmsOtp } from "@/server/notify/sms-otp";
+import { smsAccess } from "@/server/notify/sms-flags";
 import { ensureCoinWallet } from "@/server/domains/finance/coin-service";
 import { maskNationalId, normalizeDigits, normalizeMobile } from "@/lib/identity";
 import { SIGNUP_RULES_VERSION } from "@/lib/signup-rules";
@@ -152,7 +153,11 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     where: {
       OR: [{ email: identifier }, { phone: input.identifier.trim() }, { phone: normalizeMobile(identifier) }, { nationalId: digits }],
     },
-    include: { userRoles: { select: { role: { select: { portal: true } } } } },
+    include: {
+      userRoles: { select: { role: { select: { portal: true } } } },
+      driverProfile: { select: { status: true } },
+      memberships: { select: { company: { select: { type: true, status: true } } } },
+    },
   });
   if (!user) throw Errors.unauthorized("کد ملی، ایمیل، موبایل یا رمز عبور اشتباه است");
 
@@ -178,6 +183,9 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
   if (user.status === "BLOCKED" || user.status === "DEACTIVATED") {
     throw Errors.forbidden("این حساب مسدود یا غیرفعال است؛ با پشتیبانی تماس بگیرید");
   }
+  if (user.status === "SUSPENDED") {
+    throw Errors.forbidden("حساب شما توسط مدیر معلق شده است");
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -186,6 +194,14 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
 
   logger.info("login_password_accepted", { userId: user.id, ip: meta.ip });
   const isPlatformAdmin = user.userRoles.some((row) => row.role.portal === "PLATFORM");
+  if (!isPlatformAdmin) {
+    const companyBlocked = user.memberships.some((row) => row.company.type !== "PLATFORM" && row.company.status === "BLOCKED");
+    const driverBlocked = user.driverProfile?.status === "BLOCKED";
+    if (companyBlocked || driverBlocked) throw Errors.forbidden("این حساب مسدود یا غیرفعال است؛ با پشتیبانی تماس بگیرید");
+    const companySuspended = user.memberships.some((row) => row.company.type !== "PLATFORM" && row.company.status === "SUSPENDED");
+    const driverSuspended = user.driverProfile?.status === "SUSPENDED";
+    if (companySuspended || driverSuspended) throw Errors.forbidden("حساب شما توسط مدیر معلق شده است");
+  }
   if (isPlatformAdmin) {
     return completeLogin(user.id, input.portal as Portal | undefined, meta);
   }
@@ -222,7 +238,18 @@ async function issueLoginOtp(
   user: { id: string; email: string | null; phone: string | null; twoFactorSecret: string | null },
   portal?: Portal,
 ): Promise<LoginOtpChallenge> {
-  const { channel, target } = twoFactorChannelOf(user);
+  let { channel, target } = twoFactorChannelOf(user);
+  if (channel === "SMS") {
+    const access = await smsAccess(user.id);
+    if (!access.send || !access.receive) {
+      if (user.email) {
+        channel = "EMAIL";
+        target = user.email;
+      } else {
+        throw Errors.forbidden("پیامک این حساب توسط مدیر خاموش شده است");
+      }
+    }
+  }
   const code = sixDigitCode();
   await prisma.credentialChallenge.updateMany({
     where: { userId: user.id, type: "LOGIN_OTP", consumedAt: null },

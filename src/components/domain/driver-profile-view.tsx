@@ -17,6 +17,7 @@ import { useMe } from "@/hooks/use-me";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 import { AdminCoinsPanel } from "@/components/domain/coins-view";
 import { DeliveryFlow } from "@/components/domain/delivery-flow";
+import { AdminPersonControls } from "@/components/domain/admin-person-controls";
 
 export type DriverProfile = {
   id: string;
@@ -114,6 +115,7 @@ export function DriverProfileView({ id }: { id: string }) {
           ) : null
         }
       />
+      {canVerify ? <AdminPersonControls driverId={driver.id} /> : null}
       <Card>
         <h2 className="font-bold">وضعیت بار</h2>
         {activeLoads.length ? (

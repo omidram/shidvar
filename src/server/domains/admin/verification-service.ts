@@ -3,7 +3,44 @@ import { Errors } from "@/server/errors";
 import { writeAudit, recordStatusChange } from "@/server/audit";
 import type { Actor } from "@/server/rbac/actor";
 import { assertPermission } from "@/server/rbac/actor";
+import { revokeUserSessions } from "@/server/auth/session";
 import type { CompanyStatus } from "@prisma/client";
+
+async function peopleOf(companyId: string) {
+  const rows = await prisma.membership.findMany({
+    where: { companyId },
+    include: { user: { include: { userRoles: { include: { role: { select: { portal: true } } } } } } },
+  });
+  return rows.filter((row) => !row.user.userRoles.some((item) => item.role.portal === "PLATFORM")).map((row) => row.userId);
+}
+
+async function applySuspension(companyId: string, userIds: string[], status: CompanyStatus, previous: CompanyStatus) {
+  if (!userIds.length) return;
+  if (status === "SUSPENDED" || status === "BLOCKED") {
+    await prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: { status: status === "BLOCKED" ? "BLOCKED" : "SUSPENDED" },
+    });
+    await prisma.membership.updateMany({
+      where: { companyId, status: "ACTIVE" },
+      data: { status: "SUSPENDED" },
+    });
+    await Promise.all(userIds.map((id) => revokeUserSessions(id)));
+    return;
+  }
+  if (status === "APPROVED") {
+    const clear: Array<"SUSPENDED" | "BLOCKED"> = ["SUSPENDED"];
+    if (previous === "BLOCKED") clear.push("BLOCKED");
+    await prisma.user.updateMany({
+      where: { id: { in: userIds }, status: { in: clear } },
+      data: { status: "ACTIVE" },
+    });
+    await prisma.membership.updateMany({
+      where: { companyId, status: "SUSPENDED" },
+      data: { status: "ACTIVE" },
+    });
+  }
+}
 
 export async function listPendingVerifications(actor: Actor) {
   assertPermission(actor, "companies.verify");
@@ -55,6 +92,7 @@ export async function moderateCompany(
     }
   });
 
+  await applySuspension(companyId, await peopleOf(companyId), status, company.status);
   await recordStatusChange({
     entityType: "Company",
     entityId: companyId,
@@ -95,6 +133,17 @@ export async function moderateDriver(
     where: { id: driver.carrierCompanyId },
     data: { status, verifiedById: actor.userId, verifiedAt: status === "APPROVED" ? new Date() : undefined, rejectedReason: reason },
   });
+  await prisma.carrierProfile.updateMany({
+    where: { companyId: driver.carrierCompanyId },
+    data: { status },
+  });
+  const people = new Set(await peopleOf(driver.carrierCompanyId));
+  const platformRole = await prisma.userRole.findFirst({
+    where: { userId: driver.userId, role: { portal: "PLATFORM" } },
+    select: { id: true },
+  });
+  if (!platformRole) people.add(driver.userId);
+  await applySuspension(driver.carrierCompanyId, [...people], status, driver.status);
   await writeAudit({
     actor,
     action: `driver.${status.toLowerCase()}`,

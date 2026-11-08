@@ -90,6 +90,7 @@ import {
 } from "@/server/domains/finance/wallet-service";
 import { getDriverProfile } from "@/server/domains/identity/driver-profile-service";
 import { createCargoCompany, getCompanyProfile, setCompanySpecial } from "@/server/domains/identity/company-profile-service";
+import { accountControlSchema, getDriverAccount, getOwnerAccount, updateDriverAccount, updateOwnerAccount } from "@/server/domains/admin/account-control";
 import { getPortalSettings, updatePortalSettings, updateSettingsSchema } from "@/server/domains/identity/settings-service";
 import { listPurgeSections, purgeSection, purgeSectionSchema } from "@/server/maintenance/purge-sections";
 import { getOwnPriceBook, getPriceBookForCompany, quotePrice, upsertPriceBook } from "@/server/domains/finance/price-book-service";
@@ -914,7 +915,7 @@ export const routes: RouteDefinition[] = [
   {
     method: "POST",
     path: "/admin/drivers/:id/status",
-    permissions: ["drivers.verify", "drivers.reject"],
+    permissions: ["drivers.verify", "drivers.reject", "drivers.update"],
     input: z.object({
       status: z.enum(["APPROVED", "REJECTED", "SUSPENDED", "BLOCKED"]),
       reason: z.string().optional(),
@@ -958,6 +959,40 @@ export const routes: RouteDefinition[] = [
     permissions: ["companies.read"],
     async handler({ actor, params }) {
       return getCompanyProfile(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/companies/:id/account",
+    permissions: ["companies.read"],
+    async handler({ actor, params }) {
+      return getOwnerAccount(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/admin/companies/:id/account",
+    permissions: ["companies.update"],
+    input: accountControlSchema,
+    async handler({ actor, params, body }) {
+      return updateOwnerAccount(requireActor(actor), params.id, accountControlSchema.parse(body));
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/drivers/:id/account",
+    permissions: ["drivers.read"],
+    async handler({ actor, params }) {
+      return getDriverAccount(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/admin/drivers/:id/account",
+    permissions: ["drivers.update"],
+    input: accountControlSchema,
+    async handler({ actor, params, body }) {
+      return updateDriverAccount(requireActor(actor), params.id, accountControlSchema.parse(body));
     },
   },
   {

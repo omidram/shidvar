@@ -14,6 +14,7 @@ import { DocumentGallery } from "@/components/domain/document-uploader";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 import { AdminCoinsPanel } from "@/components/domain/coins-view";
 import { SpecialToggle } from "@/components/domain/special-badge";
+import { AdminPersonControls } from "@/components/domain/admin-person-controls";
 
 type CompanyProfile = {
   id: string;
@@ -69,6 +70,9 @@ export function CompanyProfileView({ id }: { id: string }) {
             {!company.drivers.length ? <p className="text-sm text-muted">پروفایل راننده برای این حساب هنوز کامل نشده است.</p> : null}
           </div>
         </Card>
+        {company.drivers.map((driver) => (
+          <AdminPersonControls key={driver.id} driverId={driver.id} />
+        ))}
       </div>
     );
   }
@@ -76,6 +80,7 @@ export function CompanyProfileView({ id }: { id: string }) {
   return (
     <div className="grid gap-6">
       <PageHeader title={company.tradeName} description={`صاحب بار · ${statusFa(company.status)}${company.isSpecial ? " · ویژه" : ""}`} />
+      <AdminPersonControls companyId={company.id} />
       <SpecialToggle companyId={company.id} isSpecial={company.isSpecial} note={company.specialNote} />
       <Card>
         <h2 className="mb-3 font-bold">شناسنامه صاحب بار</h2>
