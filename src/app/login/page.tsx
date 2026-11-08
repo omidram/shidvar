@@ -26,6 +26,7 @@ type LoginResponse = {
 function LoginForm() {
   const { t } = useI18n();
   const params = useSearchParams();
+  const portal = params.get("portal") === "DRIVER" ? "DRIVER" : params.get("portal") === "REQUESTER" ? "REQUESTER" : null;
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -104,7 +105,9 @@ function LoginForm() {
           <Button asChild variant="secondary" className="mb-6">
             <Link href="/">بازگشت به صفحه اصلی</Link>
           </Button>
-          <h1 className="text-2xl font-black">{challenge ? t.auth.otpTitle : t.auth.loginTitle}</h1>
+          <h1 className="text-2xl font-black">
+            {challenge ? t.auth.otpTitle : portal === "DRIVER" ? "ورود راننده" : portal === "REQUESTER" ? "ورود صاحب بار" : t.auth.loginTitle}
+          </h1>
           <p className="mt-1 text-sm text-muted">
             {challenge
               ? `${challenge.channel === "SMS" ? t.auth.otpSentSms : t.auth.otpSentEmail} ${challenge.destination ?? ""}`
@@ -156,7 +159,7 @@ function LoginForm() {
                 <Link href="/forgot-password" className="text-primary">
                   {t.auth.forgot}
                 </Link>
-                <Link href="/register">{t.auth.noAccount}</Link>
+                <Link href={portal === "DRIVER" ? "/register?portal=DRIVER" : portal === "REQUESTER" ? "/register?portal=REQUESTER" : "/register"}>{t.auth.noAccount}</Link>
               </div>
             </>
           )}

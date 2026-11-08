@@ -78,6 +78,12 @@ export default function HomePage() {
               <Button asChild variant="outline" className="border-white/70 text-white hover:bg-white/10">
                 <Link href="/register?portal=DRIVER">{t.landing.ctaDriver}</Link>
               </Button>
+              <Button asChild variant="outline" className="border-white/70 text-white hover:bg-white/10">
+                <a href="/downloads/shidro-owner.apk" download="shidro-owner.apk">دانلود اپ صاحب بار</a>
+              </Button>
+              <Button asChild variant="outline" className="border-white/70 text-white hover:bg-white/10">
+                <a href="/downloads/shidro-driver.apk" download="shidro-driver.apk">دانلود اپ راننده</a>
+              </Button>
             </div>
             <div className="mt-8 flex flex-wrap gap-2 text-xs text-white/75">
               {["راننده تأییدشده", "کیف پول زرین‌پال", "ردیابی با اجازهٔ گوشی"].map((item) => (
@@ -251,6 +257,30 @@ export default function HomePage() {
               })}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="max-w-2xl">
+          <p className="text-sm font-bold text-primary">اپ اندروید</p>
+          <h2 className="mt-2 text-3xl font-black">دانلود برای راننده و صاحب بار</h2>
+          <p className="mt-2 text-muted">فایل را روی گوشی اندروید باز کنید. اگر پرسید، نصب از این منبع را اجازه دهید. بعد با همان شماره و رمز سایت وارد شوید.</p>
+        </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <Card className="grid gap-3">
+            <h3 className="text-xl font-black">اپ صاحب بار</h3>
+            <p className="text-sm leading-7 text-muted">ثبت درخواست، دیدن مرحلهٔ بار و تأیید مدارک از روی گوشی.</p>
+            <Button asChild>
+              <a href="/downloads/shidro-owner.apk" download="shidro-owner.apk">دانلود اپ صاحب بار</a>
+            </Button>
+          </Card>
+          <Card className="grid gap-3">
+            <h3 className="text-xl font-black">اپ راننده</h3>
+            <p className="text-sm leading-7 text-muted">دیدن بارها، رفتن مرحله‌به‌مرحله و فرستادن موقعیت از روی گوشی.</p>
+            <Button asChild>
+              <a href="/downloads/shidro-driver.apk" download="shidro-driver.apk">دانلود اپ راننده</a>
+            </Button>
+          </Card>
         </div>
       </section>
 
