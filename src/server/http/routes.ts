@@ -91,6 +91,7 @@ import {
 import { getDriverProfile } from "@/server/domains/identity/driver-profile-service";
 import { createCargoCompany, getCompanyProfile, setCompanySpecial } from "@/server/domains/identity/company-profile-service";
 import { getPortalSettings, updatePortalSettings, updateSettingsSchema } from "@/server/domains/identity/settings-service";
+import { listPurgeSections, purgeSection, purgeSectionSchema } from "@/server/maintenance/purge-sections";
 import { getOwnPriceBook, getPriceBookForCompany, quotePrice, upsertPriceBook } from "@/server/domains/finance/price-book-service";
 import { buildChecklist, deleteDocument, getOwnChecklist, verifyDocument } from "@/server/domains/documents/document-service";
 import { prisma } from "@/server/db";
@@ -247,6 +248,25 @@ export const routes: RouteDefinition[] = [
     input: updateSettingsSchema,
     async handler({ actor, body }) {
       return updatePortalSettings(requireActor(actor), body as z.infer<typeof updateSettingsSchema>);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/data-purge",
+    permissions: ["settings.manage"],
+    async handler({ actor }) {
+      if (!requireActor(actor).isPlatformStaff) throw Errors.forbidden("پاک کردن داده‌ها فقط برای مدیر است");
+      return listPurgeSections();
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/data-purge",
+    permissions: ["settings.manage"],
+    input: purgeSectionSchema,
+    async handler({ actor, body }) {
+      const parsed = body as z.infer<typeof purgeSectionSchema>;
+      return purgeSection(requireActor(actor), parsed.section);
     },
   },
   {
