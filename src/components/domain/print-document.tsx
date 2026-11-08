@@ -94,7 +94,7 @@ function Sheet({
   children: React.ReactNode;
 }) {
   return (
-    <article className="mx-auto max-w-[210mm] bg-white p-8 print:p-0">
+    <article className="mx-auto w-full min-w-0 max-w-[210mm] bg-white p-4 sm:p-8 print:p-0">
       <header className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
           <BrandMark />
@@ -112,7 +112,7 @@ function Sheet({
         </div>
       </header>
       <div className="mt-6 grid gap-4">{children}</div>
-      <footer className="mt-10 grid grid-cols-3 gap-6 border-t border-border pt-8 text-center text-sm">
+      <footer className="mt-10 grid grid-cols-1 gap-6 border-t border-border pt-8 text-center text-sm sm:grid-cols-3">
         <SignatureBox label="امضای صادرکننده" url={signatures?.issuer} />
         <SignatureBox label="امضای راننده" url={signatures?.driver} />
         <SignatureBox label="امضای گیرنده" url={signatures?.receiver} />
@@ -221,7 +221,7 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
   const hidden = 0;
 
   return (
-    <article className="print-single-page mx-auto w-[210mm] max-w-full bg-white p-5 text-[12px] leading-5 print:p-0">
+    <article className="print-single-page mx-auto w-full min-w-0 max-w-[210mm] bg-white p-4 text-[12px] leading-5 sm:p-5 print:p-0">
       <header className="flex items-start justify-between gap-3 border-b-2 border-ink pb-2">
         <div className="min-w-0">
           <BrandMark />
@@ -236,7 +236,7 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
         </div>
       </header>
 
-      <div className="mt-2 grid grid-cols-4 gap-x-3 gap-y-1 border-b border-border pb-2 text-[11px]">
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 border-b border-border pb-2 text-[11px] sm:grid-cols-4">
         <div>
           <span className="text-muted">شماره صورتحساب</span>
           <div className="font-black">{invoice.number}</div>
@@ -260,7 +260,7 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
         <PartyCell title="گیرنده" party={invoice.recipient} />
       </div>
 
-      <div className="mt-2 grid grid-cols-4 gap-2 text-[11px]">
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
         <div className="rounded-lg bg-background px-2 py-1.5">
           <div className="text-muted">مسیر</div>
           <div className="font-bold">{[invoice.originCity, invoice.destinationCity].filter(Boolean).join(" ← ") || "—"}</div>
@@ -316,7 +316,7 @@ function InvoiceSheet({ invoice, signatures, job }: { invoice: InvoiceDetail; si
         </div>
       </div>
 
-      <footer className="mt-3 grid grid-cols-3 gap-4 border-t border-border pt-3 text-center text-[11px]">
+      <footer className="mt-3 grid grid-cols-1 gap-4 border-t border-border pt-3 text-center text-[11px] sm:grid-cols-3">
         <SignatureBox label="امضای صادرکننده" url={signatures?.issuer} />
         <SignatureBox label="امضای راننده" url={signatures?.driver} />
         <SignatureBox label="امضای گیرنده" url={signatures?.receiver} />

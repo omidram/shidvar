@@ -103,9 +103,11 @@ import { AppError, Errors } from "@/server/errors";
 import type { CompanyStatus } from "@prisma/client";
 
 function clientMeta(req: Request) {
+  const forwardedHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
   return {
     ip: req.headers.get("x-forwarded-for") ?? undefined,
     userAgent: req.headers.get("user-agent") ?? undefined,
+    host: forwardedHost.split(",")[0]?.trim() || undefined,
   };
 }
 
@@ -171,8 +173,8 @@ export const routes: RouteDefinition[] = [
     path: "/auth/login/otp/resend",
     auth: false,
     input: resendLoginOtpSchema,
-    async handler({ body }) {
-      const result = await resendLoginOtp(body as z.infer<typeof resendLoginOtpSchema>);
+    async handler({ req, body }) {
+      const result = await resendLoginOtp(body as z.infer<typeof resendLoginOtpSchema>, clientMeta(req));
       return {
         requiresTwoFactor: true,
         challengeId: result.challengeId,

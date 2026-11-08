@@ -46,6 +46,28 @@ export async function uploadFile(input: { file: File; documentType: string; enti
   return json.data!;
 }
 
+function DocPreview({ doc, label, tall = true }: { doc: DocRow; label: string; tall?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="mt-3 grid min-w-0 gap-2">
+      {doc.isImage && !failed ? (
+        <a href={doc.url} target="_blank" rel="noreferrer" className="block min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-white">
+          <img
+            src={doc.url}
+            alt={label}
+            className={`mx-auto block h-auto w-full max-w-full object-contain ${tall ? "max-h-80" : "max-h-48"}`}
+            onError={() => setFailed(true)}
+          />
+        </a>
+      ) : null}
+      <a href={doc.url} target="_blank" rel="noreferrer" className="break-all text-sm font-semibold text-primary">
+        دیدن {label}
+        {doc.originalName ? ` · ${doc.originalName}` : ""}
+      </a>
+    </div>
+  );
+}
+
 export function DocumentGallery({
   kind,
   entityId,
@@ -158,11 +180,11 @@ export function DocumentGallery({
     : "";
 
   return (
-    <Card className="grid gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+    <Card className="grid min-w-0 gap-4">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-bold">{title}</h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
+          <p className="mt-1 break-words text-sm leading-6 text-muted">
             {plain
               ? "دو عکس کافی است: رسید و بارنامه. اگر روی کاغذ امضا شده، همان عکس را بفرستید."
               : jobKind
@@ -177,30 +199,24 @@ export function DocumentGallery({
         ) : null}
       </div>
       {jobKind && !plain ? <p className="text-sm font-bold">مدارک بار</p> : null}
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2">
         {(jobKind ? items.filter((slot) => !slot.signable) : items).map((slot) => {
           const upload = allowUpload(slot);
           const sign = !jobKind && allowSign(slot);
           return (
-            <div key={slot.type} className="rounded-2xl border border-border bg-background/40 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div>
+            <div key={slot.type} className="min-w-0 rounded-2xl border border-border bg-background/40 p-4">
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
                   <div className="font-semibold">
                     {slot.label}
                     {slot.required ? <span className="ms-1 text-danger">*</span> : <span className="ms-2 text-xs font-normal text-muted">اختیاری</span>}
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-muted">{slot.hint}</p>
+                  <p className="mt-1 break-words text-xs leading-5 text-muted">{slot.hint}</p>
                 </div>
                 {slot.document ? <StatusBadge status={slot.document.verification} /> : <span className="rounded-full bg-muted/15 px-2 py-1 text-[11px] text-muted">ارسال نشده</span>}
               </div>
-              {slot.document?.isImage ? (
-                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 block overflow-hidden rounded-xl border border-border bg-white">
-                  <img src={slot.document.url} alt={slot.label} className="h-40 w-full object-contain" />
-                </a>
-              ) : slot.document ? (
-                <a href={slot.document.url} target="_blank" rel="noreferrer" className="mt-3 block rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm font-semibold text-primary">
-                  مشاهده {slot.document.originalName}
-                </a>
+              {slot.document ? (
+                <DocPreview doc={slot.document} label={slot.label} />
               ) : (
                 <div className="mt-3 rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-muted">هنوز فایلی انتخاب نشده</div>
               )}
@@ -256,23 +272,19 @@ export function DocumentGallery({
             <p className="font-bold">امضای الکترونیک</p>
             <p className="mt-1 text-sm text-muted">اجباری نیست. اگر امضا روی سند آپلودشده هست، این قسمت را خالی بگذارید.</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid min-w-0 gap-3 md:grid-cols-2">
             {items.filter((slot) => slot.signable).map((slot) => {
               const sign = allowSign(slot);
               return (
-                <div key={slot.type} className="rounded-2xl border border-dashed border-border p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                <div key={slot.type} className="min-w-0 rounded-2xl border border-dashed border-border p-4">
+                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <div className="font-semibold">{slot.label}</div>
-                      <p className="mt-1 text-xs leading-5 text-muted">{slot.hint}</p>
+                      <p className="mt-1 break-words text-xs leading-5 text-muted">{slot.hint}</p>
                     </div>
                     <span className="rounded-full bg-muted/15 px-2 py-1 text-[11px] text-muted">اختیاری</span>
                   </div>
-                  {slot.document?.isImage ? (
-                    <img src={slot.document.url} alt={slot.label} className="mt-3 h-24 w-full rounded-xl bg-white object-contain" />
-                  ) : (
-                    <p className="mt-3 text-sm text-muted">امضایی ثبت نشده</p>
-                  )}
+                  {slot.document ? <DocPreview doc={slot.document} label={slot.label} tall={false} /> : <p className="mt-3 text-sm text-muted">امضایی ثبت نشده</p>}
                   {sign ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button type="button" variant="secondary" onClick={() => setSigning(slot)}>

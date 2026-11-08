@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("max-w-full rounded-3xl border border-border bg-card p-4 card-shadow sm:p-5", className)} {...props} />;
+  return <div className={cn("min-w-0 max-w-full rounded-3xl border border-border bg-card p-4 card-shadow sm:p-5", className)} {...props} />;
 }
 
 export function StatCard({

@@ -349,7 +349,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
       </aside>
       <div className="min-w-0">
         <header className="sticky top-0 z-20 grid max-w-full gap-3 overflow-x-clip border-b border-border bg-card/80 px-3 py-3 backdrop-blur sm:px-4 md:px-8">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {phoneShell ? (
               <button
@@ -370,7 +370,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             {hasCoins && coins.data ? (
               <Link
                 href={`/${portal}/coins`}
-                className="flex h-11 max-w-28 items-center gap-1.5 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-2.5 text-sm font-bold text-amber-700 sm:max-w-none sm:px-3 dark:text-amber-300"
+                className="flex h-11 min-w-0 max-w-28 shrink items-center gap-1.5 rounded-2xl border border-amber-400/50 bg-amber-400/10 px-2.5 text-sm font-bold text-amber-700 sm:max-w-none sm:px-3 dark:text-amber-300"
                 aria-label={t.menu.coins}
               >
                 <Coins className="h-4 w-4" />

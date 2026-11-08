@@ -28,6 +28,7 @@ export const loginSchema = z.object({
   identifier: z.string().min(3),
   password: z.string().min(1),
   portal: z.enum(["PLATFORM", "REQUESTER", "SUPPLIER", "DRIVER", "CARRIER"]).optional(),
+  otpHost: z.string().trim().max(253).optional(),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -47,4 +48,5 @@ export const verifyLoginOtpSchema = z.object({
 
 export const resendLoginOtpSchema = z.object({
   challengeId: z.string().uuid(),
+  otpHost: z.string().trim().max(253).optional(),
 });

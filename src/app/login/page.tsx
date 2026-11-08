@@ -23,6 +23,13 @@ type LoginResponse = {
   devCode?: string;
 };
 
+function otpDigits(value: string) {
+  const normalized = value
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
+  return normalized.replace(/\D/g, "").slice(0, 6);
+}
+
 function LoginForm() {
   const { t } = useI18n();
   const params = useSearchParams();
@@ -39,30 +46,55 @@ function LoginForm() {
     window.location.replace(safeInternalPath(params.get("next")) || homePath(me));
   }
 
+  const challengeId = challenge?.challengeId;
+  const challengeChannel = challenge?.channel;
+
   useEffect(() => {
-    if (!challenge) return;
-    const fill = (code: string) => setOtp(code.replace(/[^\d]/g, "").slice(0, 6));
+    if (!challengeId || challengeChannel !== "SMS") return;
+    const fill = (raw: string) => {
+      const code = otpDigits(raw);
+      if (code.length < 4) return;
+      const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
+      if (el && el.value !== code) el.value = code;
+      setOtp(code);
+    };
     const host = window as Window & { __shidroFillOtp?: (code: string) => void; Shidro?: { requestOtp?: () => void } };
     host.__shidroFillOtp = fill;
-    if (challenge.channel === "SMS") host.Shidro?.requestOtp?.();
-    const credentials = navigator.credentials as CredentialsContainer & { get: (options: CredentialRequestOptions & { otp?: { transport: string[] } }) => Promise<(Credential & { code?: string }) | null> };
-    if (challenge.channel !== "SMS" || !window.isSecureContext || !("OTPCredential" in window)) {
-      return () => {
-        delete host.__shidroFillOtp;
+    host.Shidro?.requestOtp?.();
+    const watch = window.setInterval(() => {
+      const el = document.getElementById("shidro-otp") as HTMLInputElement | null;
+      const code = otpDigits(el?.value ?? "");
+      if (code.length === 6) fill(code);
+    }, 200);
+    const onField = (event: Event) => {
+      const el = event.target as HTMLInputElement | null;
+      if (el?.id !== "shidro-otp") return;
+      const code = otpDigits(el.value);
+      if (code.length === 6) fill(code);
+    };
+    document.addEventListener("input", onField, true);
+    document.addEventListener("change", onField, true);
+    let ac: AbortController | undefined;
+    if (window.isSecureContext && "OTPCredential" in window) {
+      ac = new AbortController();
+      const credentials = navigator.credentials as CredentialsContainer & {
+        get: (options: CredentialRequestOptions & { otp?: { transport: string[] } }) => Promise<(Credential & { code?: string }) | null>;
       };
+      credentials
+        .get({ otp: { transport: ["sms"] }, signal: ac.signal })
+        .then((cred) => {
+          if (cred?.code) fill(cred.code);
+        })
+        .catch(() => undefined);
     }
-    const ac = new AbortController();
-    credentials
-      .get({ otp: { transport: ["sms"] }, signal: ac.signal })
-      .then((cred) => {
-        if (cred?.code) fill(cred.code);
-      })
-      .catch(() => undefined);
     return () => {
-      ac.abort();
+      window.clearInterval(watch);
+      document.removeEventListener("input", onField, true);
+      document.removeEventListener("change", onField, true);
+      ac?.abort();
       delete host.__shidroFillOtp;
     };
-  }, [challenge]);
+  }, [challengeId, challengeChannel]);
 
   function showOtp(result: LoginResponse) {
     setChallenge(result);
@@ -76,11 +108,15 @@ function LoginForm() {
     setLoading(true);
     try {
       if (challenge?.challengeId) {
-        await api("/auth/login/otp", { method: "POST", body: JSON.stringify({ challengeId: challenge.challengeId, code: otp }) });
+        const code = otpDigits((document.getElementById("shidro-otp") as HTMLInputElement | null)?.value || otp);
+        await api("/auth/login/otp", { method: "POST", body: JSON.stringify({ challengeId: challenge.challengeId, code }) });
         await finishLogin();
         return;
       }
-      const result = await api<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password }) });
+      const result = await api<LoginResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ identifier, password, otpHost: window.location.hostname }),
+      });
       if (result.requiresTwoFactor && result.challengeId) {
         showOtp(result);
         return;
@@ -97,7 +133,10 @@ function LoginForm() {
     if (!challenge?.challengeId) return;
     setLoading(true);
     try {
-      const result = await api<LoginResponse>("/auth/login/otp/resend", { method: "POST", body: JSON.stringify({ challengeId: challenge.challengeId }) });
+      const result = await api<LoginResponse>("/auth/login/otp/resend", {
+        method: "POST",
+        body: JSON.stringify({ challengeId: challenge.challengeId, otpHost: window.location.hostname }),
+      });
       showOtp(result);
     } catch (error) {
       toast.error(formatApiError(error, t.auth.otpInvalid));
@@ -142,12 +181,20 @@ function LoginForm() {
             {challenge ? (
               <Field label={t.auth.otpCode}>
                 <Input
+                  key={challenge.challengeId}
                   id="shidro-otp"
                   name="one-time-code"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
+                  defaultValue={otp}
+                  onChange={(e) => {
+                    const next = otpDigits(e.target.value);
+                    if (e.target.value !== next) e.target.value = next;
+                    setOtp(next);
+                  }}
                   inputMode="numeric"
                   autoComplete="one-time-code"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   autoFocus
                   required
                 />

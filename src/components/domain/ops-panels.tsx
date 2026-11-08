@@ -35,7 +35,7 @@ type JobExtra = { id: string; kind: string; label: string; amount: number; curre
 type JobRating = { id: string; targetType: string; overall: number; comment?: string | null; mine: boolean; rater: string };
 
 function fieldClass() {
-  return "h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm";
+  return "h-11 w-full min-w-0 max-w-full rounded-2xl border border-border bg-background px-3 text-base";
 }
 
 export function JobOpsPanel({
@@ -99,7 +99,7 @@ function JobChat({ jobId }: { jobId: string }) {
         })}
       </div>
       <form
-        className="mt-4 flex gap-2"
+        className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           if (body.trim()) send.mutate();
@@ -154,13 +154,13 @@ function JobExtras({ jobId, currencyCode }: { jobId: string; currencyCode?: stri
   return (
     <Card>
       <h2 className="font-bold">{t.ops.extras}</h2>
-      <p className="mt-1 text-sm text-muted">{t.ops.extrasHint}</p>
+      <p className="mt-1 break-words text-sm leading-6 text-muted">{t.ops.extrasHint}</p>
       <div className="mt-4 grid gap-2">
         {(q.data ?? []).map((extra) => (
           <div key={extra.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-background px-4 py-3">
             <div>
               <div className="font-semibold">{extra.label}</div>
-              <p className="text-sm text-muted">{extra.note}</p>
+              <p className="break-words text-sm text-muted">{extra.note}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold">{formatMoney(extra.amount, extra.currencyCode || currencyCode)}</span>
@@ -257,7 +257,7 @@ function JobDeliveryActions({ jobId, status, receiverName }: { jobId: string; st
       <div className="mt-6 grid gap-3 border-t border-border pt-4">
         <p className="text-sm text-muted">{t.ops.returnDocsHint}</p>
         <textarea
-          className="min-h-20 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm"
+          className="min-h-20 w-full min-w-0 rounded-2xl border border-border bg-background px-3 py-2 text-base"
           value={returnNote}
           onChange={(e) => setReturnNote(e.target.value)}
           placeholder={t.ops.returnDocsNote}
@@ -274,7 +274,7 @@ function JobDeliveryActions({ jobId, status, receiverName }: { jobId: string; st
             </option>
           ))}
         </select>
-        <textarea className="min-h-24 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.ops.disputeHint} />
+        <textarea className="min-h-24 w-full min-w-0 rounded-2xl border border-border bg-background px-3 py-2 text-base" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.ops.disputeHint} />
         <Button variant="danger" onClick={() => confirm.mutate("DISPUTED")} disabled={confirm.isPending || returnDocs.isPending || description.trim().length < 8}>
           {t.ops.openDispute}
         </Button>
@@ -320,7 +320,7 @@ function JobRatingCard({ jobId, status }: { jobId: string; status: string }) {
           </button>
         ))}
       </div>
-      <textarea className="mt-3 min-h-20 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm" value={comment || mine?.comment || ""} onChange={(e) => setComment(e.target.value)} placeholder={t.ops.ratingComment} />
+      <textarea className="mt-3 min-h-20 w-full min-w-0 rounded-2xl border border-border bg-background px-3 py-2 text-base" value={comment || mine?.comment || ""} onChange={(e) => setComment(e.target.value)} placeholder={t.ops.ratingComment} />
       <Button className="mt-3" onClick={() => save.mutate()} disabled={save.isPending}>
         {mine ? t.ops.updateRating : t.ops.submitRating}
       </Button>

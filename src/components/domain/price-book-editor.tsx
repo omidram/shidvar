@@ -202,7 +202,7 @@ export function PriceBookEditor({ companyId, readOnly }: { companyId: string; re
       <Field label="شرایط و تبصره‌ها">
         <Textarea rows={5} value={book.terms ?? ""} onChange={(e) => setBook({ ...book, terms: e.target.value })} disabled={readOnly} />
       </Field>
-      <div className="overflow-x-auto">
+      <div className="w-full min-w-0 max-w-full overflow-x-auto">
         <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="text-muted">

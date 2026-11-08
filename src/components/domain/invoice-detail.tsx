@@ -101,7 +101,7 @@ export function InvoiceDetailView({ id }: { id: string }) {
         title={invoice.number}
         description={`${statusFa(invoice.type)} · ${statusFa(invoice.status)}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             {invoice.payable ? (
               <Button onClick={() => pay.mutate()} disabled={pay.isPending}>
                 {t.ops.payInvoice}

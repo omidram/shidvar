@@ -652,7 +652,7 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
         title={req.number}
         description={statusFa(req.status)}
         actions={
-          <div className="flex gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <PdfExportButton kind="request" id={req.id} label={t.common.pdfExport} />
             {job?.id ? <PdfExportButton kind="waybill" id={job.id} label="خروجی بارنامه" /> : null}
             {mode !== "supplier" && req.status === "DRAFT" ? <Button onClick={() => submit.mutate()}>{t.common.submit}</Button> : null}
@@ -1004,7 +1004,7 @@ export function DriverJobView({ id }: { id: string }) {
         title={job.number}
         description={`${statusFa(job.status)}${job.requestNumber ? ` · ${job.requestNumber}` : ""}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <PdfExportButton kind="waybill" id={job.id} label="خروجی بارنامه" />
             {job.requestId ? <PdfExportButton kind="request" id={job.requestId} label="خروجی درخواست" /> : null}
             {(() => {

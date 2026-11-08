@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+    <div className="mb-6 flex min-w-0 flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="break-words text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+        {description ? <p className="mt-1 break-words text-sm text-muted">{description}</p> : null}
       </div>
-      {actions}
+      {actions ? <div className="flex max-w-full flex-wrap gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -33,7 +33,7 @@ export function ErrorState({ message }: { message: string }) {
 
 export function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return (
-    <div className="max-w-full overflow-x-auto rounded-3xl border border-border bg-card card-shadow">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-3xl border border-border bg-card card-shadow">
       <table className="w-full min-w-[36rem] text-sm">
         <thead className="border-b border-border bg-background text-start text-muted">
           <tr>
@@ -133,11 +133,11 @@ export function ChoiceTile({
 
 export function RouteLine({ from, to }: { from: string; to: string }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="font-medium">{from}</span>
-      <span className="h-px flex-1 bg-gradient-to-l from-primary to-border" />
+    <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+      <span className="min-w-0 break-words font-medium">{from}</span>
+      <span className="h-px min-w-8 flex-1 bg-gradient-to-l from-primary to-border" />
       <span className="grid h-2 w-2 rounded-full bg-primary" />
-      <span className="font-medium">{to}</span>
+      <span className="min-w-0 break-words font-medium">{to}</span>
     </div>
   );
 }
@@ -150,7 +150,7 @@ export function MetaGrid({ items }: { items: Array<{ label: string; value?: Reac
       {visible.map((item) => (
         <div key={item.label} className="rounded-2xl bg-background px-4 py-3">
           <dt className="text-xs text-muted">{item.label}</dt>
-          <dd className="mt-1 text-sm font-medium leading-6">{item.value}</dd>
+          <dd className="mt-1 break-words text-sm font-medium leading-6">{item.value}</dd>
         </div>
       ))}
     </dl>

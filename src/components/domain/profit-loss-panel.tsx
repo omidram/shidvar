@@ -107,7 +107,7 @@ export function ProfitLossPanel() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border text-start text-muted">

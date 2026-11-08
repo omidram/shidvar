@@ -9,7 +9,7 @@ import { writeAudit } from "@/server/audit";
 import { getRule } from "@/server/settings/rules";
 import { logger } from "@/server/logger";
 import { config } from "@/server/config";
-import { sendLoginSmsOtp } from "@/server/notify/sms-otp";
+import { sendLoginSmsOtp, webotpHost } from "@/server/notify/sms-otp";
 import { smsAccess } from "@/server/notify/sms-flags";
 import { ensureCoinWallet } from "@/server/domains/finance/coin-service";
 import { maskNationalId, normalizeDigits, normalizeMobile } from "@/lib/identity";
@@ -145,7 +145,7 @@ export async function registerUser(input: z.infer<typeof registerSchema>, meta: 
   return { tokens, companyId: result.company.id, userId: result.user.id, driverProfileId: result.driverProfileId };
 }
 
-export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?: string; userAgent?: string }) {
+export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?: string; userAgent?: string; host?: string }) {
   hitRateLimit(`login:${meta.ip ?? "unknown"}`);
   const identifier = input.identifier.trim().toLowerCase();
   const digits = normalizeDigits(identifier);
@@ -205,7 +205,7 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
   if (isPlatformAdmin) {
     return completeLogin(user.id, input.portal as Portal | undefined, meta);
   }
-  return issueLoginOtp(user, input.portal as Portal | undefined);
+  return issueLoginOtp(user, input.portal as Portal | undefined, webotpHost(input.otpHost) ?? webotpHost(meta.host));
 }
 
 function twoFactorChannelOf(user: { twoFactorSecret: string | null; email: string | null; phone: string | null }): {
@@ -237,6 +237,7 @@ function sixDigitCode() {
 async function issueLoginOtp(
   user: { id: string; email: string | null; phone: string | null; twoFactorSecret: string | null },
   portal?: Portal,
+  host?: string | null,
 ): Promise<LoginOtpChallenge> {
   let { channel, target } = twoFactorChannelOf(user);
   if (channel === "SMS") {
@@ -266,7 +267,7 @@ async function issueLoginOtp(
   });
   let delivered = false;
   if (channel === "SMS") {
-    delivered = await sendLoginSmsOtp(target, code);
+    delivered = await sendLoginSmsOtp(target, code, host);
   } else {
     logger.info("login_otp_email_queued", { userId: user.id, target: maskDestination(channel, target) });
   }
@@ -315,7 +316,7 @@ export async function verifyLoginOtp(input: z.infer<typeof verifyLoginOtpSchema>
   return completeLogin(challenge.userId, portal || input.portal, meta);
 }
 
-export async function resendLoginOtp(input: z.infer<typeof resendLoginOtpSchema>) {
+export async function resendLoginOtp(input: z.infer<typeof resendLoginOtpSchema>, meta?: { host?: string }) {
   const challenge = await prisma.credentialChallenge.findUnique({
     where: { id: input.challengeId },
     include: { user: true },
@@ -324,7 +325,7 @@ export async function resendLoginOtp(input: z.infer<typeof resendLoginOtpSchema>
     throw Errors.unauthorized("کد ورود نادرست یا منقضی است");
   }
   const portal = (challenge.target.split(":")[2] || undefined) as Portal | undefined;
-  return issueLoginOtp(challenge.user, portal);
+  return issueLoginOtp(challenge.user, portal, webotpHost(input.otpHost) ?? webotpHost(meta?.host));
 }
 
 export async function logoutUser(userId: string) {
