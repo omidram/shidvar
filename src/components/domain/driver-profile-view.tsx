@@ -7,7 +7,7 @@ import { ErrorState, MetaGrid, PageHeader, RouteLine, SimpleTable } from "@/comp
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
 import { jobHref } from "@/lib/portal-links";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate, formatNumber } from "@/lib/utils";
@@ -88,7 +88,11 @@ export function DriverProfileView({ id }: { id: string }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const me = useMe();
-  const q = useQuery({ queryKey: ["driver", id], queryFn: () => api<DriverProfile>(`/drivers/${id}`) });
+  const q = useQuery({
+    queryKey: ["driver", id],
+    queryFn: () => api<DriverProfile>(`/drivers/${id}`),
+    refetchInterval: liveInterval(5000),
+  });
   const canUpload = Boolean(me.data?.isPlatformStaff || me.data?.driverProfile?.id === id);
   const canVerify = Boolean(me.data?.isPlatformStaff);
   if (q.isLoading) return <p>{t.common.loading}</p>;

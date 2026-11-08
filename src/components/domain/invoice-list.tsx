@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { EmptyState, PageHeader, RouteLine } from "@/components/domain/chrome";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
 import { invoiceHref } from "@/lib/portal-links";
 import { formatDate, formatMoney } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -33,7 +33,11 @@ type Invoice = {
 export function InvoiceList({ description }: { description?: string }) {
   const { t } = useI18n();
   const pathname = usePathname();
-  const q = useQuery({ queryKey: ["invoices"], queryFn: () => api<Invoice[]>("/invoices") });
+  const q = useQuery({
+    queryKey: ["invoices"],
+    queryFn: () => api<Invoice[]>("/invoices"),
+    refetchInterval: liveInterval(8000),
+  });
   const rows = q.data ?? [];
   return (
     <div>

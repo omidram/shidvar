@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
+import { flowTitle } from "@/components/domain/delivery-flow";
 import { StatusBadge } from "@/components/ui/badge";
 import { useSettingsForm } from "@/hooks/use-settings";
 import { useTheme } from "@/components/theme/theme-provider";
@@ -42,6 +43,7 @@ export default function RequesterSettingsPage() {
           }>;
         }>
       >("/requests"),
+    refetchInterval: liveInterval(5000),
   });
   const drivers = useQuery({
     queryKey: ["driver-directory"],
@@ -94,7 +96,7 @@ export default function RequesterSettingsPage() {
                 </div>
                 <p className={`mt-2 text-sm ${expectsDriver && !driverName ? "text-danger" : "text-muted"}`}>
                   {driverName
-                    ? `راننده: ${driverName}${assigned?.phone ? ` · ${assigned.phone}` : ""}${job ? ` · ${job.number} · ${statusFa(job.status)}` : ""}`
+                    ? `راننده: ${driverName}${assigned?.phone ? ` · ${assigned.phone}` : ""}${job ? ` · ${job.number} · ${flowTitle(job.status)}` : ""}`
                     : row.vipDriver
                       ? `راننده VIP: ${`${row.vipDriver.user.firstName} ${row.vipDriver.user.lastName}`.trim()} · هنوز قبول نکرده`
                       : "راننده‌ای وصل نشده"}

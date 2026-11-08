@@ -8,7 +8,7 @@ import { ErrorState, MetaGrid, PageHeader, RouteLine, SimpleTable } from "@/comp
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
 import { driverHref, jobHref, requestHref } from "@/lib/portal-links";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate, formatDateTime, formatMoney, formatNumber } from "@/lib/utils";
@@ -76,7 +76,11 @@ export function InvoiceDetailView({ id }: { id: string }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["invoice", id], queryFn: () => api<InvoiceDetail>(`/invoices/${id}`) });
+  const q = useQuery({
+    queryKey: ["invoice", id],
+    queryFn: () => api<InvoiceDetail>(`/invoices/${id}`),
+    refetchInterval: liveInterval(8000),
+  });
   const pay = useMutation({
     mutationFn: () => api(`/invoices/${id}/pay`, { method: "POST" }),
     onSuccess: () => {

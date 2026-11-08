@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { ShamsiDateInput } from "@/components/ui/shamsi-date-input";
-import { api, formatApiError } from "@/lib/api";
+import { api, formatApiError, liveInterval } from "@/lib/api";
 import { IRAN_BANKS } from "@/lib/iran-banks";
 import { BANK_STATUS_FA, EXPENSE_CATEGORIES, TXN_STATUS_FA, TXN_TYPE_FA } from "@/lib/wallet-labels";
 import { jalaliToIso, toJalali } from "@/lib/shamsi";
@@ -69,7 +69,11 @@ export default function DriverWalletPage() {
   const { t } = useI18n();
   const me = useMe();
   const qc = useQueryClient();
-  const wallet = useQuery({ queryKey: ["wallet"], queryFn: () => api<Wallet>("/wallet") });
+  const wallet = useQuery({
+    queryKey: ["wallet"],
+    queryFn: () => api<Wallet>("/wallet"),
+    refetchInterval: liveInterval(8000),
+  });
   const [tab, setTab] = useState<"charge" | "expense" | "transfer" | "bank">("charge");
   const [filter, setFilter] = useState("ALL");
 

@@ -7,7 +7,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ErrorState, PageHeader } from "@/components/domain/chrome";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, StatCard } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
 import { invoiceHref, jobHref, requestHref } from "@/lib/portal-links";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate, formatMoney, formatNumber } from "@/lib/utils";
@@ -44,7 +44,11 @@ function hrefFor(kind: ReportsPayload["recent"][number]["kind"], id: string, pat
 export function ReportsView({ compact }: { compact?: boolean }) {
   const { t } = useI18n();
   const pathname = usePathname();
-  const q = useQuery({ queryKey: ["reports"], queryFn: () => api<ReportsPayload>("/reports") });
+  const q = useQuery({
+    queryKey: ["reports"],
+    queryFn: () => api<ReportsPayload>("/reports"),
+    refetchInterval: liveInterval(8000),
+  });
   if (q.isLoading) return <p>{t.common.loading}</p>;
   if (q.isError || !q.data) return <ErrorState message={t.common.error} />;
   const data = q.data;

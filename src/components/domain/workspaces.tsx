@@ -75,6 +75,7 @@ export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; m
   const q = useQuery({
     queryKey: ["requests", marketplace ? "market" : "own"],
     queryFn: () => api<RequestRow[]>(marketplace ? "/marketplace/requests" : "/requests"),
+    refetchInterval: liveInterval(5000),
   });
   const rows = useMemo(() => {
     return (q.data ?? []).filter((row) => {
@@ -180,6 +181,7 @@ export function OrderList({ hrefPrefix }: { hrefPrefix: string }) {
   const q = useQuery({
     queryKey: ["orders"],
     queryFn: () => api<Array<{ id: string; number: string; status: string; merchandiseTotal?: number; currencyCode: string; requesterCompany?: { tradeName: string }; supplierCompany?: { tradeName: string } }>>("/orders"),
+    refetchInterval: liveInterval(5000),
   });
   const rows = (q.data ?? []).filter((row) => {
     const hay = `${row.number} ${row.requesterCompany?.tradeName ?? ""} ${row.supplierCompany?.tradeName ?? ""}`.toLowerCase();
@@ -287,7 +289,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const q = useQuery({
     queryKey: ["jobs", path],
     queryFn: () => api<JobDto[]>(path),
-    refetchInterval: marketplace ? liveInterval(15000) : false,
+    refetchInterval: liveInterval(5000),
   });
   const [confirmJob, setConfirmJob] = useState<JobDto | null>(null);
   const [fromCity, setFromCity] = useState("");
@@ -337,7 +339,14 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
     : all;
   return (
     <div>
-      <PageHeader title={marketplace ? t.job.incoming : t.job.title} description="صاحب بار، نوع محموله و مقصد را ببینید و تصمیم بگیرید." />
+      <PageHeader
+        title={marketplace ? t.job.incoming : t.job.title}
+        description={
+          marketplace
+            ? "صاحب بار، نوع محموله و مقصد را ببینید و تصمیم بگیرید."
+            : "مرحله هر بار همین‌جا، بدون تازه‌کردن صفحه، عوض می‌شود."
+        }
+      />
       {marketplace ? (
         <Card className="mb-4 grid gap-4">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -373,7 +382,16 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
         </Card>
       ) : null}
       {rows.length === 0 ? (
-        <EmptyState title={t.common.empty} hint={marketplace && all.length ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید." : "بار همگانی همین‌جا، قبل از قبول شما، دیده می‌شود. هنوز مدیریت باری برای راننده‌ها اعلام نکرده است."} />
+        <EmptyState
+          title={t.common.empty}
+          hint={
+            marketplace && all.length
+              ? "برای این مسیر و نوع بار باری پیدا نشد؛ فیلتر را تغییر دهید."
+              : marketplace
+                ? "بار همگانی همین‌جا، قبل از قبول شما، دیده می‌شود. هنوز مدیریت باری برای راننده‌ها اعلام نکرده است."
+                : "هنوز باری در این فهرست نیست. درخواست‌ها را از بخش درخواست‌ها دنبال کنید."
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {rows.map((job) => (
@@ -544,6 +562,7 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["request", id],
+    refetchInterval: liveInterval(5000),
     queryFn: () =>
       api<{
         id: string;
@@ -839,6 +858,7 @@ export function OrderDetailView({ id }: { id: string }) {
         jobs: Array<JobDto & { applications?: JobDto["applications"] }>;
         history: Array<{ toStatus: string; createdAt: string; entityType: string }>;
       }>(`/orders/${id}`),
+    refetchInterval: liveInterval(5000),
   });
   const select = useMutation({
     mutationFn: ({ jobId, driverId }: { jobId: string; driverId: string }) =>
@@ -921,7 +941,11 @@ export function DriverJobView({ id }: { id: string }) {
     me.data?.isPlatformStaff || me.data?.memberships.some((m) => m.companyType === "REQUESTER" || m.companyType === "SUPPLIER"),
   );
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["job", id], queryFn: () => api<JobDto>(`/jobs/${id}`) });
+  const q = useQuery({
+    queryKey: ["job", id],
+    queryFn: () => api<JobDto>(`/jobs/${id}`),
+    refetchInterval: liveInterval(5000),
+  });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const accept = useMutation({
     mutationFn: () => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),

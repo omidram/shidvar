@@ -47,7 +47,7 @@ export async function dashboardFor(actor: Actor) {
 
   const requesterId = actor.memberships.find((m) => m.companyType === "REQUESTER")?.companyId;
   if (requesterId && actor.portal !== "SUPPLIER" && actor.portal !== "DRIVER") {
-    const [activeRequests, waitingDrivers, assignedLoads, invoices, unpaidInvoices, openDisputes] = await Promise.all([
+    const [activeRequests, waitingDrivers, assignedLoads, docsToReview, invoices, unpaidInvoices, openDisputes] = await Promise.all([
       prisma.procurementRequest.count({ where: { companyId: requesterId, status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
       prisma.transportationJob.count({
         where: {
@@ -57,7 +57,10 @@ export async function dashboardFor(actor: Actor) {
         },
       }),
       prisma.transportationJob.count({
-        where: { order: { requesterCompanyId: requesterId }, assignedDriverId: { not: null }, status: { notIn: ["COMPLETED", "CANCELLED"] } },
+        where: { order: { requesterCompanyId: requesterId }, assignedDriverId: { not: null }, status: { notIn: ["COMPLETED", "CANCELLED", "CONFIRMED"] } },
+      }),
+      prisma.transportationJob.count({
+        where: { order: { requesterCompanyId: requesterId }, status: { in: ["PROOF_SUBMITTED", "DISPUTED"] } },
       }),
       prisma.invoice.count({ where: { recipientCompanyId: requesterId } }),
       prisma.invoice.count({
@@ -67,7 +70,7 @@ export async function dashboardFor(actor: Actor) {
         where: { order: { requesterCompanyId: requesterId }, status: { in: ["OPEN", "UNDER_REVIEW", "WAITING_FOR_INFORMATION"] } },
       }),
     ]);
-    return { portal: "REQUESTER", stats: { activeRequests, waitingDrivers, assignedLoads, invoices, unpaidInvoices, openDisputes } };
+    return { portal: "REQUESTER", stats: { activeRequests, waitingDrivers, assignedLoads, docsToReview, invoices, unpaidInvoices, openDisputes } };
   }
 
   const supplierId = actor.memberships.find((m) => m.companyType === "SUPPLIER")?.companyId;

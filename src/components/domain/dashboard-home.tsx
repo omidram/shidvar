@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { BarChart3, ClipboardList, LifeBuoy, MapPinned, PlusCircle, Receipt, ShieldCheck, Truck, UserRound, Users, Wallet } from "lucide-react";
-import { StatCard } from "@/components/ui/card";
-import { ErrorState, PageHeader } from "@/components/domain/chrome";
+import { StatCard, Card } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/badge";
+import { ErrorState, PageHeader, RouteLine } from "@/components/domain/chrome";
 import { QuickAccess, type QuickAction } from "@/components/domain/quick-access";
 import { ReportsView } from "@/components/domain/reports-view";
 import { TrackingCard, type TrackingDto } from "@/components/domain/tracking-panel";
@@ -12,14 +14,18 @@ import { formatMoney } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
-import { RoleGuide } from "@/components/domain/delivery-flow";
+import { DeliveryFlow, RoleGuide, ownerTaskRank } from "@/components/domain/delivery-flow";
 
 type Dashboard = { portal: string; stats: Record<string, number | string | null> };
 
 export function DashboardView() {
   const { t } = useI18n();
   const me = useMe();
-  const dash = useQuery({ queryKey: ["dashboard"], queryFn: () => api<Dashboard>("/dashboard") });
+  const dash = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: () => api<Dashboard>("/dashboard"),
+    refetchInterval: liveInterval(5000),
+  });
   if (dash.isLoading) return <p>{t.common.loading}</p>;
   if (dash.isError || !dash.data) return <ErrorState message={t.common.error} />;
   const stats = dash.data.stats;
@@ -50,6 +56,7 @@ export function DashboardView() {
     openDisputes: t.dash.openDisputes,
     openTickets: t.dash.openTickets,
     rating: t.common.rating,
+    docsToReview: "مدارک برای تأیید",
   };
 
   const actions: QuickAction[] =
@@ -97,7 +104,9 @@ export function DashboardView() {
       />
       {portal === "DRIVER" ? <RoleGuide role="driver" /> : null}
       {portal === "REQUESTER" ? <RoleGuide role="owner" /> : null}
+      {portal === "REQUESTER" ? <OwnerLiveLoads /> : null}
       <QuickAccess title={t.dash.quick} actions={actions} />
+      <p className="text-xs text-muted">عددها و مراحل بار هر چند ثانیه خودبه‌خود تازه می‌شوند.</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(stats)
           .filter(([, value]) => value !== null && value !== undefined)
@@ -113,6 +122,43 @@ export function DashboardView() {
       {portal === "REQUESTER" || portal === "DRIVER" || portal === "PLATFORM" ? <DashboardLiveTracking /> : null}
       {richHome || portal === "PLATFORM" ? <ReportsView compact /> : null}
     </div>
+  );
+}
+
+function OwnerLiveLoads() {
+  const q = useQuery({
+    queryKey: ["jobs", "/jobs"],
+    queryFn: () =>
+      api<Array<{ id: string; number: string; status: string; originCity?: string | null; destinationCity?: string | null }>>("/jobs"),
+    refetchInterval: liveInterval(5000),
+  });
+  const open = (q.data ?? [])
+    .filter((job) => !["COMPLETED", "CANCELLED", "CONFIRMED", "REJECTED"].includes(job.status))
+    .sort((a, b) => ownerTaskRank(a.status) - ownerTaskRank(b.status));
+  if (!open.length) return null;
+  return (
+    <section className="grid gap-3">
+      <div className="flex items-end justify-between gap-3">
+        <h2 className="text-lg font-bold">وضعیت بارها</h2>
+        <Link href="/requester/jobs" className="text-sm font-bold text-primary">
+          همه بارها
+        </Link>
+      </div>
+      {open.slice(0, 3).map((job) => (
+        <Card key={job.id}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <Link href={`/requester/jobs/${job.id}`} className="font-bold">
+              {job.number}
+            </Link>
+            <StatusBadge status={job.status} />
+          </div>
+          {job.originCity || job.destinationCity ? <RouteLine from={job.originCity ?? "مبدأ"} to={job.destinationCity ?? "مقصد"} /> : null}
+          <div className="mt-4">
+            <DeliveryFlow status={job.status} audience="owner" />
+          </div>
+        </Card>
+      ))}
+    </section>
   );
 }
 

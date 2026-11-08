@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { EmptyState, PageHeader, RouteLine } from "@/components/domain/chrome";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, liveInterval } from "@/lib/api";
+import { flowTitle } from "@/components/domain/delivery-flow";
 import { statusFa } from "@/lib/status-fa";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -32,7 +33,11 @@ type Job = {
 
 export default function AdminJobsPage() {
   const { t } = useI18n();
-  const q = useQuery({ queryKey: ["jobs", "/jobs"], queryFn: () => api<Job[]>("/jobs") });
+  const q = useQuery({
+    queryKey: ["jobs", "/jobs"],
+    queryFn: () => api<Job[]>("/jobs"),
+    refetchInterval: liveInterval(5000),
+  });
   const rows = q.data ?? [];
   return (
     <div>
@@ -53,6 +58,7 @@ export default function AdminJobsPage() {
               <div className="mt-4">
                 <RouteLine from={job.originCity ?? job.pickup?.city ?? t.job.pickup} to={job.destinationCity ?? job.delivery?.city ?? t.job.delivery} />
               </div>
+              <p className="mt-3 text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p>
               <p className="mt-3 text-sm">
                 {t.common.cargoOwner}: {job.cargoOwner?.name ?? "—"}
                 {job.cargoOwner?.phone ? ` · ${job.cargoOwner.phone}` : ""}

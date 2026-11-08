@@ -89,6 +89,46 @@ export function driverTaskRank(status: string) {
   return TASK_RANK[status] ?? 50;
 }
 
+const OWNER_RANK: Record<string, number> = {
+  PROOF_SUBMITTED: 0,
+  DISPUTED: 1,
+  DELIVERED: 2,
+  UNLOADING: 3,
+  AT_DESTINATION: 4,
+  ARRIVING_AT_DESTINATION: 5,
+  IN_TRANSIT: 6,
+  LOADED: 7,
+  LOADING: 8,
+  AT_PICKUP: 9,
+  ARRIVING_AT_PICKUP: 10,
+  DRIVER_ASSIGNED: 11,
+  SCHEDULED: 11,
+  SUPPLIER_CONFIRMED: 12,
+  DRIVER_SELECTED: 12,
+  DRIVER_APPLIED: 20,
+  OFFERED_TO_DRIVERS: 21,
+  MATCHING: 22,
+};
+
+export function ownerTaskLabel(status: string) {
+  if (status === "PROOF_SUBMITTED") return "مدارک رسیده. تأیید کنید تا سفر بسته شود";
+  if (status === "DISPUTED") return "روی مدارک اختلاف است. بررسی کنید";
+  if (status === "DELIVERED") return "راننده بار را داده و دارد عکس مدارک را می‌فرستد";
+  if (["OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "MATCHING"].includes(status)) return "منتظر قبول یک راننده هستید";
+  if (["DRIVER_SELECTED", "SUPPLIER_CONFIRMED", "SCHEDULED", "DRIVER_ASSIGNED", "ARRIVING_AT_PICKUP"].includes(status)) return "راننده قبول کرد و به سمت بارگیری می‌رود";
+  return `الان: ${flowTitle(status)}`;
+}
+
+export function ownerTaskRank(status: string) {
+  return OWNER_RANK[status] ?? 40;
+}
+
+export function ownerTaskHref(id: string, status: string) {
+  if (status === "PROOF_SUBMITTED" || status === "DISPUTED" || status === "DELIVERED") return `/requester/jobs/${id}#delivery-docs`;
+  if (["OFFERED_TO_DRIVERS", "DRIVER_APPLIED", "MATCHING", "DRIVER_SELECTED", "SUPPLIER_CONFIRMED"].includes(status)) return `/requester/jobs/${id}`;
+  return "/requester/tracking";
+}
+
 function nowText(status: string, audience: Audience, finished: boolean, cancelled: boolean) {
   if (cancelled) return "این بار لغو شده و دیگر ادامه ندارد.";
   if (finished) return "سفر تمام شد. مدارک تأیید شده و این بار بسته است.";

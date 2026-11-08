@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
-import { api, formatApiError } from "@/lib/api";
+import { api, formatApiError, liveInterval } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,11 @@ function BalanceCard({ balance }: { balance: number }) {
 }
 
 export function CoinsView() {
-  const q = useQuery({ queryKey: ["coins"], queryFn: () => api<CoinWalletView>("/coins") });
+  const q = useQuery({
+    queryKey: ["coins"],
+    queryFn: () => api<CoinWalletView>("/coins"),
+    refetchInterval: liveInterval(8000),
+  });
   return (
     <div className="grid gap-4">
       <PageHeader title="اعتبارها" description="ارز داخلی shidro. هر حساب تازه ۱۰۰۰ اعتبار هدیه می‌گیرد." />

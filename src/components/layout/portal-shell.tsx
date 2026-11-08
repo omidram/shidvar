@@ -29,7 +29,7 @@ import {
   ScrollText,
   LogOut,
 } from "lucide-react";
-import { api, isAuthError } from "@/lib/api";
+import { api, isAuthError, liveInterval } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import { BrandMark } from "@/components/visual/icons";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useMe } from "@/hooks/use-me";
 import { notificationHref, notificationTitle, type NotificationPayload } from "@/lib/portal-links";
-import { driverTaskLabel, driverTaskRank } from "@/components/domain/delivery-flow";
+import { driverTaskLabel, driverTaskRank, ownerTaskHref, ownerTaskLabel, ownerTaskRank } from "@/components/domain/delivery-flow";
 
 const ICONS = {
   dashboard: LayoutDashboard,
@@ -132,7 +132,7 @@ function DriverNextTask() {
   const jobs = useQuery({
     queryKey: ["jobs", "/jobs"],
     queryFn: () => api<Array<{ id: string; status: string }>>("/jobs"),
-    refetchInterval: 15000,
+    refetchInterval: liveInterval(5000),
   });
   const open = (jobs.data ?? []).filter((job) => !["COMPLETED", "CANCELLED", "CONFIRMED"].includes(job.status));
   const current = [...open].sort((a, b) => driverTaskRank(a.status) - driverTaskRank(b.status))[0];
@@ -140,7 +140,7 @@ function DriverNextTask() {
     queryKey: ["jobs", "/marketplace/jobs"],
     queryFn: () => api<Array<{ id: string }>>("/marketplace/jobs"),
     enabled: jobs.isSuccess && !current,
-    refetchInterval: 15000,
+    refetchInterval: liveInterval(5000),
   });
   if (current) {
     const onTrip = ["LOADED", "IN_TRANSIT", "ARRIVING_AT_DESTINATION", "AT_DESTINATION", "UNLOADING", "DELIVERED"].includes(current.status);
@@ -174,6 +174,49 @@ function DriverNextTask() {
   return null;
 }
 
+function OwnerNextTask() {
+  const jobs = useQuery({
+    queryKey: ["jobs", "/jobs"],
+    queryFn: () => api<Array<{ id: string; status: string }>>("/jobs"),
+    refetchInterval: liveInterval(5000),
+  });
+  const requests = useQuery({
+    queryKey: ["requests", "own"],
+    queryFn: () => api<Array<{ id: string; status: string }>>("/requests"),
+    refetchInterval: liveInterval(5000),
+  });
+  const open = (jobs.data ?? []).filter((job) => !["COMPLETED", "CANCELLED", "CONFIRMED", "REJECTED"].includes(job.status));
+  const current = [...open].sort((a, b) => ownerTaskRank(a.status) - ownerTaskRank(b.status))[0];
+  if (current) {
+    return (
+      <Link href={ownerTaskHref(current.id, current.status)} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
+          <span className="block truncate text-base font-black">{ownerTaskLabel(current.status)}</span>
+        </span>
+        <ChevronLeft className="h-5 w-5 shrink-0" />
+      </Link>
+    );
+  }
+  const pending = (requests.data ?? []).find((row) => ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "PUBLISHED", "TRANSPORT_PENDING"].includes(row.status));
+  if (!pending) return null;
+  const label =
+    pending.status === "DRAFT"
+      ? "درخواست پیش‌نویس مانده. آن را بفرستید"
+      : pending.status === "UNDER_REVIEW" || pending.status === "SUBMITTED"
+        ? "درخواست شما در صف بررسی مدیریت است"
+        : "بار اعلام شده. منتظر قبول راننده هستید";
+  return (
+    <Link href={`/requester/requests/${pending.id}`} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-primary-foreground">
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold opacity-80">کار بعدی شما</span>
+        <span className="block truncate text-base font-black">{label}</span>
+      </span>
+      <ChevronLeft className="h-5 w-5 shrink-0" />
+    </Link>
+  );
+}
+
 export function PortalShell({ portal, children }: { portal: keyof typeof NAV; children: React.ReactNode }) {
   const { t } = useI18n();
   const pathname = usePathname();
@@ -199,6 +242,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
       >("/notifications"),
     enabled: Boolean(me.data),
     retry: false,
+    refetchInterval: liveInterval(8000),
   });
 
   useEffect(() => {
@@ -221,6 +265,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
     queryFn: () => api<{ balance: number }>("/coins"),
     enabled: Boolean(me.data) && hasCoins,
     retry: false,
+    refetchInterval: liveInterval(8000),
   });
   const displayName = me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() || me.data.phone || me.data.email || "" : "";
 
@@ -325,6 +370,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
           </div>
           </div>
           {portal === "driver" ? <DriverNextTask /> : null}
+          {portal === "requester" ? <OwnerNextTask /> : null}
         </header>
         {openNotes ? (
           <div className="mx-4 mt-3 rounded-3xl border border-border bg-card p-4 card-shadow md:mx-8">
