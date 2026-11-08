@@ -77,6 +77,9 @@ function RegisterForm() {
           <Link href="/" className="lg:hidden">
             <BrandMark />
           </Link>
+          <Button asChild variant="secondary">
+            <Link href="/">بازگشت به صفحه اصلی</Link>
+          </Button>
           <h1 className="text-2xl font-black">{t.auth.registerTitle}</h1>
           <div className="grid gap-2 sm:grid-cols-2">
             <ChoiceTile

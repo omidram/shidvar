@@ -101,6 +101,9 @@ function LoginForm() {
           <Link href="/" className="mb-8 block lg:hidden">
             <BrandMark />
           </Link>
+          <Button asChild variant="secondary" className="mb-6">
+            <Link href="/">بازگشت به صفحه اصلی</Link>
+          </Button>
           <h1 className="text-2xl font-black">{challenge ? t.auth.otpTitle : t.auth.loginTitle}</h1>
           <p className="mt-1 text-sm text-muted">
             {challenge
