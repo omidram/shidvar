@@ -34,8 +34,8 @@ export function QuickAccess({ title, actions }: { title: string; actions: QuickA
                 <Icon className="h-5 w-5" />
               </span>
               <span className="min-w-0">
-                <span className="block font-bold leading-6">{action.label}</span>
-                <span className="mt-0.5 block text-xs leading-5 text-muted">{action.hint}</span>
+                <span className="block break-words font-bold leading-6">{action.label}</span>
+                <span className="mt-0.5 block break-words text-xs leading-5 text-muted">{action.hint}</span>
               </span>
             </Link>
           );

@@ -119,16 +119,16 @@ export default function CompaniesPage() {
             <Link key={c.id} href={`/admin/companies/${c.id}`}>
               <Card className="transition hover:-translate-y-0.5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-lg font-bold">
-                      {c.tradeName}
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold">
+                      <span className="min-w-0 break-words">{c.tradeName}</span>
                       {c.isSpecial ? <SpecialBadge note={c.specialNote} /> : null}
                     </div>
-                    <p className="mt-1 text-sm text-muted">{c.legalName}</p>
+                    <p className="mt-1 break-words text-sm text-muted">{c.legalName}</p>
                   </div>
                   <StatusBadge status={c.status} />
                 </div>
-                <p className="mt-3 text-sm">
+                <p className="mt-3 break-words text-sm">
                   {statusFa(c.type)}
                   {c.phone ? ` · ${c.phone}` : ""}
                   {c.email ? ` · ${c.email}` : ""}

@@ -22,9 +22,9 @@ export function SettingsSection({
     <Card className="grid gap-4">
       <div className="flex items-start gap-3">
         {icon ? <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">{icon}</div> : null}
-        <div>
-          <h2 className="font-bold">{title}</h2>
-          {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+        <div className="min-w-0">
+          <h2 className="break-words font-bold">{title}</h2>
+          {description ? <p className="mt-1 break-words text-sm leading-6 text-muted">{description}</p> : null}
         </div>
       </div>
       {children}
@@ -54,9 +54,9 @@ export function SettingToggle({
         checked ? "border-primary/40 bg-primary/10" : "border-border bg-background",
       )}
     >
-      <span>
-        <span className="block text-sm font-semibold">{label}</span>
-        {hint ? <span className="mt-0.5 block text-xs text-muted">{hint}</span> : null}
+      <span className="min-w-0">
+        <span className="block break-words text-sm font-semibold">{label}</span>
+        {hint ? <span className="mt-0.5 block break-words text-xs leading-5 text-muted">{hint}</span> : null}
       </span>
       <span className={cn("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-primary" : "bg-border")}>
         <span

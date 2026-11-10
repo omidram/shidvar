@@ -109,14 +109,14 @@ export function CompanyProfileView({ id }: { id: string }) {
         <div className="grid gap-3">
           {company.members.map((member, i) => (
             <div key={`${member.email ?? member.phone ?? i}`} className="rounded-2xl bg-background px-4 py-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="font-semibold">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="min-w-0 break-words font-semibold">
                   {member.firstName} {member.lastName}
                   {member.isOwner ? <span className="ms-2 text-xs text-primary">مالک</span> : null}
                 </div>
                 <StatusBadge status={member.status} />
               </div>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 break-words text-sm text-muted">
                 {[member.title, member.phone, member.email].filter(Boolean).join(" · ") || "—"}
               </p>
             </div>
@@ -129,10 +129,10 @@ export function CompanyProfileView({ id }: { id: string }) {
           <div className="grid gap-3 md:grid-cols-2">
             {company.warehouses.map((w) => (
               <div key={w.id} className="rounded-2xl border border-border p-4">
-                <div className="font-bold">{w.name}</div>
-                <p className="mt-1 text-sm text-muted">{w.code} · {statusFa(w.status)}</p>
-                <p className="mt-2 text-sm">{w.city}، {w.region}</p>
-                <p className="text-sm text-muted">{w.line1}{w.postalCode ? ` · ${w.postalCode}` : ""}</p>
+                <div className="break-words font-bold">{w.name}</div>
+                <p className="mt-1 break-words text-sm text-muted">{w.code} · {statusFa(w.status)}</p>
+                <p className="mt-2 break-words text-sm">{w.city}، {w.region}</p>
+                <p className="break-words text-sm text-muted">{w.line1}{w.postalCode ? ` · ${w.postalCode}` : ""}</p>
               </div>
             ))}
           </div>

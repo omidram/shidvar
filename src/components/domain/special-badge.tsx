@@ -44,7 +44,7 @@ export function SpecialToggle({ companyId, isSpecial, note }: { companyId: strin
         {isSpecial ? <SpecialBadge note={note} /> : null}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Input className="max-w-sm" placeholder="یادداشت (اختیاری)" value={text} onChange={(e) => setText(e.target.value)} />
+        <Input className="w-full min-w-0 sm:max-w-sm" placeholder="یادداشت (اختیاری)" value={text} onChange={(e) => setText(e.target.value)} />
         {isSpecial ? (
           <>
             <Button type="button" variant="secondary" disabled={save.isPending} onClick={() => save.mutate(true)}>

@@ -32,15 +32,15 @@ export default function UsersPage() {
         {(q.data ?? []).map((u) => (
           <Card key={`${u.email ?? ""}-${u.phone ?? ""}-${u.firstName}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-lg font-bold">{u.firstName} {u.lastName}</div>
-                <p className="mt-1 text-sm text-muted">{[u.phone, u.email].filter(Boolean).join(" · ") || "—"}</p>
+              <div className="min-w-0">
+                <div className="break-words text-lg font-bold">{u.firstName} {u.lastName}</div>
+                <p className="mt-1 break-words text-sm text-muted">{[u.phone, u.email].filter(Boolean).join(" · ") || "—"}</p>
               </div>
               <StatusBadge status={u.status} />
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {(u.memberships ?? []).map((m, i) => (
-                <span key={`${m.company?.tradeName}-${i}`} className="rounded-full bg-background px-3 py-1 text-xs">
+                <span key={`${m.company?.tradeName}-${i}`} className="max-w-full break-words rounded-full bg-background px-3 py-1 text-xs">
                   {m.company?.tradeName ?? "—"} · {statusFa(m.company?.type)} · {statusFa(m.company?.status)}
                   {m.isOwner ? " · مالک" : ""}
                 </span>

@@ -263,8 +263,13 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const items = NAV[portal];
   const pinned = portal === "admin" ? items.filter((item) => item.key === "adminProfile" || item.key === "settings") : [];
   const menuItems = portal === "admin" ? items.filter((item) => item.key !== "adminProfile" && item.key !== "settings") : items;
-  const phoneShell = portal === "driver" || portal === "requester" || portal === "supplier";
-  const dockKeys = portal === "driver" ? ["dashboard", "jobs", "activeTrip", "wallet"] : ["dashboard", "requests", "newRequest", "jobs"];
+  const phoneShell = portal === "driver" || portal === "requester" || portal === "supplier" || portal === "admin";
+  const dockKeys =
+    portal === "driver"
+      ? ["dashboard", "jobs", "activeTrip", "wallet"]
+      : portal === "admin"
+        ? ["dashboard", "verifications", "drivers", "companies"]
+        : ["dashboard", "requests", "newRequest", "jobs"];
   const dock = items.filter((item) => dockKeys.includes(item.key));
   const unread = (notes.data ?? []).filter((n) => !n.readAt).length;
   const hasCoins = portal === "requester" || portal === "driver";
@@ -315,8 +320,8 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                   active ? "bg-primary text-primary-foreground" : "text-white/80 hover:bg-white/10",
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {t.menu[item.key]}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 break-words">{t.menu[item.key]}</span>
               </Link>
             );
           })}
@@ -330,13 +335,14 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMenuOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
                     active ? "bg-primary text-primary-foreground" : "text-white/80 hover:bg-white/10",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
-                  {t.menu[item.key]}
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 break-words">{t.menu[item.key]}</span>
                 </Link>
               );
             })}
@@ -379,9 +385,13 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             ) : null}
             <ThemeToggle />
             {portal === "admin" ? (
-              <Link href="/admin/settings" className="inline-flex h-11 items-center gap-2 rounded-2xl border border-border bg-card px-3 text-sm font-semibold">
+              <Link
+                href="/admin/settings"
+                aria-label={t.menu.settings}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-card text-sm font-semibold sm:w-auto sm:gap-2 sm:px-3"
+              >
                 <Settings className="h-4 w-4" />
-                {t.menu.settings}
+                <span className="hidden sm:inline">{t.menu.settings}</span>
               </Link>
             ) : null}
             <Button variant="secondary" className="hidden h-11 px-3 lg:inline-flex" onClick={() => void signOut()}>
@@ -464,7 +474,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 )}
               >
                 <Icon className="h-4 w-4" />
-                <span className="max-w-full truncate">{t.menu[item.key]}</span>
+                <span className="line-clamp-2 max-w-full text-center leading-4">{t.menu[item.key]}</span>
               </Link>
             );
           })}

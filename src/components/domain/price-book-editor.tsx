@@ -202,7 +202,51 @@ export function PriceBookEditor({ companyId, readOnly }: { companyId: string; re
       <Field label="شرایط و تبصره‌ها">
         <Textarea rows={5} value={book.terms ?? ""} onChange={(e) => setBook({ ...book, terms: e.target.value })} disabled={readOnly} />
       </Field>
-      <div className="w-full min-w-0 max-w-full overflow-x-auto">
+      <div className="grid gap-3 md:hidden">
+        {book.lines.map((line, i) => (
+          <div key={`m-${line.zoneName}-${i}`} className="grid min-w-0 gap-3 rounded-2xl border border-border p-3">
+            <Field label="پهنه">
+              <Input value={line.zoneName} disabled={readOnly} onChange={(e) => patchLine(i, { zoneName: e.target.value })} />
+            </Field>
+            <Field label="استان‌ها">
+              <Input
+                value={line.provinces.join("، ")}
+                disabled={readOnly}
+                onChange={(e) => patchLine(i, { provinces: e.target.value.split(/[،,]/).map((s) => s.trim()).filter(Boolean) })}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="از">
+                <Input type="number" value={line.minQuantity} disabled={readOnly} onChange={(e) => patchLine(i, { minQuantity: Number(e.target.value || 0) })} />
+              </Field>
+              <Field label="تا">
+                <Input
+                  type="number"
+                  value={line.maxQuantity ?? ""}
+                  disabled={readOnly}
+                  placeholder="باز"
+                  onChange={(e) => patchLine(i, { maxQuantity: e.target.value ? Number(e.target.value) : null })}
+                />
+              </Field>
+            </div>
+            <Field label="نوع نرخ">
+              <NativeSelect value={line.rateType} disabled={readOnly} onChange={(e) => patchLine(i, { rateType: e.target.value })}>
+                <option value="SERVICE">سرویسی</option>
+                <option value="PER_UNIT">به ازای واحد</option>
+              </NativeSelect>
+            </Field>
+            <Field label="مبلغ واحد">
+              <Input type="number" value={line.unitPrice ?? ""} disabled={readOnly} onChange={(e) => patchLine(i, { unitPrice: e.target.value ? Number(e.target.value) : null })} />
+            </Field>
+            {readOnly ? null : (
+              <button type="button" className="justify-self-start text-sm text-danger" onClick={() => setBook({ ...book, lines: book.lines.filter((_, j) => j !== i) })}>
+                حذف این ردیف
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="hidden w-full min-w-0 max-w-full overflow-x-auto md:block">
         <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="text-muted">

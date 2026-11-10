@@ -51,19 +51,19 @@ export default function AdminJobsPage() {
         {rows.map((job) => (
           <Link key={job.id} href={`/admin/jobs/${job.id}`}>
             <Card className="transition hover:-translate-y-0.5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-lg font-bold">{job.number}</div>
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="min-w-0 break-words text-lg font-bold">{job.number}</div>
                 <StatusBadge status={job.status} />
               </div>
               <div className="mt-4">
                 <RouteLine from={job.originCity ?? job.pickup?.city ?? t.job.pickup} to={job.destinationCity ?? job.delivery?.city ?? t.job.delivery} />
               </div>
-              <p className="mt-3 text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p>
-              <p className="mt-3 text-sm">
+              <p className="mt-3 break-words text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p>
+              <p className="mt-3 break-words text-sm">
                 {t.common.cargoOwner}: {job.cargoOwner?.name ?? "—"}
                 {job.cargoOwner?.phone ? ` · ${job.cargoOwner.phone}` : ""}
               </p>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 break-words text-sm text-muted">
                 {(job.cargoItems ?? []).map((item) => `${item.name} ${item.quantity} ${item.unitCode}`).join("، ")}
               </p>
               <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted">

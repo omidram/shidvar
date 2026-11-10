@@ -54,14 +54,14 @@ export default function AuditPage() {
         {(q.data ?? []).map((row) => (
           <Card key={`${row.entityId}-${row.createdAt}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="font-bold">{ACTION_FA[row.action] ?? row.action}</div>
-                <p className="mt-1 text-sm text-muted">
+              <div className="min-w-0">
+                <div className="break-words font-bold">{ACTION_FA[row.action] ?? row.action}</div>
+                <p className="mt-1 break-all text-sm text-muted">
                   {ENTITY_FA[row.entityType] ?? row.entityType} · {row.entityId.slice(0, 8)}
                   {row.actorRole ? ` · نقش ${row.actorRole}` : ""}
                 </p>
               </div>
-              <div className="text-end text-sm text-muted">
+              <div className="min-w-0 break-words text-end text-sm text-muted">
                 <div>{formatDateTime(row.createdAt)}</div>
                 {row.ipAddress ? <div className="mt-1">{row.ipAddress}</div> : null}
               </div>

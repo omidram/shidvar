@@ -90,7 +90,7 @@ function RuleEditor({
     const dirty = asNumber(draft) !== asNumber(value);
     return (
       <div className="mt-4 flex flex-wrap items-end gap-3">
-        <div className="min-w-40 flex-1">
+        <div className="w-full min-w-0 flex-1 sm:max-w-xs">
           <NumberField label="مقدار" unit={field.unit} value={asNumber(draft)} onChange={setDraft} />
         </div>
         <Button disabled={saving || !dirty} onClick={() => onSave(asNumber(draft))}>
@@ -159,9 +159,9 @@ export default function RulesPage() {
             {group.fields.map((field) => (
               <Card key={field.key}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="font-bold">{field.title}</div>
-                    <p className="mt-1 text-sm text-muted">{field.body}</p>
+                  <div className="min-w-0">
+                    <div className="break-words font-bold">{field.title}</div>
+                    <p className="mt-1 break-words text-sm leading-6 text-muted">{field.body}</p>
                   </div>
                   <span
                     className={cn(

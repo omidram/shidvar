@@ -46,11 +46,11 @@ export default function AdminDriversPage() {
             <Link key={row.id} href={`/admin/drivers/${row.id}`}>
               <Card className="transition hover:-translate-y-0.5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-lg font-bold">
+                  <div className="min-w-0">
+                    <div className="break-words text-lg font-bold">
                       {row.user.firstName} {row.user.lastName}
                     </div>
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="mt-1 break-words text-sm text-muted">
                       {[row.user.phone, row.user.email, row.carrier?.company?.tradeName].filter(Boolean).join(" · ")}
                     </p>
                   </div>

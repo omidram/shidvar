@@ -58,9 +58,9 @@ function BalanceCard({ balance }: { balance: number }) {
       <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-400/15 text-amber-600">
         <Coins className="h-7 w-7" />
       </span>
-      <div>
+      <div className="min-w-0">
         <p className="text-sm text-muted">موجودی اعتبار</p>
-        <p className="text-3xl font-black">{fa(balance)}</p>
+        <p className="break-words text-3xl font-black">{fa(balance)}</p>
       </div>
     </Card>
   );

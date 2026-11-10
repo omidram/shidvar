@@ -67,16 +67,16 @@ export default function VerificationsPage() {
           return (
             <Card key={c.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <Link href={`/admin/companies/${c.id}`} className="text-lg font-bold hover:underline">
+                <div className="min-w-0">
+                  <Link href={`/admin/companies/${c.id}`} className="break-words text-lg font-bold hover:underline">
                     {c.tradeName}
                   </Link>
-                  <p className="mt-1 text-sm text-muted">{c.legalName}</p>
-                  <p className="mt-2 text-sm">
+                  <p className="mt-1 break-words text-sm text-muted">{c.legalName}</p>
+                  <p className="mt-2 break-words text-sm">
                     {statusFa(c.type)} · {[c.phone, c.email, c.taxId, c.registrationNumber].filter(Boolean).join(" · ")}
                   </p>
                   {owner ? (
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="mt-1 break-words text-sm text-muted">
                       رابط: {owner.firstName} {owner.lastName}{owner.phone ? ` · ${owner.phone}` : ""}
                     </p>
                   ) : null}
@@ -107,14 +107,14 @@ export default function VerificationsPage() {
         {drivers.map((d) => (
           <Card key={d.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <Link href={`/admin/drivers/${d.id}`} className="text-lg font-bold hover:underline">
+              <div className="min-w-0">
+                <Link href={`/admin/drivers/${d.id}`} className="break-words text-lg font-bold hover:underline">
                   {`${d.user.firstName} ${d.user.lastName}`.trim() || `راننده ${d.user.phone ?? ""}`}
                 </Link>
-                <p className="mt-2 text-sm">
+                <p className="mt-2 break-words text-sm">
                   {[d.user.phone, d.user.email, d.carrier?.company?.tradeName].filter(Boolean).join(" · ")}
                 </p>
-                <p className="mt-1 text-sm text-muted">
+                <p className="mt-1 break-words text-sm text-muted">
                   {t.common.license}: {d.licenseNumber ?? "—"}
                   {d.licenseType ? ` · ${d.licenseType}` : ""}
                 </p>

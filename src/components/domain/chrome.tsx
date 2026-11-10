@@ -176,7 +176,7 @@ export function FilterBar({
         value={query}
         onChange={(e) => onQuery(e.target.value)}
         placeholder="جستجو در شماره، شهر یا کالا"
-        className="h-11 rounded-2xl border border-border bg-card px-4 text-sm"
+        className="h-11 min-w-0 max-w-full rounded-2xl border border-border bg-card px-4 text-base"
       />
       <div className="flex flex-wrap gap-2">
         {statuses.map((item) => (

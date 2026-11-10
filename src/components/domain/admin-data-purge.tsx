@@ -65,12 +65,12 @@ export function AdminDataPurge() {
           const count = countOf(section.id);
           return (
             <div key={section.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
-              <div>
-                <div className="font-semibold">
+              <div className="min-w-0">
+                <div className="break-words font-semibold">
                   {section.title}
                   <span className="ms-2 text-sm font-normal text-muted">{counts.isLoading ? "…" : formatNumber(count)}</span>
                 </div>
-                <p className="mt-1 text-sm text-muted">{section.detail}</p>
+                <p className="mt-1 break-words text-sm leading-6 text-muted">{section.detail}</p>
               </div>
               <Button
                 type="button"
