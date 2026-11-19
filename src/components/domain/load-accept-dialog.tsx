@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CargoBadges } from "@/components/domain/cargo-badges";
+import { SETTLEMENT_FA, SETTLEMENT_METHODS, type SettlementMethod, settlementLabel } from "@/lib/settlement";
 import { formatMoney, formatNumber } from "@/lib/utils";
 
 export type LoadSummary = {
@@ -25,6 +26,7 @@ export type LoadSummary = {
   dispatchMode?: string;
   needsWaybill?: boolean;
   needsInsurance?: boolean;
+  settlementMethod?: string | null;
 };
 
 /** The driver must see what the load is, and confirm it, before taking it. */
@@ -38,9 +40,13 @@ export function LoadAcceptDialog({
   job: LoadSummary;
   cost?: number;
   busy?: boolean;
-  onConfirm: () => void;
+  onConfirm: (settlementMethod: SettlementMethod) => void;
   onClose: () => void;
 }) {
+  const required = (SETTLEMENT_METHODS as readonly string[]).includes(job.settlementMethod ?? "")
+    ? (job.settlementMethod as SettlementMethod)
+    : null;
+  const [method, setMethod] = useState<SettlementMethod | "">(required ?? "");
   const [agreed, setAgreed] = useState(false);
   const items: Array<{ name: string; quantity: number; unitCode: string; qualityNotes?: string | null; packagingNotes?: string | null }> =
     job.cargoItems ?? job.items ?? [];
@@ -104,16 +110,33 @@ export function LoadAcceptDialog({
           </div>
         ) : null}
 
+        <fieldset className="mt-4 grid gap-2">
+          <legend className="text-sm font-bold">نحوه تسویه</legend>
+          {required ? <p className="text-sm text-muted">صاحب بار «{settlementLabel(required)}» را ثبت کرده است. همان را تأیید کنید.</p> : null}
+          {SETTLEMENT_METHODS.map((value) => (
+            <label key={value} className="flex items-center gap-2 rounded-2xl border border-border px-3 py-2 text-sm">
+              <input
+                type="radio"
+                name="settlement"
+                checked={method === value}
+                disabled={Boolean(required && required !== value)}
+                onChange={() => setMethod(value)}
+              />
+              {SETTLEMENT_FA[value]}
+            </label>
+          ))}
+        </fieldset>
+
         <label className="mt-4 flex items-start gap-2 rounded-2xl border border-border p-3 text-sm">
           <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
           <span>
-            محتوای بار را دیدم و می‌دانم چه چیزی حمل می‌کنم؛ با پذیرش، تحویل سالم و به‌موقع آن را تعهد می‌کنم.
+            محتوای بار و نحوه تسویه را کامل دیدم و تأیید می‌کنم؛ بعد از این، بارگیری را شروع می‌کنم.
             <span className="mt-1 block text-xs text-muted">با قبول بار، {formatNumber(cost)} اعتبار از حساب شما کسر می‌شود.</span>
           </span>
         </label>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <Button type="button" disabled={!agreed || busy} onClick={onConfirm}>
+          <Button type="button" disabled={!agreed || !method || busy} onClick={() => method && onConfirm(method)}>
             تأیید و قبول بار
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Vazirmatn } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { APP_VERSION } from "@/lib/version";
 import "./globals.css";
 
 const vazir = Vazirmatn({
@@ -21,6 +22,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "shidro | تأمین و حمل سازمانی",
   description: "سامانه تأمین عمده، تطبیق تأمین‌کننده و حمل بار برای فروشگاه‌های زنجیره‌ای",
+  icons: { icon: "/shidro-logo.png", apple: "/shidro-logo.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={vazir.className}>
         <Providers>{children}</Providers>
+        <p className="pointer-events-none fixed inset-x-0 bottom-1 z-20 text-center text-[11px] font-semibold text-muted lg:bottom-2 lg:z-40">نسخه {APP_VERSION}</p>
       </body>
     </html>
   );

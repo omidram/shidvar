@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { SpecialBadge } from "@/components/domain/special-badge";
 import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
@@ -102,7 +103,7 @@ export default function CompaniesPage() {
             <Input value={form.ownerPhone} onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })} />
           </Field>
           <Field label="رمز عبور اولیه">
-            <Input type="password" value={form.ownerPassword} onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} />
+            <PasswordInput value={form.ownerPassword} onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} />
           </Field>
           <div className="flex items-end">
             <Button type="button" onClick={() => create.mutate()} disabled={create.isPending || !form.tradeName || !form.ownerEmail}>

@@ -7,6 +7,7 @@ import { SettingToggle } from "@/components/domain/settings-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { api, formatApiError } from "@/lib/api";
 
 type AccountControl = {
@@ -151,8 +152,7 @@ export function AdminPersonControls({ companyId, driverId }: { companyId?: strin
       <div className="grid gap-3 md:grid-cols-2">
         <label className="grid gap-1">
           <Label>رمز جدید</Label>
-          <Input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -161,7 +161,7 @@ export function AdminPersonControls({ companyId, driverId }: { companyId?: strin
         </label>
         <label className="grid gap-1">
           <Label>تکرار رمز</Label>
-          <Input type="password" autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} />
+          <PasswordInput autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} />
         </label>
       </div>
       <p className="text-xs text-muted">رمز حداقل ۱۰ نویسه است و باید حرف بزرگ، حرف کوچک و عدد داشته باشد. با ذخیرهٔ رمز، ورودهای قبلی این حساب بسته می‌شود.</p>

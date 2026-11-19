@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
+import { PhoneLink } from "@/components/ui/phone-link";
 
 type Driver = {
   id: string;
@@ -51,7 +52,9 @@ export default function AdminDriversPage() {
                       {row.user.firstName} {row.user.lastName}
                     </div>
                     <p className="mt-1 break-words text-sm text-muted">
-                      {[row.user.phone, row.user.email, row.carrier?.company?.tradeName].filter(Boolean).join(" · ")}
+                      {row.user.phone ? <PhoneLink phone={row.user.phone} /> : null}
+                      {row.user.email ? ` · ${row.user.email}` : ""}
+                      {row.carrier?.company?.tradeName ? ` · ${row.carrier.company.tradeName}` : ""}
                     </p>
                   </div>
                   <StatusBadge status={row.status} />

@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { PriceBookEditor } from "@/components/domain/price-book-editor";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
@@ -64,7 +65,11 @@ export function CompanyProfileView({ id }: { id: string }) {
                   <div className="font-bold">{driver.name}</div>
                   <StatusBadge status={driver.status} />
                 </div>
-                {driver.phone ? <p className="mt-1 text-sm text-muted">{driver.phone}</p> : null}
+                {driver.phone ? (
+                  <p className="mt-1 text-sm">
+                    <PhoneLink phone={driver.phone} />
+                  </p>
+                ) : null}
               </Link>
             ))}
             {!company.drivers.length ? <p className="text-sm text-muted">پروفایل راننده برای این حساب هنوز کامل نشده است.</p> : null}
@@ -87,7 +92,7 @@ export function CompanyProfileView({ id }: { id: string }) {
         <MetaGrid
           items={[
             { label: t.common.legalName, value: company.legalName },
-            { label: t.common.phone, value: company.phone },
+            { label: t.common.phone, value: company.phone ? <PhoneLink phone={company.phone} /> : null },
             { label: t.common.email, value: company.email },
             { label: t.common.taxId, value: company.taxId },
             { label: t.common.registration, value: company.registrationNumber },
@@ -117,7 +122,10 @@ export function CompanyProfileView({ id }: { id: string }) {
                 <StatusBadge status={member.status} />
               </div>
               <p className="mt-1 break-words text-sm text-muted">
-                {[member.title, member.phone, member.email].filter(Boolean).join(" · ") || "—"}
+                {member.title ? `${member.title} · ` : ""}
+                {member.phone ? <PhoneLink phone={member.phone} /> : null}
+                {member.email ? ` · ${member.email}` : ""}
+                {!member.title && !member.phone && !member.email ? "—" : ""}
               </p>
             </div>
           ))}

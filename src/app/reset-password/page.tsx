@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { PublicHeader } from "@/components/layout/public-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { api, formatApiError } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
 
@@ -33,7 +34,7 @@ function ResetForm() {
       <h1 className="text-xl font-semibold">{t.auth.resetTitle}</h1>
       <form className="mt-6 grid gap-4" onSubmit={onSubmit}>
         <Field label={t.auth.password} hint={t.auth.passwordHint}>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
         </Field>
         <Button type="submit" disabled={!token}>
           {t.auth.submit}

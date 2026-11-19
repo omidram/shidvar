@@ -39,6 +39,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useMe } from "@/hooks/use-me";
 import { notificationHref, notificationTitle, type NotificationPayload } from "@/lib/portal-links";
 import { driverTaskLabel, driverTaskRank, ownerTaskHref, ownerTaskLabel, ownerTaskRank } from "@/components/domain/delivery-flow";
+import { APP_VERSION } from "@/lib/version";
 
 const ICONS = {
   dashboard: LayoutDashboard,
@@ -68,6 +69,9 @@ const ICONS = {
   disputes: Scale,
   tickets: LifeBuoy,
   coins: Coins,
+  partners: Building2,
+  shipments: PackageSearch,
+  newShipment: PlusCircle,
 };
 
 const NAV = {
@@ -77,6 +81,7 @@ const NAV = {
     { href: "/admin/drivers", key: "drivers" as const },
     { href: "/admin/users", key: "users" as const },
     { href: "/admin/companies", key: "companies" as const },
+    { href: "/admin/partners", key: "partners" as const },
     { href: "/admin/requests", key: "requests" as const },
     { href: "/admin/jobs", key: "jobs" as const },
     { href: "/admin/tracking", key: "tracking" as const },
@@ -126,6 +131,11 @@ const NAV = {
     { href: "/driver/profile", key: "profile" as const },
     { href: "/driver/support", key: "support" as const },
     { href: "/driver/settings", key: "settings" as const },
+  ],
+  partner: [
+    { href: "/partner/dashboard", key: "dashboard" as const },
+    { href: "/partner/shipments", key: "shipments" as const },
+    { href: "/partner/shipments/new", key: "newShipment" as const },
   ],
 };
 
@@ -263,13 +273,15 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const items = NAV[portal];
   const pinned = portal === "admin" ? items.filter((item) => item.key === "adminProfile" || item.key === "settings") : [];
   const menuItems = portal === "admin" ? items.filter((item) => item.key !== "adminProfile" && item.key !== "settings") : items;
-  const phoneShell = portal === "driver" || portal === "requester" || portal === "supplier" || portal === "admin";
+  const phoneShell = portal === "driver" || portal === "requester" || portal === "supplier" || portal === "admin" || portal === "partner";
   const dockKeys =
     portal === "driver"
-      ? ["dashboard", "jobs", "activeTrip", "wallet"]
+      ? ["dashboard", "jobs", "activeTrip"]
       : portal === "admin"
         ? ["dashboard", "verifications", "drivers", "companies"]
-        : ["dashboard", "requests", "newRequest", "jobs"];
+        : portal === "partner"
+          ? ["dashboard", "shipments", "newShipment"]
+          : ["dashboard", "newRequest", "jobs"];
   const dock = items.filter((item) => dockKeys.includes(item.key));
   const unread = (notes.data ?? []).filter((n) => !n.readAt).length;
   const hasCoins = portal === "requester" || portal === "driver";
@@ -283,7 +295,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
   const displayName = me.data ? `${me.data.firstName} ${me.data.lastName}`.trim() || me.data.phone || me.data.email || "" : "";
 
   return (
-    <div className={cn("min-h-screen max-w-full bg-background", phoneShell ? "pb-24 lg:grid lg:grid-cols-[280px_1fr] lg:pb-0" : "grid md:grid-cols-[280px_1fr]")}>
+    <div className={cn("min-h-screen max-w-full bg-background", phoneShell ? "pb-28 lg:grid lg:grid-cols-[280px_1fr] lg:pb-0" : "grid md:grid-cols-[280px_1fr]")}>
       {phoneShell && menuOpen ? (
         <button type="button" className="fixed inset-0 z-30 bg-black/50 lg:hidden" aria-label="بستن منو" onClick={() => setMenuOpen(false)} />
       ) : null}
@@ -303,7 +315,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
         </Link>
         <p className="mt-3 shrink-0 text-sm text-white/70">{me.data ? displayName : "…"}</p>
         <p className="shrink-0 text-xs text-white/40">
-          {portal === "admin" ? t.auth.admin : portal === "requester" ? t.auth.requester : portal === "supplier" ? t.auth.requester : t.auth.driver}
+          {portal === "admin" ? t.auth.admin : portal === "partner" ? "طرف قرارداد" : portal === "requester" || portal === "supplier" ? t.auth.requester : t.auth.driver}
         </p>
         <nav className="portal-scroll mt-8 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto pe-1">
           {menuItems.map((item) => {
@@ -355,6 +367,11 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
       </aside>
       <div className="min-w-0">
         <header className="sticky top-0 z-20 grid max-w-full gap-3 overflow-x-clip border-b border-border bg-card/80 px-3 py-3 backdrop-blur sm:px-4 md:px-8">
+          {phoneShell ? (
+            <Link href={`/${portal}/dashboard`} className="mx-auto grid w-fit justify-items-center lg:hidden" aria-label="shidro">
+              <BrandMark className="h-16" />
+            </Link>
+          ) : null}
           <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {phoneShell ? (
@@ -424,7 +441,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 <p className="text-sm text-muted">{t.common.empty}</p>
               ) : (
                 (notes.data ?? []).slice(0, 20).map((n) => {
-                  const href = notificationHref(portal, n);
+                  const href = portal === "partner" ? "/partner/shipments" : notificationHref(portal, n);
                   return (
                     <button
                       key={n.id}
@@ -460,7 +477,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
         <main className="min-w-0 max-w-full overflow-x-clip p-3 sm:p-4 md:p-8">{children}</main>
       </div>
       {phoneShell ? (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card px-1 py-1 lg:hidden">
+        <nav className={cn("fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-card px-1 pb-5 pt-1 lg:hidden", dock.length >= 4 ? "grid-cols-5" : "grid-cols-4")}>
           {dock.map((item) => {
             const Icon = ICONS[item.key];
             const active = navReady && (pathname === item.href || (item.href !== `/${portal}/dashboard` && pathname.startsWith(item.href)));
@@ -486,6 +503,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             <Menu className="h-4 w-4" />
             منو
           </button>
+          <p className="pointer-events-none absolute inset-x-0 bottom-0.5 text-center text-[10px] font-semibold text-muted">نسخه {APP_VERSION}</p>
         </nav>
       ) : null}
     </div>

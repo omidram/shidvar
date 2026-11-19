@@ -33,12 +33,20 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   identifier: z.string().min(3),
+  otpHost: z.string().trim().max(253).optional(),
 });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(16),
-  password: z.string(),
-});
+export const resetPasswordSchema = z.union([
+  z.object({
+    token: z.string().min(16),
+    password: z.string(),
+  }),
+  z.object({
+    challengeId: z.string().uuid(),
+    code: z.string().trim().min(4).max(8),
+    password: z.string(),
+  }),
+]);
 
 export const verifyLoginOtpSchema = z.object({
   challengeId: z.string().uuid(),

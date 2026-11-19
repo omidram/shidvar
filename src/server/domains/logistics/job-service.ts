@@ -185,7 +185,8 @@ function serializeJob(job: Awaited<ReturnType<typeof loadJob>>, actor: Actor, un
           longitude: delivery.longitude ? Number(delivery.longitude) : null,
         }
       : null,
-  }),
+    }),
+    settlementMethod: job.settlementMethod ?? job.order.request?.settlementMethod ?? null,
   };
 }
 
@@ -776,7 +777,7 @@ export async function listAssignedJobs(actor: Actor) {
   });
 }
 
-export async function acceptCargoJob(actor: Actor, jobId: string) {
+export async function acceptCargoJob(actor: Actor, jobId: string, settlementMethod: string) {
   assertPermission(actor, "jobs.apply");
   const driver = requireApprovedDriver(actor);
   const job = await loadJob(jobId);
@@ -813,9 +814,13 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
   }
   await assertDriverCanTakeLoad(driver.id, jobId);
 
+  const expected = request?.settlementMethod;
+  if (expected && expected !== settlementMethod) {
+    throw Errors.validation({ settlementMethod: ["نحوه تسویه با چیزی که صاحب بار ثبت کرده یکی نیست"] });
+  }
   const updated = await prisma.transportationJob.updateMany({
     where: { id: jobId, assignedDriverId: null, status: { in: ["OFFERED_TO_DRIVERS", "DRIVER_APPLIED"] } },
-    data: { assignedDriverId: driver.id, status: "DRIVER_SELECTED", version: { increment: 1 } },
+    data: { assignedDriverId: driver.id, status: "DRIVER_SELECTED", settlementMethod, version: { increment: 1 } },
   });
   if (updated.count !== 1) throw Errors.conflict("راننده دیگری این بار را قبول کرده است");
 
@@ -840,6 +845,9 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
     }
   }
 
+  if (request && !expected) {
+    await prisma.procurementRequest.update({ where: { id: request.id }, data: { settlementMethod } });
+  }
   await prisma.driverApplication.upsert({
     where: { jobId_driverId: { jobId, driverId: driver.id } },
     create: { jobId, driverId: driver.id, status: "SELECTED" },
@@ -859,6 +867,7 @@ export async function acceptCargoJob(actor: Actor, jobId: string) {
     entityId: jobId,
     newValue: {
       contentsConfirmed: true,
+      settlementMethod,
       confirmedAt: new Date().toISOString(),
       items: (job.order.request?.items ?? []).map((item) => `${item.name} ${Number(item.quantity)} ${item.unitCode}`),
     },

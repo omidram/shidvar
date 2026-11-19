@@ -10,6 +10,7 @@ import { flowTitle } from "@/components/domain/delivery-flow";
 import { statusFa } from "@/lib/status-fa";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
+import { PhoneLink } from "@/components/ui/phone-link";
 
 type Job = {
   id: string;
@@ -60,8 +61,7 @@ export default function AdminJobsPage() {
               </div>
               <p className="mt-3 break-words text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p>
               <p className="mt-3 break-words text-sm">
-                {t.common.cargoOwner}: {job.cargoOwner?.name ?? "—"}
-                {job.cargoOwner?.phone ? ` · ${job.cargoOwner.phone}` : ""}
+                {t.common.cargoOwner}: {job.cargoOwner?.name ?? "—"} {job.cargoOwner?.phone ? <PhoneLink phone={job.cargoOwner.phone} /> : null}
               </p>
               <p className="mt-1 break-words text-sm text-muted">
                 {(job.cargoItems ?? []).map((item) => `${item.name} ${item.quantity} ${item.unitCode}`).join("، ")}
@@ -71,7 +71,11 @@ export default function AdminJobsPage() {
                 {job.cargoWeight != null ? <span>{formatNumber(job.cargoWeight)} {job.cargoUnit}</span> : null}
                 {job.compensationAmount != null ? <span>{formatMoney(job.compensationAmount, job.currencyCode)}</span> : null}
                 {job.pickupAt ? <span>{formatDateTime(job.pickupAt)}</span> : null}
-                {job.assignedDriver ? <span>{t.common.driver}: {job.assignedDriver.name}</span> : null}
+                {job.assignedDriver ? (
+                  <span>
+                    {t.common.driver}: {job.assignedDriver.name} {job.assignedDriver.phone ? <PhoneLink phone={job.assignedDriver.phone} /> : null}
+                  </span>
+                ) : null}
                 {job.waybill ? <span className="font-semibold text-foreground">{t.common.waybill}: {job.waybill}</span> : null}
               </div>
             </Card>

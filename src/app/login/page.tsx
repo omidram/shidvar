@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { api, formatApiError } from "@/lib/api";
 import { homePath, safeInternalPath } from "@/lib/portal";
 import { useI18n } from "@/i18n/provider";
@@ -43,7 +44,8 @@ function writeOtpInput(code: string) {
 function LoginForm() {
   const { t } = useI18n();
   const params = useSearchParams();
-  const portal = params.get("portal") === "DRIVER" ? "DRIVER" : params.get("portal") === "REQUESTER" ? "REQUESTER" : null;
+  const portal =
+    params.get("portal") === "DRIVER" ? "DRIVER" : params.get("portal") === "REQUESTER" ? "REQUESTER" : params.get("portal") === "PARTNER" ? "PARTNER" : null;
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -194,8 +196,28 @@ function LoginForm() {
             <Link href="/">بازگشت به صفحه اصلی</Link>
           </Button>
           <h1 className="text-2xl font-black">
-            {challenge ? t.auth.otpTitle : portal === "DRIVER" ? "ورود راننده" : portal === "REQUESTER" ? "ورود صاحب بار" : t.auth.loginTitle}
+            {challenge ? t.auth.otpTitle : portal === "DRIVER" ? "ورود راننده" : portal === "REQUESTER" ? "ورود صاحب بار" : portal === "PARTNER" ? "ورود طرف قرارداد" : t.auth.loginTitle}
           </h1>
+          {portal === "PARTNER" && !challenge ? (
+            <p className="mt-2 text-sm text-muted">نمونه: demo1 تا demo10. رمز هر حساب همان نام کاربری است.</p>
+          ) : null}
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+            {(
+              [
+                ["DRIVER", "راننده"],
+                ["REQUESTER", "صاحب بار"],
+                ["PARTNER", "طرف قرارداد"],
+              ] as const
+            ).map(([value, label]) => (
+              <Link
+                key={value}
+                href={`/login?portal=${value}`}
+                className={`rounded-2xl border px-2 py-2 ${portal === value ? "border-primary bg-primary/10 font-bold text-primary" : "border-border"}`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
           <p className="mt-1 text-sm text-muted">
             {challenge
               ? `${challenge.channel === "SMS" ? t.auth.otpSentSms : t.auth.otpSentEmail} ${challenge.destination ?? ""}`
@@ -238,7 +260,7 @@ function LoginForm() {
                   <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required />
                 </Field>
                 <Field label={t.auth.password}>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+                  <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
                 </Field>
               </>
             )}
@@ -267,7 +289,7 @@ function LoginForm() {
                 <Link href="/forgot-password" className="text-primary">
                   {t.auth.forgot}
                 </Link>
-                <Link href={portal === "DRIVER" ? "/register?portal=DRIVER" : portal === "REQUESTER" ? "/register?portal=REQUESTER" : "/register"}>{t.auth.noAccount}</Link>
+                {portal === "PARTNER" ? <span /> : <Link href={portal === "DRIVER" ? "/register?portal=DRIVER" : portal === "REQUESTER" ? "/register?portal=REQUESTER" : "/register"}>{t.auth.noAccount}</Link>}
               </div>
             </>
           )}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { COOKIES } from "@/server/config";
 
-const PORTAL = /^\/(admin|requester|supplier|driver|carrier)(\/|$)/;
+const PORTAL = /^\/(admin|requester|supplier|driver|carrier|partner)(\/|$)/;
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

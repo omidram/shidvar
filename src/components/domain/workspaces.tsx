@@ -23,6 +23,8 @@ import { DocumentGallery } from "@/components/domain/document-uploader";
 import { CargoBadges } from "@/components/domain/cargo-badges";
 import { Field, NativeSelect } from "@/components/ui/input";
 import { LoadAcceptDialog } from "@/components/domain/load-accept-dialog";
+import { PhoneLink } from "@/components/ui/phone-link";
+import { settlementLabel } from "@/lib/settlement";
 import { CitySelect } from "@/components/domain/city-select";
 
 export { DashboardView } from "@/components/domain/dashboard-home";
@@ -131,7 +133,11 @@ export function RequestList({ hrefPrefix, marketplace }: { hrefPrefix: string; m
                       {row.number}
                       <CargoBadges dispatchMode={row.dispatchMode} needsWaybill={row.needsWaybill} needsInsurance={row.needsInsurance} />
                     </div>
-                    {row.company ? <p className="mt-1 text-sm">{t.common.cargoOwner}: {row.company.tradeName}{row.company.phone ? ` · ${row.company.phone}` : ""}</p> : null}
+                    {row.company ? (
+                      <p className="mt-1 text-sm">
+                        {t.common.cargoOwner}: {row.company.tradeName} {row.company.phone ? <PhoneLink phone={row.company.phone} /> : null}
+                      </p>
+                    ) : null}
                   </div>
                   <StatusBadge status={row.status} />
                 </div>
@@ -276,6 +282,7 @@ type JobDto = {
   trackingActive?: boolean;
   dispatchMode?: string;
   loadType?: string;
+  settlementMethod?: string | null;
   needsWaybill?: boolean;
   needsInsurance?: boolean;
   loadCheck?: { allowed: boolean; roobar: boolean; activeDestination: string | null; reason: string | null };
@@ -297,7 +304,8 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
   const [loadFilter, setLoadFilter] = useState<"" | "FULL" | "SHARED">("");
   const [applied, setApplied] = useState({ fromCity: "", toCity: "", loadFilter: "" as "" | "FULL" | "SHARED" });
   const accept = useMutation({
-    mutationFn: (id: string) => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),
+    mutationFn: (input: { id: string; settlementMethod: string }) =>
+      api(`/jobs/${input.id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true, settlementMethod: input.settlementMethod }) }),
     onSuccess: () => {
       setConfirmJob(null);
       toast.success("بار قبول شد. ۱۰۰ اعتبار کسر شد");
@@ -418,8 +426,8 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
               {!marketplace ? <p className="mt-3 text-sm font-semibold text-primary">مرحله فعلی: {flowTitle(job.status)}</p> : null}
               {job.cargoOwner ? (
                 <p className="mt-3 text-sm">
-                  {t.common.cargoOwner}: {job.cargoOwner.name}
-                  {job.cargoOwner.phone ? ` · ${job.cargoOwner.phone}` : ""}
+                  {t.common.cargoOwner}: {job.cargoOwner.name}{" "}
+                  {job.cargoOwner.phone ? <PhoneLink phone={job.cargoOwner.phone} /> : null}
                 </p>
               ) : null}
               {marketplace && job.contactLocked ? (
@@ -475,7 +483,7 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
         <LoadAcceptDialog
           job={confirmJob}
           busy={accept.isPending}
-          onConfirm={() => accept.mutate(confirmJob.id)}
+          onConfirm={(settlementMethod) => accept.mutate({ id: confirmJob.id, settlementMethod })}
           onClose={() => setConfirmJob(null)}
         />
       ) : null}
@@ -735,7 +743,14 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
           items={[
             { label: t.request.originAddress, value: req.originLine1 },
             { label: t.request.destinationAddress, value: req.destinationLine1 },
-            { label: t.common.cargoOwner, value: req.company ? `${req.company.tradeName}${req.company.phone ? ` · ${req.company.phone}` : ""}` : null },
+            {
+              label: t.common.cargoOwner,
+              value: req.company ? (
+                <span>
+                  {req.company.tradeName} {req.company.phone ? <PhoneLink phone={req.company.phone} /> : null}
+                </span>
+              ) : null,
+            },
             { label: t.common.email, value: req.company?.email },
             { label: "تاریخ ثبت", value: formatDateTime(req.createdAt) },
             { label: "تاریخ انتشار", value: formatDateTime(req.publishedAt) },
@@ -784,7 +799,7 @@ export function RequestDetailView({ id, mode }: { id: string; mode: "requester" 
             </p>
             <MetaGrid
               items={[
-                { label: t.common.phone, value: driver.user.phone },
+                { label: t.common.phone, value: driver.user.phone ? <PhoneLink phone={driver.user.phone} /> : null },
                 { label: t.common.email, value: driver.user.email },
                 { label: t.common.license, value: driver.licenseNumber },
                 { label: "نوع گواهینامه", value: driver.licenseType },
@@ -948,7 +963,8 @@ export function DriverJobView({ id }: { id: string }) {
   });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const accept = useMutation({
-    mutationFn: () => api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true }) }),
+    mutationFn: (settlementMethod: string) =>
+      api(`/jobs/${id}/accept`, { method: "POST", body: JSON.stringify({ contentsConfirmed: true, settlementMethod }) }),
     onSuccess: () => {
       setConfirmOpen(false);
       toast.success("بار قبول شد. ۱۰۰ اعتبار کسر شد");
@@ -1040,7 +1056,7 @@ export function DriverJobView({ id }: { id: string }) {
         ) : null}
       </Card>
       {confirmOpen ? (
-        <LoadAcceptDialog job={job} busy={accept.isPending} onConfirm={() => accept.mutate()} onClose={() => setConfirmOpen(false)} />
+        <LoadAcceptDialog job={job} busy={accept.isPending} onConfirm={(settlementMethod) => accept.mutate(settlementMethod)} onClose={() => setConfirmOpen(false)} />
       ) : null}
       <Card className="overflow-hidden p-0">
         <img src="/media/cargo-2.jpg" alt="" className="h-40 w-full object-cover" />
@@ -1095,7 +1111,7 @@ export function DriverJobView({ id }: { id: string }) {
             items={[
               { label: t.auth.company, value: job.cargoOwner.name },
               { label: t.common.legalName, value: job.cargoOwner.legalName },
-              { label: t.common.phone, value: job.cargoOwner.phone },
+              { label: t.common.phone, value: job.cargoOwner.phone ? <PhoneLink phone={job.cargoOwner.phone} /> : null },
               { label: t.common.email, value: job.cargoOwner.email },
             ]}
           />
@@ -1137,7 +1153,8 @@ export function DriverJobView({ id }: { id: string }) {
           <p className="text-lg font-semibold">{job.assignedDriver.name}</p>
           <MetaGrid
             items={[
-              { label: t.common.phone, value: job.assignedDriver.phone },
+              { label: t.common.phone, value: job.assignedDriver.phone ? <PhoneLink phone={job.assignedDriver.phone} /> : null },
+              { label: "نحوه تسویه", value: settlementLabel(job.settlementMethod) },
               { label: t.common.license, value: job.assignedDriver.licenseNumber },
               { label: t.common.rating, value: job.assignedDriver.ratingAvg != null ? formatNumber(job.assignedDriver.ratingAvg) : null },
               { label: t.common.plate, value: job.assignedDriver.plateNumber ?? job.assignedVehicle?.plateNumber },

@@ -17,6 +17,7 @@ import { SettingsSection, SettingToggle, TwoFactorSettings } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useSettingsForm } from "@/hooks/use-settings";
 import { useTheme } from "@/components/theme/theme-provider";
 import { useI18n } from "@/i18n/provider";
@@ -150,10 +151,10 @@ export default function DriverSettingsPage() {
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t.settings.currentPassword}>
-            <Input type="password" value={draft.currentPassword} onChange={(e) => setDraft({ ...draft, currentPassword: e.target.value })} autoComplete="current-password" />
+            <PasswordInput value={draft.currentPassword} onChange={(e) => setDraft({ ...draft, currentPassword: e.target.value })} autoComplete="current-password" />
           </Field>
           <Field label={t.settings.newPassword} hint={t.auth.passwordHint}>
-            <Input type="password" value={draft.newPassword} onChange={(e) => setDraft({ ...draft, newPassword: e.target.value })} autoComplete="new-password" />
+            <PasswordInput value={draft.newPassword} onChange={(e) => setDraft({ ...draft, newPassword: e.target.value })} autoComplete="new-password" />
           </Field>
         </div>
       </SettingsSection>

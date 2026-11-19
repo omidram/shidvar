@@ -14,6 +14,7 @@ import { ShamsiDateInput } from "@/components/ui/shamsi-date-input";
 import { api } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
 import { CitySelect } from "@/components/domain/city-select";
+import { SETTLEMENT_FA, SETTLEMENT_METHODS, type SettlementMethod } from "@/lib/settlement";
 import { ColdIcon, HeavyTruckIcon, TankerIcon, TruckIcon, VanIcon } from "@/components/visual/icons";
 
 type Line = { name: string; quantity: string; unitCode: string };
@@ -47,6 +48,7 @@ function NewRequestForm() {
   const [covered, setCovered] = useState(true);
   const [insurance, setInsurance] = useState(false);
   const [loadType, setLoadType] = useState<"FULL" | "SHARED">("FULL");
+  const [settlementMethod, setSettlementMethod] = useState<SettlementMethod | "">("");
   const [waybill, setWaybill] = useState(false);
   const [dispatchMode, setDispatchMode] = useState<"NORMAL" | "VIP">("NORMAL");
   const [vipDriverId, setVipDriverId] = useState("");
@@ -98,6 +100,11 @@ function NewRequestForm() {
       toast.error("برای بار VIP یک راننده انتخاب کنید");
       return;
     }
+    if (!settlementMethod) {
+      toast.error("نحوه تسویه را انتخاب کنید");
+      setStep(3);
+      return;
+    }
     if (lines.some((line) => !line.name.trim() || !(Number(line.quantity) > 0))) {
       toast.error("نام و مقدار هر قلم را بنویسید");
       setStep(2);
@@ -133,6 +140,7 @@ function NewRequestForm() {
           needsWaybill: waybill,
           needsInsurance: insurance,
           loadType,
+          settlementMethod,
           items: lines.map((line) => ({
             name: line.name.trim(),
             quantity: Number(line.quantity),
@@ -381,6 +389,16 @@ function NewRequestForm() {
             <NativeSelect value={loadType} onChange={(e) => setLoadType(e.target.value as "FULL" | "SHARED")}>
               <option value="FULL">دربستی (کل ماشین برای این بار)</option>
               <option value="SHARED">روباری (می‌تواند با بار هم‌مقصد حمل شود)</option>
+            </NativeSelect>
+          </Field>
+          <Field label="نحوه تسویه">
+            <NativeSelect value={settlementMethod} onChange={(e) => setSettlementMethod(e.target.value as SettlementMethod)} required>
+              <option value="">انتخاب کنید</option>
+              {SETTLEMENT_METHODS.map((value) => (
+                <option key={value} value={value}>
+                  {SETTLEMENT_FA[value]}
+                </option>
+              ))}
             </NativeSelect>
           </Field>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

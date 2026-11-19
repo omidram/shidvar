@@ -4,7 +4,7 @@ import { prisma } from "@/server/db";
 import { Errors } from "@/server/errors";
 import { hashPassword, passwordPolicy, verifyPassword } from "@/server/auth/password";
 import { createSession, revokeUserSessions } from "@/server/auth/session";
-import { hashToken, randomToken } from "@/server/auth/tokens";
+import { hashToken } from "@/server/auth/tokens";
 import { writeAudit } from "@/server/audit";
 import { getRule } from "@/server/settings/rules";
 import { logger } from "@/server/logger";
@@ -202,7 +202,8 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     const driverSuspended = user.driverProfile?.status === "SUSPENDED";
     if (companySuspended || driverSuspended) throw Errors.forbidden("حساب شما توسط مدیر معلق شده است");
   }
-  if (isPlatformAdmin) {
+  const isPartner = user.memberships.some((row) => row.company.type === "PARTNER");
+  if (isPlatformAdmin || isPartner) {
     return completeLogin(user.id, input.portal as Portal | undefined, meta);
   }
   return issueLoginOtp(user, input.portal as Portal | undefined, webotpHost(input.otpHost) ?? webotpHost(meta.host));
@@ -336,36 +337,57 @@ export function serializeActor(actor: Actor) {
   return publicActor(actor);
 }
 
-export async function requestPasswordReset(input: z.infer<typeof forgotPasswordSchema>) {
+export async function requestPasswordReset(input: z.infer<typeof forgotPasswordSchema>, meta?: { host?: string }) {
   const identifier = input.identifier.trim();
+  const digits = normalizeDigits(identifier);
   const user = await prisma.user.findFirst({
-    where: { OR: [{ email: identifier.toLowerCase() }, { phone: identifier }] },
+    where: {
+      OR: [{ email: identifier.toLowerCase() }, { phone: identifier }, { phone: normalizeMobile(identifier) }, { nationalId: digits }],
+    },
   });
-  if (!user) return { sent: true as const };
-  const token = randomToken();
-  await prisma.credentialChallenge.create({
+  if (!user?.phone) return { sent: true as const };
+  const code = sixDigitCode();
+  await prisma.credentialChallenge.updateMany({
+    where: { userId: user.id, type: "PASSWORD_RESET", consumedAt: null },
+    data: { consumedAt: new Date() },
+  });
+  const challenge = await prisma.credentialChallenge.create({
     data: {
       userId: user.id,
       type: "PASSWORD_RESET",
-      target: user.email ?? user.phone ?? user.id,
-      tokenHash: hashToken(token),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      target: user.phone,
+      tokenHash: hashToken(code),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     },
   });
-  logger.info("password_reset_issued", { userId: user.id });
-  return config.isProd ? { sent: true as const } : { sent: true as const, devToken: token };
+  const host = webotpHost(input.otpHost) ?? webotpHost(meta?.host);
+  const delivered = await sendLoginSmsOtp(user.phone, code, host);
+  if (!delivered && config.isProd) {
+    await prisma.credentialChallenge.update({ where: { id: challenge.id }, data: { consumedAt: new Date() } });
+    throw Errors.conflict("پیامک کد ارسال نشد. چند لحظه بعد دوباره تلاش کنید.");
+  }
+  logger.info("password_reset_sms", { userId: user.id, delivered });
+  return {
+    sent: true as const,
+    challengeId: challenge.id,
+    destination: maskDestination("SMS", user.phone),
+    ...(delivered || config.isProd ? {} : { devCode: code }),
+  };
 }
 
 export async function resetPassword(input: z.infer<typeof resetPasswordSchema>) {
   const policy = passwordPolicy(input.password);
   if (policy.length) throw Errors.validation({ password: policy });
-  const challenge = await prisma.credentialChallenge.findUnique({
-    where: { tokenHash: hashToken(input.token) },
-  });
-  if (!challenge || challenge.type !== "PASSWORD_RESET" || challenge.consumedAt || challenge.expiresAt < new Date()) {
-    throw Errors.unauthorized("پیوند بازیابی نامعتبر است یا منقضی شده است");
+  const challenge =
+    "challengeId" in input
+      ? await prisma.credentialChallenge.findUnique({ where: { id: input.challengeId } })
+      : await prisma.credentialChallenge.findUnique({ where: { tokenHash: hashToken(input.token) } });
+  const presented = "challengeId" in input ? hashToken(input.code.replace(/\s/g, "")) : hashToken(input.token);
+  const tokenMatches = "challengeId" in input ? challenge?.tokenHash === presented : Boolean(challenge);
+  if (!challenge || !tokenMatches || challenge.type !== "PASSWORD_RESET" || challenge.consumedAt || challenge.expiresAt < new Date()) {
+    throw Errors.unauthorized("کد ورود نادرست یا منقضی است");
   }
-  if (!challenge.userId) throw Errors.unauthorized("پیوند بازیابی نامعتبر است یا منقضی شده است");
+  if (!challenge.userId) throw Errors.unauthorized("کد ورود نادرست یا منقضی است");
   const passwordHash = await hashPassword(input.password);
   await prisma.$transaction(async (tx) => {
     await tx.user.update({

@@ -20,6 +20,7 @@ enum CompanyType {
   REQUESTER
   SUPPLIER
   CARRIER
+  PARTNER
 }
 
 enum CompanyStatus {
@@ -44,6 +45,7 @@ enum Portal {
   SUPPLIER
   DRIVER
   CARRIER
+  PARTNER
 }
 
 enum GeographicAreaType {
@@ -353,6 +355,7 @@ model User {
   impersonatedAs       Impersonation[]        @relation("ImpersonatedUser")
   verifiedCompanies    Company[]              @relation("CompanyVerifiedBy")
   createdRequests      ProcurementRequest[]   @relation("RequestCreator")
+  partnerShipments     PartnerShipment[]      @relation("PartnerShipmentCreator")
   assignedTickets      SupportTicket[]        @relation("TicketAssignee")
   reportedDisputes     Dispute[]              @relation("DisputeReporter")
   assignedDisputes     Dispute[]              @relation("DisputeAssignee")
@@ -491,6 +494,7 @@ model Company {
   priceBooks         PriceBook[]
   coinWallet         CoinWallet?
   infoRequests       ProfileInfoRequest[]
+  partnerShipments   PartnerShipment[]
 
   @@index([type, status])
 }
@@ -783,6 +787,7 @@ model DriverProfile {
   assignedJobs       TransportationJob[]
   wallet             DriverWallet?
   vipRequests        ProcurementRequest[] @relation("VipRequestDriver")
+  partnerShipments   PartnerShipment[]
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -856,6 +861,7 @@ model ProcurementRequest {
   needsWaybill          Boolean       @default(false)
   needsInsurance        Boolean       @default(false)
   loadType              String        @default("FULL")
+  settlementMethod      String?
   announcedAt           DateTime?
   version               Int           @default(1)
   items                 ProcurementRequestItem[]
@@ -1004,6 +1010,7 @@ model TransportationJob {
   cargoUnit              String              @default("ton")
   requiredVehicleType    VehicleType?
   compensationAmount     Decimal?            @db.Decimal(18, 4)
+  settlementMethod       String?
   currencyCode           String              @default("IRR")
   pickupAt               DateTime?
   deliveryDeadline       DateTime?
@@ -1183,8 +1190,45 @@ model Invoice {
   lines           InvoiceLine[]
   payments        Payment[]
   commissions     CommissionEntry[]
+  partnerShipment PartnerShipment?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model PartnerShipment {
+  id              String    @id @default(uuid())
+  number          String    @unique
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  createdById     String
+  createdBy       User      @relation("PartnerShipmentCreator", fields: [createdById], references: [id])
+  invoiceNumber   String
+  brandName       String
+  storeName       String
+  cargoType       String
+  cartonCount     Int
+  cargoAmount     Decimal   @db.Decimal(18, 4)
+  province        String
+  county          String?
+  city            String
+  warehouseName   String    @default("شورآباد")
+  receivedAt      DateTime?
+  promisedDeliveryAt DateTime?
+  shipAt          DateTime
+  notes           String?
+  status          String    @default("REGISTERED")
+  driverId        String?
+  driver          DriverProfile? @relation(fields: [driverId], references: [id])
+  driverLocation  String?
+  freightAmount   Decimal?  @db.Decimal(18, 4)
+  invoiceId       String?   @unique
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+  deliveredAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([status])
 }
 
 model InvoiceLine {

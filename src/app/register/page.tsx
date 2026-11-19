@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { ChoiceTile } from "@/components/domain/chrome";
 import { api, formatApiError, getApiError } from "@/lib/api";
 import { homePath } from "@/lib/portal";
@@ -116,7 +117,7 @@ function RegisterForm() {
             />
           </Field>
           <Field label={t.auth.password} hint={t.auth.passwordHint} error={fieldErrors.password?.join(" · ")}>
-            <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <PasswordInput value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           </Field>
           <p className="rounded-2xl border border-border bg-surface-soft p-3 text-sm text-muted">
             بعد از ثبت‌نام، مدیریت اطلاعات و مدارک تکمیلی را از داخل پنل از شما می‌خواهد. هر حساب تازه ۱۰۰۰ اعتبار هدیه می‌گیرد.

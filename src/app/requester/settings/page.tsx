@@ -7,6 +7,8 @@ import { SettingsSection, SettingToggle, TwoFactorSettings } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
+import { PhoneLink } from "@/components/ui/phone-link";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useQuery } from "@tanstack/react-query";
 import { api, liveInterval } from "@/lib/api";
 import { flowTitle } from "@/components/domain/delivery-flow";
@@ -95,11 +97,16 @@ export default function RequesterSettingsPage() {
                   <RouteLine from={row.originCity ?? "مبدأ"} to={row.destinationCity ?? "مقصد"} />
                 </div>
                 <p className={`mt-2 text-sm ${expectsDriver && !driverName ? "text-danger" : "text-muted"}`}>
-                  {driverName
-                    ? `راننده: ${driverName}${assigned?.phone ? ` · ${assigned.phone}` : ""}${job ? ` · ${job.number} · ${flowTitle(job.status)}` : ""}`
-                    : row.vipDriver
-                      ? `راننده VIP: ${`${row.vipDriver.user.firstName} ${row.vipDriver.user.lastName}`.trim()} · هنوز قبول نکرده`
-                      : "راننده‌ای وصل نشده"}
+                  {driverName ? (
+                    <>
+                      راننده: {driverName} {assigned?.phone ? <PhoneLink phone={assigned.phone} /> : null}
+                      {job ? ` · ${job.number} · ${flowTitle(job.status)}` : ""}
+                    </>
+                  ) : row.vipDriver ? (
+                    `راننده VIP: ${`${row.vipDriver.user.firstName} ${row.vipDriver.user.lastName}`.trim()} · هنوز قبول نکرده`
+                  ) : (
+                    "راننده‌ای وصل نشده"
+                  )}
                   {expectsDriver && !driverName ? " · ارتباط راننده با وضعیت بار ناقص است" : ""}
                 </p>
               </Link>
@@ -224,10 +231,10 @@ export default function RequesterSettingsPage() {
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t.settings.currentPassword}>
-            <Input type="password" value={draft.currentPassword} onChange={(e) => setDraft({ ...draft, currentPassword: e.target.value })} autoComplete="current-password" />
+            <PasswordInput value={draft.currentPassword} onChange={(e) => setDraft({ ...draft, currentPassword: e.target.value })} autoComplete="current-password" />
           </Field>
           <Field label={t.settings.newPassword} hint={t.auth.passwordHint}>
-            <Input type="password" value={draft.newPassword} onChange={(e) => setDraft({ ...draft, newPassword: e.target.value })} autoComplete="new-password" />
+            <PasswordInput value={draft.newPassword} onChange={(e) => setDraft({ ...draft, newPassword: e.target.value })} autoComplete="new-password" />
           </Field>
         </div>
       </SettingsSection>

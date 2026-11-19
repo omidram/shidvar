@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { statusFa } from "@/lib/status-fa";
 import { useI18n } from "@/i18n/provider";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
 
@@ -73,11 +74,12 @@ export default function VerificationsPage() {
                   </Link>
                   <p className="mt-1 break-words text-sm text-muted">{c.legalName}</p>
                   <p className="mt-2 break-words text-sm">
-                    {statusFa(c.type)} · {[c.phone, c.email, c.taxId, c.registrationNumber].filter(Boolean).join(" · ")}
+                    {statusFa(c.type)} {c.phone ? <PhoneLink phone={c.phone} /> : null}
+                    {[c.email, c.taxId, c.registrationNumber].filter(Boolean).length ? ` · ${[c.email, c.taxId, c.registrationNumber].filter(Boolean).join(" · ")}` : ""}
                   </p>
                   {owner ? (
                     <p className="mt-1 break-words text-sm text-muted">
-                      رابط: {owner.firstName} {owner.lastName}{owner.phone ? ` · ${owner.phone}` : ""}
+                      رابط: {owner.firstName} {owner.lastName} {owner.phone ? <PhoneLink phone={owner.phone} /> : null}
                     </p>
                   ) : null}
                 </div>

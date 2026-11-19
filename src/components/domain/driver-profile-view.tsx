@@ -12,6 +12,7 @@ import { jobHref } from "@/lib/portal-links";
 import { statusFa } from "@/lib/status-fa";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DocumentGallery } from "@/components/domain/document-uploader";
 import { useMe } from "@/hooks/use-me";
 import { AdminInfoRequestPanel } from "@/components/domain/admin-info-request";
@@ -178,7 +179,7 @@ export function DriverProfileView({ id }: { id: string }) {
         <MetaGrid
           items={[
             { label: t.auth.firstName, value: name },
-            { label: t.common.phone, value: driver.user.phone },
+            { label: t.common.phone, value: driver.user.phone ? <PhoneLink phone={driver.user.phone} /> : null },
             { label: t.common.email, value: driver.user.email },
             { label: "وضعیت حساب", value: <StatusBadge status={driver.user.status} /> },
             { label: "شناسه ملی", value: driver.nationalIdMasked },
@@ -196,7 +197,7 @@ export function DriverProfileView({ id }: { id: string }) {
         <MetaGrid
           items={[
             { label: t.common.legalName, value: driver.carrier.legalName },
-            { label: t.common.phone, value: driver.carrier.phone },
+            { label: t.common.phone, value: driver.carrier.phone ? <PhoneLink phone={driver.carrier.phone} /> : null },
             { label: t.common.email, value: driver.carrier.email },
           ]}
         />

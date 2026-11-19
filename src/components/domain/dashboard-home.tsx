@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ClipboardList, LifeBuoy, MapPinned, PlusCircle, Receipt, ShieldCheck, Truck, UserRound, Users, Wallet } from "lucide-react";
+import { BarChart3, ClipboardList, LifeBuoy, MapPinned, PlusCircle, Receipt, ShieldCheck, Truck, Users, Wallet } from "lucide-react";
 import { StatCard, Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { ErrorState, PageHeader, RouteLine } from "@/components/domain/chrome";
@@ -14,7 +14,7 @@ import { formatMoney } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
-import { DeliveryFlow, RoleGuide, ownerTaskRank } from "@/components/domain/delivery-flow";
+import { DeliveryFlow, ownerTaskRank } from "@/components/domain/delivery-flow";
 
 type Dashboard = { portal: string; stats: Record<string, number | string | null> };
 
@@ -62,13 +62,9 @@ export function DashboardView() {
   const actions: QuickAction[] =
     portal === "REQUESTER"
       ? [
-          { href: "/requester/requests/new", label: t.request.create, hint: t.dash.hintNewRequest, icon: PlusCircle, tone: "green" },
-          { href: "/requester/requests", label: t.menu.requests, hint: t.dash.hintRequests, icon: ClipboardList, tone: "ink" },
-          { href: "/requester/jobs", label: t.menu.jobs, hint: t.dash.hintJobs, icon: Truck, tone: "violet" },
-          { href: "/requester/tracking", label: t.menu.tracking, hint: t.dash.hintTracking, icon: MapPinned, tone: "ink" },
-          { href: "/requester/invoices", label: t.menu.invoices, hint: t.dash.hintInvoices, icon: Receipt, tone: "amber" },
-          { href: "/requester/support", label: t.menu.support, hint: t.ops.supportHint, icon: LifeBuoy, tone: "ink" },
-          { href: "/requester/reports", label: t.menu.reports, hint: t.dash.hintReports, icon: BarChart3, tone: "green" },
+          { href: "/requester/requests/new", label: "ثبت بار", hint: "مبدأ، مقصد و اقلام", icon: PlusCircle, tone: "green" },
+          { href: "/requester/jobs", label: "بارهای جاری", hint: "وضعیت بارهایی که ثبت شده", icon: Truck, tone: "ink" },
+          { href: "/requester/requests", label: t.menu.requests, hint: "فهرست درخواست‌ها", icon: ClipboardList, tone: "violet" },
         ]
       : portal === "SUPPLIER"
         ? [
@@ -78,11 +74,9 @@ export function DashboardView() {
           ]
         : portal === "DRIVER"
           ? [
-              { href: "/driver/jobs", label: t.dash.availableJobs, hint: t.dash.hintDriverJobs, icon: Truck, tone: "green" },
-              { href: "/driver/active-trip", label: t.menu.activeTrip, hint: t.dash.hintActiveTrip, icon: MapPinned, tone: "ink" },
+              { href: "/driver/jobs", label: "بارهای جاری", hint: "بارهایی که می‌توانید قبول کنید", icon: Truck, tone: "green" },
+              { href: "/driver/active-trip", label: t.menu.activeTrip, hint: "مسیر باری که قبول کرده‌اید", icon: MapPinned, tone: "ink" },
               { href: "/driver/wallet", label: t.menu.wallet, hint: t.dash.hintWallet, icon: Wallet, tone: "amber" },
-              { href: "/driver/reports", label: t.menu.reports, hint: t.dash.hintDriverReports, icon: BarChart3, tone: "violet" },
-              { href: "/driver/profile", label: t.menu.profile, hint: t.dash.hintProfile, icon: UserRound, tone: "amber" },
             ]
           : [
               { href: "/admin/verifications", label: t.menu.verifications, hint: t.dash.hintVerify, icon: ShieldCheck, tone: "green" },
@@ -93,7 +87,7 @@ export function DashboardView() {
               { href: "/admin/disputes", label: t.menu.disputes, hint: t.ops.supportHint, icon: LifeBuoy, tone: "ink" },
             ];
 
-  const richHome = portal === "REQUESTER" || portal === "DRIVER";
+  const summaryHome = portal === "REQUESTER" || portal === "DRIVER";
   const name = me.data ? `${me.data.firstName} ${me.data.lastName}` : "";
 
   return (
@@ -102,12 +96,11 @@ export function DashboardView() {
         title={name ? `${t.dash.hello} ${me.data?.firstName}` : t.common.dashboard}
         description={portal === "DRIVER" ? t.dash.driverHome : portal === "REQUESTER" ? t.dash.requesterHome : t.dash.adminHome}
       />
-      {portal === "DRIVER" ? <RoleGuide role="driver" /> : null}
-      {portal === "REQUESTER" ? <RoleGuide role="owner" /> : null}
+      {summaryHome ? <p className="text-sm leading-7 text-muted">بقیهٔ کارها داخل منو است.</p> : null}
       {portal === "REQUESTER" ? <OwnerLiveLoads /> : null}
-      <QuickAccess title={t.dash.quick} actions={actions} />
-      <p className="text-xs text-muted">عددها و مراحل بار هر چند ثانیه خودبه‌خود تازه می‌شوند.</p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <QuickAccess title={summaryHome ? "کارهای اصلی" : t.dash.quick} actions={actions} />
+      {summaryHome ? null : <p className="text-xs text-muted">عددها و مراحل بار هر چند ثانیه خودبه‌خود تازه می‌شوند.</p>}
+      {summaryHome ? null : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(stats)
           .filter(([, value]) => value !== null && value !== undefined)
           .map(([key, value], index) => (
@@ -118,9 +111,9 @@ export function DashboardView() {
               icon={index % 3 === 0 ? <TruckIcon className="h-6 w-6" /> : index % 3 === 1 ? <BoxIcon className="h-6 w-6" /> : <WarehouseIcon className="h-6 w-6" />}
             />
           ))}
-      </div>
-      {portal === "REQUESTER" || portal === "DRIVER" || portal === "PLATFORM" ? <DashboardLiveTracking /> : null}
-      {richHome || portal === "PLATFORM" ? <ReportsView compact /> : null}
+      </div>}
+      {portal === "PLATFORM" ? <DashboardLiveTracking /> : null}
+      {portal === "PLATFORM" ? <ReportsView compact /> : null}
     </div>
   );
 }

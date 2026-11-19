@@ -33,6 +33,7 @@ export const createRequestSchema = z.object({
   needsWaybill: z.boolean().default(false),
   needsInsurance: z.boolean().default(false),
   loadType: z.enum(["FULL", "SHARED"]).default("FULL"),
+  settlementMethod: z.enum(["ON_DELIVERY", "END_OF_LOADING_DAY", "AFTER_24H"]),
 }).refine((value) => value.dispatchMode !== "VIP" || Boolean(value.vipDriverId), {
   path: ["vipDriverId"],
   message: "برای اعلام VIP یک راننده انتخاب کنید",

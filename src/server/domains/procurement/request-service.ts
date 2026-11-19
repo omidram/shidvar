@@ -58,6 +58,7 @@ export async function createRequest(actor: Actor, input: z.infer<typeof createRe
       needsWaybill: input.needsWaybill,
       needsInsurance: input.needsInsurance,
       loadType: input.loadType,
+      settlementMethod: input.settlementMethod,
       items: {
         create: input.items.map((item) => ({
           productId: item.productId,

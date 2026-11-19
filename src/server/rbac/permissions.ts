@@ -99,7 +99,7 @@ export type PermissionCode = (typeof PERMISSIONS)[number];
 
 export const SYSTEM_ROLES: Record<
   string,
-  { name: string; portal: "PLATFORM" | "REQUESTER" | "SUPPLIER" | "DRIVER" | "CARRIER"; permissions: PermissionCode[] }
+  { name: string; portal: "PLATFORM" | "REQUESTER" | "SUPPLIER" | "DRIVER" | "CARRIER" | "PARTNER"; permissions: PermissionCode[] }
 > = {
   SUPER_ADMIN: { name: "Super admin", portal: "PLATFORM", permissions: [...PERMISSIONS] },
   ADMIN: {
@@ -273,6 +273,11 @@ export const SYSTEM_ROLES: Record<
       "disputes.read",
       "reports.read",
     ],
+  },
+  PARTNER_OWNER: {
+    name: "Partner",
+    portal: "PARTNER",
+    permissions: ["requests.read", "requests.create", "jobs.read", "shipments.read", "invoices.read", "documents.read"],
   },
   DRIVER: {
     name: "Driver",

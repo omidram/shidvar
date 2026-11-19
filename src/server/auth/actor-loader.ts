@@ -41,6 +41,9 @@ export async function loadActor(userId: string, portalHint?: Actor["portal"]): P
     if (membership.company.type === "CARRIER") {
       for (const p of SYSTEM_ROLES.DRIVER.permissions) permissions.add(p);
     }
+    if (membership.company.type === "PARTNER") {
+      for (const p of SYSTEM_ROLES.PARTNER_OWNER.permissions) permissions.add(p);
+    }
   }
 
   if (user.driverProfile) {

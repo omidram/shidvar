@@ -21,6 +21,22 @@ import { COOKIES } from "@/server/config";
 import { NextResponse } from "next/server";
 import { ok } from "@/server/http/envelope";
 import { listPendingVerifications, moderateCompany, moderateDriver } from "@/server/domains/admin/verification-service";
+import {
+  assignPartnerDriver,
+  createPartnerAccount,
+  createPartnerShipment,
+  deliverPartnerShipment,
+  dispatchPartnerShipment,
+  getPartnerShipment,
+  invoicePartnerShipment,
+  listAssignableDrivers,
+  listPartnerShipments,
+  listPartners,
+  setPartnerDriverLocation,
+  setPartnerPassword,
+  setPartnerStatus,
+} from "@/server/domains/identity/partner-service";
+import { partnerAccountSchema, partnerAssignSchema, partnerLocationSchema, partnerPasswordSchema, partnerShipmentSchema } from "@/lib/validation/partner";
 import { announceRequest, announceRequestSchema, createRequest, createRequestSchema, listDriverDirectory, listRequests, getRequestForActor, submitRequest, publishRequest, cancelRequest } from "@/server/domains/procurement/request-service";
 import { adjustCompanyCoins, getCompanyCoins, getOwnCoins } from "@/server/domains/finance/coin-service";
 import {
@@ -208,8 +224,8 @@ export const routes: RouteDefinition[] = [
     path: "/auth/forgot-password",
     auth: false,
     input: forgotPasswordSchema,
-    async handler({ body }) {
-      return requestPasswordReset(body as z.infer<typeof forgotPasswordSchema>);
+    async handler({ req, body }) {
+      return requestPasswordReset(body as z.infer<typeof forgotPasswordSchema>, clientMeta(req));
     },
   },
   {
@@ -635,9 +651,11 @@ export const routes: RouteDefinition[] = [
     path: "/jobs/:id/accept",
     input: z.object({
       contentsConfirmed: z.literal(true, { errorMap: () => ({ message: "ابتدا محتوای بار را ببینید و تأیید کنید" }) }),
+      settlementMethod: z.enum(["ON_DELIVERY", "END_OF_LOADING_DAY", "AFTER_24H"]),
     }),
-    async handler({ actor, params }) {
-      return acceptCargoJob(requireActor(actor), params.id);
+    async handler({ actor, params, body }) {
+      const input = body as { settlementMethod: "ON_DELIVERY" | "END_OF_LOADING_DAY" | "AFTER_24H" };
+      return acceptCargoJob(requireActor(actor), params.id, input.settlementMethod);
     },
   },
   {
@@ -1332,6 +1350,119 @@ export const routes: RouteDefinition[] = [
         create: { key: params.key, value: payload.value as object, description: payload.description ?? params.key },
         update: { value: payload.value as object, description: payload.description },
       });
+    },
+  },
+  {
+    method: "GET",
+    path: "/partner/shipments",
+    permissions: ["requests.read"],
+    async handler({ actor }) {
+      return listPartnerShipments(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/partner/shipments",
+    permissions: ["requests.create"],
+    input: partnerShipmentSchema,
+    async handler({ actor, body }) {
+      return createPartnerShipment(requireActor(actor), body as z.infer<typeof partnerShipmentSchema>);
+    },
+  },
+  {
+    method: "GET",
+    path: "/partner/shipments/:id",
+    permissions: ["requests.read"],
+    async handler({ actor, params }) {
+      return getPartnerShipment(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/partners",
+    permissions: ["companies.read"],
+    async handler({ actor }) {
+      return listPartners(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partners",
+    permissions: ["companies.create"],
+    input: partnerAccountSchema,
+    async handler({ actor, body }) {
+      return createPartnerAccount(requireActor(actor), body as z.infer<typeof partnerAccountSchema>);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partners/:id/password",
+    permissions: ["users.update"],
+    input: partnerPasswordSchema,
+    async handler({ actor, params, body }) {
+      const input = body as z.infer<typeof partnerPasswordSchema>;
+      return setPartnerPassword(requireActor(actor), params.id, input.password);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partners/:id/status",
+    permissions: ["companies.suspend"],
+    input: z.object({ status: z.enum(["APPROVED", "SUSPENDED"]) }),
+    async handler({ actor, params, body }) {
+      const input = body as { status: "APPROVED" | "SUSPENDED" };
+      return setPartnerStatus(requireActor(actor), params.id, input.status);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/partner-drivers",
+    permissions: ["drivers.read"],
+    async handler({ actor }) {
+      return listAssignableDrivers(requireActor(actor));
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partner-shipments/:id/assign",
+    permissions: ["jobs.assign"],
+    input: partnerAssignSchema,
+    async handler({ actor, params, body }) {
+      return assignPartnerDriver(requireActor(actor), params.id, body as z.infer<typeof partnerAssignSchema>);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partner-shipments/:id/location",
+    permissions: ["jobs.assign"],
+    input: partnerLocationSchema,
+    async handler({ actor, params, body }) {
+      const input = body as { driverLocation: string };
+      return setPartnerDriverLocation(requireActor(actor), params.id, input.driverLocation);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partner-shipments/:id/dispatch",
+    permissions: ["jobs.update_status"],
+    async handler({ actor, params }) {
+      return dispatchPartnerShipment(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partner-shipments/:id/deliver",
+    permissions: ["jobs.update_status"],
+    async handler({ actor, params }) {
+      return deliverPartnerShipment(requireActor(actor), params.id);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partner-shipments/:id/invoice",
+    permissions: ["invoices.manage"],
+    async handler({ actor, params }) {
+      return invoicePartnerShipment(requireActor(actor), params.id);
     },
   },
 ];
