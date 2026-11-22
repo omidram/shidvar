@@ -12,22 +12,25 @@ export function CitySelect({
   label,
   value,
   onChange,
-  placeholder = "نام شهر را بنویسید یا از فهرست انتخاب کنید",
+  placeholder = "نام را بنویسید یا از فهرست انتخاب کنید",
   required,
+  options: source = IRAN_CITY_NAMES,
+  emptyText = "موردی با این نام در فهرست نیست؛ می‌توانید همان را بنویسید",
 }: {
   label: string;
   value: string;
   onChange: (city: string) => void;
   placeholder?: string;
   required?: boolean;
+  options?: string[];
+  emptyText?: string;
 }) {
   const [open, setOpen] = useState(false);
   const options = useMemo(() => {
     const query = fold(value);
-    const exact = IRAN_CITY_NAMES.some((city) => fold(city) === query);
-    const matched = !query || exact ? IRAN_CITY_NAMES : IRAN_CITY_NAMES.filter((city) => fold(city).includes(query));
-    return matched;
-  }, [value]);
+    const exact = source.some((city) => fold(city) === query);
+    return !query || exact ? source : source.filter((city) => fold(city).includes(query));
+  }, [source, value]);
 
   return (
     <Field label={label}>
@@ -63,7 +66,7 @@ export function CitySelect({
                 </li>
               ))
             ) : (
-              <li className="px-3 py-2 text-sm text-muted">شهری با این نام پیدا نشد</li>
+              <li className="px-3 py-2 text-sm text-muted">{emptyText}</li>
             )}
           </ul>
         ) : null}

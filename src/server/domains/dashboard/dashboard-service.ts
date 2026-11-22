@@ -15,6 +15,10 @@ export async function dashboardFor(actor: Actor) {
       cancelledOrders,
       disputes,
       tickets,
+      pendingRequests,
+      partners,
+      invoices,
+      orders,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.company.count({ where: { type: "REQUESTER", status: "APPROVED" } }),
@@ -27,6 +31,10 @@ export async function dashboardFor(actor: Actor) {
       prisma.order.count({ where: { status: "CANCELLED" } }),
       prisma.dispute.count({ where: { status: { in: ["OPEN", "UNDER_REVIEW"] } } }),
       prisma.supportTicket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS", "WAITING_FOR_USER"] } } }),
+      prisma.procurementRequest.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
+      prisma.company.count({ where: { type: "PARTNER", deletedAt: null } }),
+      prisma.invoice.count(),
+      prisma.order.count(),
     ]);
     return {
       portal: "PLATFORM",
@@ -41,6 +49,10 @@ export async function dashboardFor(actor: Actor) {
         cancelledOrders,
         disputes,
         openTickets: tickets,
+        pendingRequests,
+        partners,
+        invoices,
+        orders,
       },
     };
   }

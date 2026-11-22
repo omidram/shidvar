@@ -156,6 +156,24 @@ export async function loadActorFromToken(sessionToken: string | undefined): Prom
       for (const p of bundled.permissions) permissions.add(p);
     }
   }
+  for (const membership of user.memberships) {
+    if (membership.status !== "ACTIVE") continue;
+    if (membership.company.type === "PARTNER") {
+      for (const p of SYSTEM_ROLES.PARTNER_OWNER.permissions) permissions.add(p);
+      continue;
+    }
+    if (!membership.isOwner) continue;
+    if (membership.company.type === "REQUESTER") {
+      for (const p of SYSTEM_ROLES.REQUESTER_OWNER.permissions) permissions.add(p);
+    }
+    if (membership.company.type === "SUPPLIER") {
+      for (const p of SYSTEM_ROLES.SUPPLIER_OWNER.permissions) permissions.add(p);
+      for (const p of SYSTEM_ROLES.REQUESTER_OWNER.permissions) permissions.add(p);
+    }
+    if (membership.company.type === "CARRIER") {
+      for (const p of SYSTEM_ROLES.DRIVER.permissions) permissions.add(p);
+    }
+  }
   if (user.driverProfile) {
     for (const p of SYSTEM_ROLES.DRIVER.permissions) permissions.add(p);
   }

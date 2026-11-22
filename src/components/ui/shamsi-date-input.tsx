@@ -10,21 +10,31 @@ export function ShamsiDateInput({
   required,
   disabled,
   className,
+  notBeforeToday,
 }: {
   value: string;
   onChange: (isoDate: string) => void;
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  notBeforeToday?: boolean;
 }) {
   const today = toJalali(new Date());
-  const current = value ? toJalali(value) : today;
-  const years = Array.from({ length: 16 }, (_, i) => today.jy - 6 + i);
+  const parsed = value ? toJalali(value) : today;
+  const current = notBeforeToday ? clampToToday(parsed, today) : parsed;
+  const years = notBeforeToday
+    ? Array.from({ length: 11 }, (_, i) => today.jy + i)
+    : Array.from({ length: 16 }, (_, i) => today.jy - 6 + i);
+  const months = JALALI_MONTHS.map((month, index) => ({ month, value: index + 1 })).filter(
+    (item) => !notBeforeToday || current.jy > today.jy || item.value >= today.jm,
+  );
+  const firstDay = notBeforeToday && current.jy === today.jy && current.jm === today.jm ? today.jd : 1;
   const days = jalaliMonthDays(current.jy, current.jm);
 
   function emit(jy: number, jm: number, jd: number) {
-    const max = jalaliMonthDays(jy, jm);
-    onChange(jalaliToIso(jy, jm, Math.min(jd, max)));
+    const next = notBeforeToday ? clampToToday({ jy, jm, jd }, today) : { jy, jm, jd };
+    const max = jalaliMonthDays(next.jy, next.jm);
+    onChange(jalaliToIso(next.jy, next.jm, Math.min(Math.max(next.jd, 1), max)));
   }
 
   return (
@@ -36,7 +46,7 @@ export function ShamsiDateInput({
         onChange={(e) => emit(current.jy, current.jm, Number(e.target.value))}
         aria-label="روز"
       >
-        {Array.from({ length: days }, (_, i) => i + 1).map((day) => (
+        {Array.from({ length: days - firstDay + 1 }, (_, i) => firstDay + i).map((day) => (
           <option key={day} value={day}>
             {toFaDigits(day)}
           </option>
@@ -49,9 +59,9 @@ export function ShamsiDateInput({
         onChange={(e) => emit(current.jy, Number(e.target.value), current.jd)}
         aria-label="ماه"
       >
-        {JALALI_MONTHS.map((month, index) => (
-          <option key={month} value={index + 1}>
-            {month}
+        {months.map((item) => (
+          <option key={item.month} value={item.value}>
+            {item.month}
           </option>
         ))}
       </NativeSelect>
@@ -70,4 +80,11 @@ export function ShamsiDateInput({
       </NativeSelect>
     </div>
   );
+}
+
+function clampToToday(date: { jy: number; jm: number; jd: number }, today: { jy: number; jm: number; jd: number }) {
+  if (date.jy < today.jy) return today;
+  if (date.jy === today.jy && date.jm < today.jm) return today;
+  if (date.jy === today.jy && date.jm === today.jm && date.jd < today.jd) return { ...date, jd: today.jd };
+  return date;
 }

@@ -30,6 +30,11 @@ export async function loadActor(userId: string, portalHint?: Actor["portal"]): P
   }
 
   for (const membership of user.memberships) {
+    if (membership.status !== "ACTIVE") continue;
+    if (membership.company.type === "PARTNER") {
+      for (const p of SYSTEM_ROLES.PARTNER_OWNER.permissions) permissions.add(p);
+      continue;
+    }
     if (!membership.isOwner) continue;
     if (membership.company.type === "REQUESTER") {
       for (const p of SYSTEM_ROLES.REQUESTER_OWNER.permissions) permissions.add(p);
@@ -40,9 +45,6 @@ export async function loadActor(userId: string, portalHint?: Actor["portal"]): P
     }
     if (membership.company.type === "CARRIER") {
       for (const p of SYSTEM_ROLES.DRIVER.permissions) permissions.add(p);
-    }
-    if (membership.company.type === "PARTNER") {
-      for (const p of SYSTEM_ROLES.PARTNER_OWNER.permissions) permissions.add(p);
     }
   }
 

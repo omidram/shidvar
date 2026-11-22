@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { useI18n } from "@/i18n/provider";
 import { CitySelect } from "@/components/domain/city-select";
 import { SETTLEMENT_FA, SETTLEMENT_METHODS, type SettlementMethod } from "@/lib/settlement";
+import { isPastDate, todayIso } from "@/lib/shamsi";
 import { ColdIcon, HeavyTruckIcon, TankerIcon, TruckIcon, VanIcon } from "@/components/visual/icons";
 
 type Line = { name: string; quantity: string; unitCode: string };
@@ -44,6 +45,7 @@ function NewRequestForm() {
   const [step, setStep] = useState(1);
   const [vehicle, setVehicle] = useState<VehicleKey>((params.get("vehicle") as VehicleKey) || "TRUCK");
   const [urgency, setUrgency] = useState("normal");
+  const [scheduledDate, setScheduledDate] = useState(todayIso());
   const [helper, setHelper] = useState(false);
   const [covered, setCovered] = useState(true);
   const [insurance, setInsurance] = useState(false);
@@ -63,7 +65,7 @@ function NewRequestForm() {
   const [destinationCity, setDestinationCity] = useState(params.get("destination") || "آمل");
   const [originLine1, setOriginLine1] = useState("");
   const [destinationLine1, setDestinationLine1] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("2026-09-01");
+  const [deliveryDate, setDeliveryDate] = useState(todayIso());
   const [budget, setBudget] = useState("8500000");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>([{ name: "", quantity: "1", unitCode: "carton" }]);
@@ -105,6 +107,16 @@ function NewRequestForm() {
       setStep(3);
       return;
     }
+    if (isPastDate(deliveryDate)) {
+      toast.error("تاریخ تحویل نمی‌تواند از امروز عقب‌تر باشد");
+      setStep(1);
+      return;
+    }
+    if (urgency === "scheduled" && (!scheduledDate || isPastDate(scheduledDate))) {
+      toast.error("برای زمان‌بندی‌شده یک تاریخ از امروز به بعد انتخاب کنید");
+      setStep(3);
+      return;
+    }
     if (lines.some((line) => !line.name.trim() || !(Number(line.quantity) > 0))) {
       toast.error("نام و مقدار هر قلم را بنویسید");
       setStep(2);
@@ -114,7 +126,7 @@ function NewRequestForm() {
     try {
       const extras = [
         vehicle,
-        `فوریت: ${urgency === "urgent" ? t.request.urgent : urgency === "scheduled" ? t.request.scheduled : t.request.normal}`,
+        `فوریت: ${urgency === "urgent" ? t.request.urgent : urgency === "scheduled" ? `${t.request.scheduled} ${scheduledDate}` : t.request.normal}`,
         helper ? t.request.helper : null,
         covered ? t.request.covered : null,
       ]
@@ -134,7 +146,7 @@ function NewRequestForm() {
           pickupNotes: extras,
           requiredVehicleType: vehicle,
           packagingNotes: covered ? "حمل مسقف" : "حمل روباز",
-          qualityNotes: urgency,
+          qualityNotes: urgency === "scheduled" ? `${t.request.scheduled} ${scheduledDate}` : urgency === "urgent" ? t.request.urgent : t.request.normal,
           dispatchMode,
           vipDriverId: dispatchMode === "VIP" ? vipDriverId : undefined,
           needsWaybill: waybill,
@@ -163,37 +175,7 @@ function NewRequestForm() {
       <PageHeader
         title={t.request.create}
         description={`${t.request.example} با ثبت درخواست، ۱۰۰ اعتبار از حساب شرکت کم می‌شود.`}
-        actions={
-          <div className="flex gap-2">
-            {step > 1 ? (
-              <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
-                {t.common.prev}
-              </Button>
-            ) : null}
-            {step < 3 ? (
-              <Button type="button" onClick={() => setStep(step + 1)}>
-                {t.common.next}
-              </Button>
-            ) : (
-              <Button type="button" disabled={saving} onClick={() => void createRequest()}>
-                {saving ? t.common.loading : "ثبت درخواست"}
-              </Button>
-            )}
-          </div>
-        }
       />
-      <div className="grid gap-2 sm:grid-cols-3">
-        {[t.request.stepRoute, t.request.stepItems, t.request.stepCargo].map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setStep(i + 1)}
-            className={`min-w-0 break-words rounded-2xl px-3 py-3 text-center text-sm leading-6 ${step === i + 1 ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}
-          >
-            {i + 1}. {label}
-          </button>
-        ))}
-      </div>
       <p className="text-sm leading-7 text-muted">
         {step === 1
           ? "اگر انبار ثبت کرده‌اید از فهرست انتخاب کنید. شهر و نشانی خودش پر می‌شود. بعد تاریخ و کرایه را بنویسید."
@@ -251,7 +233,7 @@ function NewRequestForm() {
             <Input value={destinationLine1} onChange={(e) => setDestinationLine1(e.target.value)} placeholder="مرکز پخش آمل" />
           </Field>
           <Field label={t.request.deliveryDate}>
-            <ShamsiDateInput value={deliveryDate} onChange={setDeliveryDate} required />
+            <ShamsiDateInput value={deliveryDate} onChange={setDeliveryDate} notBeforeToday required />
           </Field>
           <Field label={t.request.budget}>
             <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} />
@@ -334,7 +316,7 @@ function NewRequestForm() {
           </div>
           <div>
             <h2 className="font-bold">{t.request.urgency}</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-2">
               {[
                 { value: "normal", label: t.request.normal },
                 { value: "urgent", label: t.request.urgent },
@@ -344,12 +326,19 @@ function NewRequestForm() {
                   key={item.value}
                   type="button"
                   onClick={() => setUrgency(item.value)}
-                  className={`rounded-full px-4 py-2 text-sm ${urgency === item.value ? "bg-ink text-white" : "bg-background"}`}
+                  className={`min-h-14 cursor-pointer rounded-2xl border px-2 py-3 text-sm font-bold ${urgency === item.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
+            {urgency === "scheduled" ? (
+              <div className="mt-3 max-w-md">
+                <Field label="تاریخ زمان‌بندی">
+                  <ShamsiDateInput value={scheduledDate} onChange={setScheduledDate} notBeforeToday required />
+                </Field>
+              </div>
+            ) : null}
           </div>
           <div>
             <h2 className="font-bold">نوع اعلام بار</h2>
@@ -424,6 +413,34 @@ function NewRequestForm() {
           </Field>
         </Card>
       ) : null}
+      <div className="grid gap-2 sm:grid-cols-3">
+        {[t.request.stepRoute, t.request.stepItems, t.request.stepCargo].map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setStep(i + 1)}
+            className={`min-w-0 cursor-pointer break-words rounded-2xl px-3 py-3 text-center text-sm leading-6 ${step === i + 1 ? "bg-primary text-primary-foreground" : "border border-border bg-card"}`}
+          >
+            {i + 1}. {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {step > 1 ? (
+          <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
+            {t.common.prev}
+          </Button>
+        ) : null}
+        {step < 3 ? (
+          <Button type="button" onClick={() => setStep(step + 1)}>
+            {t.common.next}
+          </Button>
+        ) : (
+          <Button type="button" disabled={saving} onClick={() => void createRequest()}>
+            {saving ? t.common.loading : "ثبت درخواست"}
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

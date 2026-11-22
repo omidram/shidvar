@@ -8,6 +8,8 @@ import { PartnerShipmentCard, type PartnerShipment } from "@/components/domain/p
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
+import { CitySelect } from "@/components/domain/city-select";
+import { IRAN_PROVINCES } from "@/lib/geo/iran-provinces";
 import { PasswordInput } from "@/components/ui/password-input";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { api, formatApiError } from "@/lib/api";
@@ -19,8 +21,13 @@ type Partner = {
   phone?: string | null;
   status: string;
   shipmentCount: number;
-  owner?: { id: string; name: string; phone?: string | null; username?: string | null; status: string } | null;
+  addressLine?: string;
+  city?: string;
+  province?: string;
+  owner?: { id: string; name: string; firstName?: string; lastName?: string; phone?: string | null; username?: string | null; status: string } | null;
 };
+
+const emptyProfile = { tradeName: "", phone: "", firstName: "", lastName: "", addressLine: "", city: "", province: "" };
 
 type DriverOption = { id: string; name: string; phone?: string | null };
 
@@ -32,6 +39,8 @@ export default function AdminPartnersPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ tradeName: "", phone: "", firstName: "", lastName: "", username: "", password: "" });
   const [drafts, setDrafts] = useState<Record<string, { driverId: string; freight: string; password: string; location: string }>>({});
+  const [editing, setEditing] = useState<string | null>(null);
+  const [profile, setProfile] = useState(emptyProfile);
 
   function draft(id: string) {
     return drafts[id] ?? { driverId: "", freight: "", password: "", location: "" };
@@ -57,6 +66,16 @@ export default function AdminPartnersPage() {
       api(`/admin/partners/${id}/password`, { method: "POST", body: JSON.stringify({ password: value }) }),
     onSuccess: () => toast.success("رمز عوض شد"),
     onError: (error) => toast.error(formatApiError(error, "تغییر رمز انجام نشد")),
+  });
+
+  const saveProfile = useMutation({
+    mutationFn: (id: string) => api(`/admin/partners/${id}`, { method: "POST", body: JSON.stringify(profile) }),
+    onSuccess: () => {
+      toast.success("اطلاعات طرف قرارداد ذخیره شد");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["admin-partners"] });
+    },
+    onError: (error) => toast.error(formatApiError(error, "ذخیره اطلاعات انجام نشد")),
   });
 
   const status = useMutation({
@@ -130,15 +149,74 @@ export default function AdminPartnersPage() {
                 <p className="mt-1 break-words text-sm text-muted">
                   {partner.owner?.name ?? "بدون رابط"} · {partner.owner?.username ?? "—"} · {statusFa(partner.status)} · {partner.shipmentCount.toLocaleString("fa-IR")} بار
                 </p>
+                {partner.addressLine ? <p className="mt-1 break-words text-sm text-muted">{[partner.province, partner.city, partner.addressLine].filter(Boolean).join("، ")}</p> : null}
                 {partner.owner?.phone ? <PhoneLink phone={partner.owner.phone} /> : null}
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => status.mutate({ id: partner.id, next: partner.status === "SUSPENDED" ? "APPROVED" : "SUSPENDED" })}
-              >
-                {partner.status === "SUSPENDED" ? "فعال کردن" : "تعلیق"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setEditing(editing === partner.id ? null : partner.id);
+                    setProfile({
+                      tradeName: partner.tradeName,
+                      phone: partner.owner?.phone || partner.phone || "",
+                      firstName: partner.owner?.firstName || "",
+                      lastName: partner.owner?.lastName || "",
+                      addressLine: partner.addressLine || "",
+                      city: partner.city || "",
+                      province: partner.province || "",
+                    });
+                  }}
+                >
+                  {editing === partner.id ? "بستن ویرایش" : "ویرایش اطلاعات"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => status.mutate({ id: partner.id, next: partner.status === "SUSPENDED" ? "APPROVED" : "SUSPENDED" })}
+                >
+                  {partner.status === "SUSPENDED" ? "فعال کردن" : "تعلیق"}
+                </Button>
+              </div>
             </div>
+            {editing === partner.id ? (
+              <div className="grid gap-3 rounded-2xl border border-border p-3">
+                <Field label="نام طرف قرارداد">
+                  <Input value={profile.tradeName} onChange={(e) => setProfile({ ...profile, tradeName: e.target.value })} />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="نام رابط">
+                    <Input value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} />
+                  </Field>
+                  <Field label="نام خانوادگی">
+                    <Input value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} />
+                  </Field>
+                </div>
+                <Field label="موبایل">
+                  <Input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} inputMode="tel" />
+                </Field>
+                <Field label="آدرس">
+                  <Input value={profile.addressLine} onChange={(e) => setProfile({ ...profile, addressLine: e.target.value })} />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <CitySelect label="استان" value={profile.province} onChange={(value) => setProfile({ ...profile, province: value })} options={IRAN_PROVINCES} placeholder="استان" />
+                  <CitySelect label="شهر" value={profile.city} onChange={(value) => setProfile({ ...profile, city: value })} placeholder="شهر" />
+                </div>
+                <Button
+                  disabled={
+                    saveProfile.isPending ||
+                    profile.tradeName.trim().length < 2 ||
+                    profile.firstName.trim().length < 1 ||
+                    profile.lastName.trim().length < 1 ||
+                    (profile.phone.trim().length > 0 && profile.phone.trim().length < 10) ||
+                    (Boolean(profile.addressLine.trim() || profile.city.trim() || profile.province.trim()) &&
+                      (profile.addressLine.trim().length < 2 || profile.city.trim().length < 2 || profile.province.trim().length < 2))
+                  }
+                  onClick={() => saveProfile.mutate(partner.id)}
+                >
+                  ذخیره اطلاعات
+                </Button>
+              </div>
+            ) : null}
             <div className="flex min-w-0 flex-wrap gap-2">
               <PasswordInput
                 className="sm:max-w-xs"

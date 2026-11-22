@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { ShamsiDateInput } from "@/components/ui/shamsi-date-input";
+import { CitySelect } from "@/components/domain/city-select";
 import { api, formatApiError } from "@/lib/api";
+import { IRAN_PROVINCES, provinceOf } from "@/lib/geo/iran-provinces";
+import { todayIso } from "@/lib/shamsi";
 
 export default function NewPartnerShipmentPage() {
   const router = useRouter();
@@ -24,9 +27,9 @@ export default function NewPartnerShipmentPage() {
     county: "",
     city: "",
     warehouseName: "شورآباد",
-    receivedAt: "",
-    promisedDeliveryAt: "",
-    shipAt: "",
+    receivedAt: todayIso(),
+    promisedDeliveryAt: todayIso(),
+    shipAt: todayIso(),
     notes: "",
   });
 
@@ -61,7 +64,7 @@ export default function NewPartnerShipmentPage() {
 
   return (
     <form className="grid gap-4" onSubmit={(event) => void onSubmit(event)}>
-      <PageHeader title="ثبت بار طرف قرارداد" description="همین فرم، برگه اکسل است. بار را به انبار شیدرو (شورآباد) می‌آورید و فاکتور را ثبت می‌کنید. راننده، لوکیشن و صورتحساب را مدیریت پر می‌کند." />
+      <PageHeader title="ثبت بار طرف قرارداد" />
       <Card className="grid gap-3">
         <Field label="شماره فاکتور">
           <Input value={form.invoiceNumber} onChange={(e) => set("invoiceNumber", e.target.value)} required />
@@ -84,29 +87,47 @@ export default function NewPartnerShipmentPage() {
           </Field>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="استان مقصد">
-            <Input value={form.province} onChange={(e) => set("province", e.target.value)} required />
-          </Field>
-          <Field label="شهرستان">
-            <Input value={form.county} onChange={(e) => set("county", e.target.value)} />
-          </Field>
-          <Field label="شهر مقصد">
-            <Input value={form.city} onChange={(e) => set("city", e.target.value)} required />
-          </Field>
+          <CitySelect
+            label="استان مقصد"
+            value={form.province}
+            onChange={(value) => set("province", value)}
+            options={IRAN_PROVINCES}
+            placeholder="استان را بنویسید یا انتخاب کنید"
+            emptyText="این استان در فهرست نیست؛ همان نوشته ذخیره می‌شود"
+            required
+          />
+          <CitySelect
+            label="شهرستان"
+            value={form.county}
+            onChange={(value) => set("county", value)}
+            placeholder="شهرستان را بنویسید یا انتخاب کنید"
+            required
+          />
+          <CitySelect
+            label="شهر مقصد"
+            value={form.city}
+            onChange={(value) => {
+              set("city", value);
+              const province = provinceOf(value);
+              if (province && !form.province) set("province", province);
+            }}
+            placeholder="شهر را بنویسید یا انتخاب کنید"
+            required
+          />
         </div>
         <Field label="انبار تحویلی">
           <Input value={form.warehouseName} onChange={(e) => set("warehouseName", e.target.value)} required />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="تاریخ تحویل بار به انبار">
-            <ShamsiDateInput value={form.receivedAt} onChange={(value) => set("receivedAt", value)} />
+            <ShamsiDateInput value={form.receivedAt} onChange={(value) => set("receivedAt", value)} notBeforeToday required />
           </Field>
           <Field label="تاریخ تحویل">
-            <ShamsiDateInput value={form.promisedDeliveryAt} onChange={(value) => set("promisedDeliveryAt", value)} />
+            <ShamsiDateInput value={form.promisedDeliveryAt} onChange={(value) => set("promisedDeliveryAt", value)} notBeforeToday required />
           </Field>
         </div>
         <Field label="تاریخ ارسال">
-          <ShamsiDateInput value={form.shipAt} onChange={(value) => set("shipAt", value)} required />
+          <ShamsiDateInput value={form.shipAt} onChange={(value) => set("shipAt", value)} notBeforeToday required />
         </Field>
         <Field label="توضیحات">
           <Input value={form.notes} onChange={(e) => set("notes", e.target.value)} />

@@ -118,3 +118,13 @@ function jalaliToGregorian(jy: number, jm: number, jd: number) {
   }
   return { gy, gm, gd };
 }
+
+export function todayIso() {
+  const today = toJalali(new Date());
+  return jalaliToIso(today.jy, today.jm, today.jd);
+}
+
+export function isPastDate(value: string) {
+  const day = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && day < todayIso();
+}

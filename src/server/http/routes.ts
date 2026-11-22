@@ -35,8 +35,9 @@ import {
   setPartnerDriverLocation,
   setPartnerPassword,
   setPartnerStatus,
+  updatePartnerProfile,
 } from "@/server/domains/identity/partner-service";
-import { partnerAccountSchema, partnerAssignSchema, partnerLocationSchema, partnerPasswordSchema, partnerShipmentSchema } from "@/lib/validation/partner";
+import { partnerAccountSchema, partnerAssignSchema, partnerLocationSchema, partnerPasswordSchema, partnerProfileSchema, partnerShipmentSchema } from "@/lib/validation/partner";
 import { announceRequest, announceRequestSchema, createRequest, createRequestSchema, listDriverDirectory, listRequests, getRequestForActor, submitRequest, publishRequest, cancelRequest } from "@/server/domains/procurement/request-service";
 import { adjustCompanyCoins, getCompanyCoins, getOwnCoins } from "@/server/domains/finance/coin-service";
 import {
@@ -1392,6 +1393,15 @@ export const routes: RouteDefinition[] = [
     input: partnerAccountSchema,
     async handler({ actor, body }) {
       return createPartnerAccount(requireActor(actor), body as z.infer<typeof partnerAccountSchema>);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/partners/:id",
+    permissions: ["companies.update"],
+    input: partnerProfileSchema,
+    async handler({ actor, params, body }) {
+      return updatePartnerProfile(requireActor(actor), params.id, body as z.infer<typeof partnerProfileSchema>);
     },
   },
   {

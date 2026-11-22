@@ -57,6 +57,8 @@ export function DashboardView() {
     openTickets: t.dash.openTickets,
     rating: t.common.rating,
     docsToReview: "مدارک برای تأیید",
+    pendingRequests: "درخواست در انتظار تأیید",
+    partners: "طرف قرارداد",
   };
 
   const actions: QuickAction[] =
@@ -96,6 +98,17 @@ export function DashboardView() {
         title={name ? `${t.dash.hello} ${me.data?.firstName}` : t.common.dashboard}
         description={portal === "DRIVER" ? t.dash.driverHome : portal === "REQUESTER" ? t.dash.requesterHome : t.dash.adminHome}
       />
+      {portal === "PLATFORM" ? (
+        <Link href="/admin/requests" className="flex items-center gap-4 rounded-3xl bg-primary px-5 py-4 text-primary-foreground">
+          <span className="grid h-16 min-w-16 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl font-black tabular-nums">
+            {Number(stats.pendingRequests ?? 0).toLocaleString("fa-IR")}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold opacity-80">درخواست‌هایی که برای تأیید آمده</span>
+            <span className="block text-lg font-black">درخواست‌های در انتظار تأیید</span>
+          </span>
+        </Link>
+      ) : null}
       {summaryHome ? <p className="text-sm leading-7 text-muted">بقیهٔ کارها داخل منو است.</p> : null}
       {portal === "REQUESTER" ? <OwnerLiveLoads /> : null}
       <QuickAccess title={summaryHome ? "کارهای اصلی" : t.dash.quick} actions={actions} />

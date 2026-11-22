@@ -11,6 +11,7 @@ import { dispatchCargoToDrivers, redispatchOpenJob } from "@/server/domains/logi
 import { quotePrice } from "@/server/domains/finance/price-book-service";
 import { moveCoins } from "@/server/domains/finance/coin-service";
 import { announceRequestSchema, createRequestSchema } from "@/lib/validation/procurement";
+import { isPastDate } from "@/lib/shamsi";
 
 export { announceRequestSchema, createRequestSchema };
 
@@ -30,6 +31,9 @@ export async function createRequest(actor: Actor, input: z.infer<typeof createRe
     }
   }
 
+  if (isPastDate(input.requestedDeliveryDate)) {
+    throw Errors.validation({ requestedDeliveryDate: ["تاریخ تحویل نمی‌تواند از امروز عقب‌تر باشد"] });
+  }
   if (input.dispatchMode === "VIP") await assertVipDriver(input.vipDriverId);
 
   const qty = input.items.reduce((sum, item) => sum + item.quantity, 0);

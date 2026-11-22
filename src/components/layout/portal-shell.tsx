@@ -74,6 +74,27 @@ const ICONS = {
   newShipment: PlusCircle,
 };
 
+const ADMIN_MENU_COUNT: Record<string, string | null> = {
+  dashboard: "pendingRequests",
+  verifications: "pendingApprovals",
+  drivers: "drivers",
+  users: "users",
+  companies: "cargoOwners",
+  partners: "partners",
+  requests: "pendingRequests",
+  jobs: "activeShipments",
+  tracking: "activeShipments",
+  invoices: "invoices",
+  reports: null,
+  orders: "orders",
+  audit: null,
+  rules: null,
+  disputes: "disputes",
+  tickets: "openTickets",
+  adminProfile: null,
+  settings: null,
+};
+
 const NAV = {
   admin: [
     { href: "/admin/dashboard", key: "dashboard" as const },
@@ -270,6 +291,19 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
     window.location.replace("/login");
   }
 
+  const adminMenu = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: () => api<{ stats: Record<string, number> }>("/dashboard"),
+    enabled: portal === "admin" && Boolean(me.data),
+    refetchInterval: liveInterval(15000),
+  });
+  function menuCount(key: string) {
+    if (portal !== "admin") return null;
+    const field = ADMIN_MENU_COUNT[key];
+    const raw = field ? adminMenu.data?.stats?.[field] : 0;
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+  }
+
   const items = NAV[portal];
   const pinned = portal === "admin" ? items.filter((item) => item.key === "adminProfile" || item.key === "settings") : [];
   const menuItems = portal === "admin" ? items.filter((item) => item.key !== "adminProfile" && item.key !== "settings") : items;
@@ -333,6 +367,11 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
+                {portal === "admin" ? (
+                  <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-white/15 px-1.5 text-xs font-bold tabular-nums">
+                    {menuCount(item.key)?.toLocaleString("fa-IR")}
+                  </span>
+                ) : null}
                 <span className="min-w-0 break-words">{t.menu[item.key]}</span>
               </Link>
             );
@@ -354,6 +393,9 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
+                  <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-white/15 px-1.5 text-xs font-bold tabular-nums">
+                    {menuCount(item.key)?.toLocaleString("fa-IR")}
+                  </span>
                   <span className="min-w-0 break-words">{t.menu[item.key]}</span>
                 </Link>
               );

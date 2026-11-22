@@ -39,3 +39,19 @@ export const partnerAssignSchema = z.object({
 export const partnerLocationSchema = z.object({
   driverLocation: z.string().trim().min(2, "لوکیشن راننده را بنویسید"),
 });
+
+export const partnerProfileSchema = z.object({
+  tradeName: z.string().trim().min(2, "نام طرف قرارداد را بنویسید"),
+  phone: z.string().trim().refine((value) => value.length === 0 || value.length >= 10, "موبایل معتبر نیست"),
+  firstName: z.string().trim().min(1, "نام رابط را بنویسید"),
+  lastName: z.string().trim().min(1, "نام خانوادگی را بنویسید"),
+  addressLine: z.string().trim(),
+  city: z.string().trim(),
+  province: z.string().trim(),
+}).superRefine((value, ctx) => {
+  const started = Boolean(value.addressLine || value.city || value.province);
+  if (!started) return;
+  if (value.addressLine.length < 2) ctx.addIssue({ code: "custom", path: ["addressLine"], message: "آدرس را بنویسید" });
+  if (value.city.length < 2) ctx.addIssue({ code: "custom", path: ["city"], message: "شهر را بنویسید" });
+  if (value.province.length < 2) ctx.addIssue({ code: "custom", path: ["province"], message: "استان را بنویسید" });
+});

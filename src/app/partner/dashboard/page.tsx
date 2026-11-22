@@ -42,7 +42,8 @@ export default function PartnerDashboard() {
         {rows.slice(0, 5).map((row) => (
           <PartnerShipmentCard key={row.id} shipment={row} href={`/partner/shipments/${row.id}`} />
         ))}
-        {!q.isLoading && !rows.length ? <p className="text-sm text-muted">هنوز باری ثبت نشده است.</p> : null}
+        {q.isError ? <p className="text-sm text-danger">فهرست بارها خوانده نشد. یک بار خارج شوید و دوباره وارد شوید.</p> : null}
+        {!q.isLoading && !q.isError && !rows.length ? <p className="text-sm text-muted">هنوز باری ثبت نشده است.</p> : null}
       </div>
     </div>
   );

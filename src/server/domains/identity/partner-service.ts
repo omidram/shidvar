@@ -7,6 +7,7 @@ import { writeAudit } from "@/server/audit";
 import type { Actor } from "@/server/rbac/actor";
 import { assertPermission } from "@/server/rbac/actor";
 import { normalizeMobile } from "@/lib/identity";
+import { isPastDate } from "@/lib/shamsi";
 
 const partnerInclude = {
   company: { select: { id: true, tradeName: true, phone: true, status: true } },
@@ -124,6 +125,13 @@ export async function createPartnerShipment(
   assertPermission(actor, "requests.create");
   const companyId = partnerCompanyId(actor);
   if (!companyId) throw Errors.forbidden("حساب طرف قرارداد لازم است");
+  for (const [field, value] of [
+    ["receivedAt", input.receivedAt],
+    ["promisedDeliveryAt", input.promisedDeliveryAt],
+    ["shipAt", input.shipAt],
+  ] as const) {
+    if (value && isPastDate(value)) throw Errors.validation({ [field]: ["تاریخ نمی‌تواند از امروز عقب‌تر باشد"] });
+  }
   const shipAt = new Date(input.shipAt);
   if (Number.isNaN(shipAt.getTime())) throw Errors.validation({ shipAt: ["زمان ارسال معتبر نیست"] });
   const receivedAt = input.receivedAt ? new Date(input.receivedAt) : null;
@@ -162,12 +170,14 @@ export async function listPartners(actor: Actor) {
     where: { type: "PARTNER", deletedAt: null },
     include: {
       memberships: { where: { isOwner: true }, include: { user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true, status: true } } } },
+      addresses: { take: 1, orderBy: { createdAt: "asc" }, select: { line1: true, city: true, region: true } },
       _count: { select: { partnerShipments: true } },
     },
     orderBy: { createdAt: "desc" },
   });
   return companies.map((company) => {
     const owner = company.memberships[0]?.user;
+    const address = company.addresses[0];
     return {
       id: company.id,
       tradeName: company.tradeName,
@@ -175,8 +185,19 @@ export async function listPartners(actor: Actor) {
       phone: company.phone,
       status: company.status,
       shipmentCount: company._count.partnerShipments,
+      addressLine: address?.line1 ?? "",
+      city: address?.city ?? "",
+      province: address?.region ?? "",
       owner: owner
-        ? { id: owner.id, name: `${owner.firstName} ${owner.lastName}`.trim(), phone: owner.phone, username: owner.email, status: owner.status }
+        ? {
+            id: owner.id,
+            name: `${owner.firstName} ${owner.lastName}`.trim(),
+            firstName: owner.firstName,
+            lastName: owner.lastName,
+            phone: owner.phone,
+            username: owner.email,
+            status: owner.status,
+          }
         : null,
     };
   });
@@ -230,6 +251,47 @@ export async function createPartnerAccount(
   }
   await writeAudit({ actor, action: "partner.account_created", entityType: "Company", entityId: created.companyId });
   return created;
+}
+
+export async function updatePartnerProfile(
+  actor: Actor,
+  companyId: string,
+  input: { tradeName: string; phone: string; firstName: string; lastName: string; addressLine: string; city: string; province: string },
+) {
+  assertPermission(actor, "companies.update");
+  if (!actor.isPlatformStaff) throw Errors.forbidden();
+  const company = await prisma.company.findFirst({ where: { id: companyId, type: "PARTNER", deletedAt: null } });
+  if (!company) throw Errors.notFound();
+  const phone = input.phone.trim() ? normalizeMobile(input.phone) : null;
+  const membership = await prisma.membership.findFirst({ where: { companyId, isOwner: true } });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: companyId },
+        data: { tradeName: input.tradeName.trim(), legalName: input.tradeName.trim(), phone },
+      });
+      if (membership) {
+        await tx.user.update({
+          where: { id: membership.userId },
+          data: { firstName: input.firstName.trim(), lastName: input.lastName.trim(), phone },
+        });
+      }
+      const line1 = input.addressLine.trim();
+      if (line1) {
+        const address = await tx.address.findFirst({ where: { companyId }, orderBy: { createdAt: "asc" } });
+        const data = { line1, city: input.city.trim(), region: input.province.trim(), label: "دفتر" };
+        if (address) await tx.address.update({ where: { id: address.id }, data });
+        else await tx.address.create({ data: { ...data, companyId } });
+      }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw Errors.conflict("این موبایل قبلاً برای حساب دیگری ثبت شده است");
+    }
+    throw error;
+  }
+  await writeAudit({ actor, action: "partner.profile_updated", entityType: "Company", entityId: companyId });
+  return { updated: true as const };
 }
 
 export async function setPartnerPassword(actor: Actor, companyId: string, password: string) {
