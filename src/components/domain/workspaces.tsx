@@ -298,6 +298,27 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
     queryFn: () => api<JobDto[]>(path),
     refetchInterval: liveInterval(5000),
   });
+  const assignedPartner = useQuery({
+    queryKey: ["driver-partner-shipments"],
+    queryFn: () =>
+      api<
+        Array<{
+          id: string;
+          number: string;
+          brandName: string;
+          cargoType: string;
+          cartonCount: number;
+          city: string;
+          province: string;
+          warehouseName: string;
+          status: string;
+          shipAt: string;
+          company: { tradeName: string };
+        }>
+      >("/driver/partner-shipments"),
+    enabled: Boolean(marketplace),
+    refetchInterval: liveInterval(5000),
+  });
   const [confirmJob, setConfirmJob] = useState<JobDto | null>(null);
   const [fromCity, setFromCity] = useState("");
   const [toCity, setToCity] = useState("");
@@ -389,7 +410,35 @@ export function JobBoard({ marketplace, hrefPrefix = "/driver/jobs" }: { marketp
           </div>
         </Card>
       ) : null}
-      {rows.length === 0 ? (
+      {marketplace && (assignedPartner.data ?? []).length > 0 ? (
+        <section className="mb-4 grid gap-3">
+          <h2 className="text-lg font-bold">بارهای سپرده‌شده به شما</h2>
+          {(assignedPartner.data ?? []).map((load) => (
+            <Card key={load.id}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Link href={`/driver/partner-shipments/${load.id}`} className="text-lg font-bold hover:underline">
+                  {load.brandName}
+                  <span className="ms-2 text-sm font-normal text-muted">{load.number}</span>
+                </Link>
+                <StatusBadge status={load.status} />
+              </div>
+              <p className="mt-2 text-sm text-muted">طرف قرارداد: {load.company.tradeName}</p>
+              <div className="mt-3">
+                <RouteLine from={load.warehouseName || "شورآباد"} to={[load.province, load.city].filter(Boolean).join("، ")} />
+              </div>
+              <p className="mt-3 text-sm text-muted">
+                {load.cargoType} · {formatNumber(load.cartonCount)} کارتن · ارسال {formatDate(load.shipAt)}
+              </p>
+              <Button asChild variant="secondary" className="mt-4">
+                <Link href={`/driver/partner-shipments/${load.id}`}>{t.common.details}</Link>
+              </Button>
+            </Card>
+          ))}
+        </section>
+      ) : null}
+      {rows.length === 0 && (assignedPartner.data ?? []).length > 0 ? (
+        <p className="text-sm text-muted">بار همگانی تازه‌ای برای قبول کردن نیست. بارهای سپرده‌شده همین بالا هستند.</p>
+      ) : rows.length === 0 ? (
         <EmptyState
           title={t.common.empty}
           hint={

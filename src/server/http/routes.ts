@@ -30,6 +30,8 @@ import {
   getPartnerShipment,
   invoicePartnerShipment,
   listAssignableDrivers,
+  getDriverPartnerShipment,
+  listDriverPartnerShipments,
   listPartnerShipments,
   listPartners,
   setPartnerDriverLocation,
@@ -1378,6 +1380,22 @@ export const routes: RouteDefinition[] = [
         create: { key: params.key, value: payload.value as object, description: payload.description ?? params.key },
         update: { value: payload.value as object, description: payload.description },
       });
+    },
+  },
+  {
+    method: "GET",
+    path: "/driver/partner-shipments",
+    permissions: ["jobs.read"],
+    async handler({ actor }) {
+      return listDriverPartnerShipments(requireActor(actor));
+    },
+  },
+  {
+    method: "GET",
+    path: "/driver/partner-shipments/:id",
+    permissions: ["jobs.read"],
+    async handler({ actor, params }) {
+      return getDriverPartnerShipment(requireActor(actor), params.id);
     },
   },
   {

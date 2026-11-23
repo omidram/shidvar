@@ -548,7 +548,7 @@ export function PortalShell({ portal, children }: { portal: keyof typeof NAV; ch
             <Menu className="h-4 w-4" />
             منو
           </button>
-          <p className="pointer-events-none absolute inset-x-0 bottom-0.5 text-center text-[10px] font-semibold text-muted">نسخه {APP_VERSION}</p>
+          <p className="no-print pointer-events-none absolute inset-x-0 bottom-0.5 text-center text-[10px] font-semibold text-muted">نسخه {APP_VERSION}</p>
         </nav>
       ) : null}
     </div>

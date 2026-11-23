@@ -94,6 +94,29 @@ export async function listPartnerShipments(actor: Actor) {
   return rows.map(mapShipment);
 }
 
+export async function listDriverPartnerShipments(actor: Actor) {
+  assertPermission(actor, "jobs.read");
+  if (!actor.driverProfile) throw Errors.forbidden();
+  const rows = await prisma.partnerShipment.findMany({
+    where: { driverId: actor.driverProfile.id, status: { in: ["ASSIGNED", "IN_TRANSIT"] } },
+    include: partnerInclude,
+    orderBy: { updatedAt: "desc" },
+    take: 100,
+  });
+  return rows.map(mapShipment);
+}
+
+export async function getDriverPartnerShipment(actor: Actor, id: string) {
+  assertPermission(actor, "jobs.read");
+  if (!actor.driverProfile) throw Errors.forbidden();
+  const row = await prisma.partnerShipment.findFirst({
+    where: { id, driverId: actor.driverProfile.id },
+    include: partnerInclude,
+  });
+  if (!row) throw Errors.notFound();
+  return mapShipment(row);
+}
+
 export async function getPartnerShipment(actor: Actor, id: string) {
   assertPermission(actor, "requests.read");
   const row = await prisma.partnerShipment.findUnique({ where: { id }, include: partnerInclude });

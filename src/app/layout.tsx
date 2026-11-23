@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={vazir.className}>
         <Providers>{children}</Providers>
-        <p className="pointer-events-none fixed inset-x-0 bottom-1 z-20 text-center text-[11px] font-semibold text-muted lg:bottom-2 lg:z-40">نسخه {APP_VERSION}</p>
+        <p className="no-print pointer-events-none fixed inset-x-0 bottom-1 z-20 text-center text-[11px] font-semibold text-muted lg:bottom-2 lg:z-40">نسخه {APP_VERSION}</p>
       </body>
     </html>
   );

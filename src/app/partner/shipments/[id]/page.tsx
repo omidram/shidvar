@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { ErrorState, PageHeader } from "@/components/domain/chrome";
@@ -9,39 +10,6 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatDate, formatMoney, formatNumber } from "@/lib/utils";
-
-function printReceipt(row: PartnerShipment) {
-  const lines = [
-    ["شماره رسید", row.number],
-    ["شماره فاکتور", row.invoiceNumber],
-    ["نام شرکت (برند)", row.brandName],
-    ["نام فروشگاه", row.storeName],
-    ["نوع بار", row.cargoType],
-    ["تعداد کارتن", formatNumber(row.cartonCount)],
-    ["مبلغ فاکتور", formatMoney(row.cargoAmount)],
-    ["مقصد", [row.province, row.county, row.city].filter(Boolean).join(" / ")],
-    ["انبار تحویلی", row.warehouseName],
-    ["تاریخ تحویل بار به انبار", row.receivedAt ? formatDate(row.receivedAt) : "—"],
-    ["تاریخ ارسال", formatDate(row.shipAt)],
-    ["تاریخ تحویل", row.promisedDeliveryAt ? formatDate(row.promisedDeliveryAt) : row.deliveredAt ? formatDate(row.deliveredAt) : "—"],
-    ["راننده", row.driver ? row.driver.name : "—"],
-    ["تلفن راننده", row.driver?.phone ?? "—"],
-    ["مبلغ باربری", row.freightAmount != null ? formatMoney(row.freightAmount) : "—"],
-    ["اعلام صورتحساب", row.invoice ? row.invoice.number : "هنوز صادر نشده"],
-    ["رسید تحویل بار", row.status === "DELIVERED" ? "ثبت شد" : "هنوز ثبت نشده"],
-    ["توضیحات", row.notes || "—"],
-  ];
-  const popup = window.open("", "_blank", "noopener,width=720,height=900");
-  if (!popup) return;
-  popup.document.write(`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>رسید ${row.number}</title>
-    <style>body{font-family:Tahoma,sans-serif;margin:32px;color:#111}h1{font-size:22px;margin:0}table{width:100%;border-collapse:collapse;margin-top:16px}td{border-bottom:1px solid #ddd;padding:8px 4px}td:first-child{color:#555;width:40%}</style>
-    </head><body><h1>رسید طرف قرارداد · شیدرو</h1><p>این برگه رسید ساده همین بار است.</p><table>${lines
-      .map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`)
-      .join("")}</table></body></html>`);
-  popup.document.close();
-  popup.focus();
-  popup.print();
-}
 
 const STEPS = ["ثبت در انبار شیدرو", "راننده تخصیص شد", "بار ارسال شد", "به مقصد رسید"];
 
@@ -60,7 +28,11 @@ export default function PartnerShipmentPage() {
       <PageHeader
         title={row.brandName}
         description={`فاکتور ${row.invoiceNumber} · ${row.number}`}
-        actions={<Button onClick={() => printReceipt(row)}>رسید ساده</Button>}
+        actions={
+          <Button asChild>
+            <Link href={`/print/partner-receipt/${row.id}`}>صدور رسید</Link>
+          </Button>
+        }
       />
       <Card className="grid gap-3">
         {STEPS.map((label, index) => (
