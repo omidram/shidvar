@@ -17,6 +17,7 @@ export async function dashboardFor(actor: Actor) {
       tickets,
       pendingRequests,
       partners,
+      partnerRequests,
       invoices,
       orders,
     ] = await Promise.all([
@@ -33,6 +34,7 @@ export async function dashboardFor(actor: Actor) {
       prisma.supportTicket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS", "WAITING_FOR_USER"] } } }),
       prisma.procurementRequest.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
       prisma.company.count({ where: { type: "PARTNER", deletedAt: null } }),
+      prisma.partnerShipment.count({ where: { status: { not: "DELIVERED" } } }),
       prisma.invoice.count(),
       prisma.order.count(),
     ]);
@@ -51,6 +53,7 @@ export async function dashboardFor(actor: Actor) {
         openTickets: tickets,
         pendingRequests,
         partners,
+        partnerRequests,
         invoices,
         orders,
       },

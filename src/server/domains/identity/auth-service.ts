@@ -202,8 +202,12 @@ export async function loginUser(input: z.infer<typeof loginSchema>, meta: { ip?:
     const driverSuspended = user.driverProfile?.status === "SUSPENDED";
     if (companySuspended || driverSuspended) throw Errors.forbidden("حساب شما توسط مدیر معلق شده است");
   }
-  const isPartner = user.memberships.some((row) => row.company.type === "PARTNER");
-  if (isPlatformAdmin || isPartner) {
+  const hasFixedPassword = Boolean(user.passwordHash);
+  const skipsLoginSms =
+    hasFixedPassword &&
+    (Boolean(user.driverProfile) ||
+      user.memberships.some((row) => row.company.type === "REQUESTER" || row.company.type === "SUPPLIER" || row.company.type === "PARTNER"));
+  if (isPlatformAdmin || skipsLoginSms) {
     return completeLogin(user.id, input.portal as Portal | undefined, meta);
   }
   return issueLoginOtp(user, input.portal as Portal | undefined, webotpHost(input.otpHost) ?? webotpHost(meta.host));

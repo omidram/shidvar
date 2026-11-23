@@ -14,6 +14,8 @@ const SECTIONS = [
   { id: "invoices", title: "فاکتورها", detail: "فاکتورها، پرداخت‌ها و سندهای مالی." },
   { id: "drivers", title: "راننده‌ها", detail: "حساب راننده، ماشین و کیف پول. بارها می‌مانند و راننده از آن‌ها برداشته می‌شود." },
   { id: "owners", title: "صاحب بارها", detail: "شرکت صاحب بار و کاربرانش، همراه بارها و فاکتورهای همان شرکت‌ها. حساب مدیر می‌ماند." },
+  { id: "partnerLoads", title: "بارهای طرف قرارداد", detail: "بارهایی که طرف قرارداد ثبت کرده، همراه فاکتور باربری همان بارها." },
+  { id: "partners", title: "طرف قرارداد", detail: "حساب، نام، آدرس و بارهای ثبت‌شدهٔ طرف قرارداد. حساب مدیر می‌ماند." },
   { id: "chats", title: "چت‌ها", detail: "گفتگوها و پیام‌ها." },
   { id: "notifications", title: "اعلان‌ها", detail: "اعلان‌های داخل سامانه." },
   { id: "tickets", title: "تیکت‌ها", detail: "تیکت‌های پشتیبانی و پاسخ‌هایشان." },
@@ -54,7 +56,9 @@ export function AdminDataPurge() {
   const countOf = (id: SectionId) => counts.data?.find((row) => row.id === id)?.count ?? 0;
   if (counts.isError) {
     return (
-      <SettingsSection title="پاک کردن بخش‌های پایگاه" description="فهرست بخش‌ها خوانده نشد. صفحه را دوباره باز کنید." icon={<Trash2 className="h-5 w-5" />} />
+      <SettingsSection title="پاک کردن بخش‌های پایگاه" description="فهرست بخش‌ها خوانده نشد. صفحه را دوباره باز کنید." icon={<Trash2 className="h-5 w-5" />}>
+        <p className="text-sm text-muted">صفحه را دوباره باز کنید.</p>
+      </SettingsSection>
     );
   }
 
@@ -77,7 +81,7 @@ export function AdminDataPurge() {
                 variant="danger"
                 disabled={purge.isPending || count === 0}
                 onClick={() => {
-                  const extra = section.id === "owners" ? " بارها و فاکتورهایشان هم پاک می‌شود." : "";
+                  const extra = section.id === "owners" || section.id === "partners" ? " بارها و اطلاعاتشان هم پاک می‌شود." : "";
                   if (window.confirm(`${section.title} پاک شود؟${extra} این کار برگشت ندارد.`)) purge.mutate(section.id);
                 }}
               >

@@ -26,7 +26,6 @@ function printReceipt(row: PartnerShipment) {
     ["تاریخ تحویل", row.promisedDeliveryAt ? formatDate(row.promisedDeliveryAt) : row.deliveredAt ? formatDate(row.deliveredAt) : "—"],
     ["راننده", row.driver ? row.driver.name : "—"],
     ["تلفن راننده", row.driver?.phone ?? "—"],
-    ["لوکیشن راننده", row.driverLocation || "—"],
     ["مبلغ باربری", row.freightAmount != null ? formatMoney(row.freightAmount) : "—"],
     ["اعلام صورتحساب", row.invoice ? row.invoice.number : "هنوز صادر نشده"],
     ["رسید تحویل بار", row.status === "DELIVERED" ? "ثبت شد" : "هنوز ثبت نشده"],
@@ -92,7 +91,6 @@ export default function PartnerShipmentPage() {
         {row.driver ? (
           <p>
             راننده: {row.driver.name} {row.driver.phone ? <PhoneLink phone={row.driver.phone} /> : null}
-            {row.driverLocation ? ` · لوکیشن: ${row.driverLocation}` : " · لوکیشن هنوز ثبت نشده"}
           </p>
         ) : (
           <p>راننده هنوز مشخص نشده است.</p>

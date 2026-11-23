@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminAccountEditor } from "@/components/domain/admin-account-form";
+import { AdminBackups } from "@/components/domain/admin-backups";
 import { AdminDataPurge } from "@/components/domain/admin-data-purge";
 
 export default function AdminSettingsPage() {
@@ -8,6 +9,7 @@ export default function AdminSettingsPage() {
     <div className="grid gap-4">
       <AdminAccountEditor mode="settings" />
       <AdminDataPurge />
+      <AdminBackups />
     </div>
   );
 }

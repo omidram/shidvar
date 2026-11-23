@@ -70,6 +70,7 @@ const ICONS = {
   tickets: LifeBuoy,
   coins: Coins,
   partners: Building2,
+  partnerRequests: ClipboardList,
   shipments: PackageSearch,
   newShipment: PlusCircle,
 };
@@ -81,6 +82,7 @@ const ADMIN_MENU_COUNT: Record<string, string | null> = {
   users: "users",
   companies: "cargoOwners",
   partners: "partners",
+  partnerRequests: "partnerRequests",
   requests: "pendingRequests",
   jobs: "activeShipments",
   tracking: "activeShipments",
@@ -103,6 +105,7 @@ const NAV = {
     { href: "/admin/users", key: "users" as const },
     { href: "/admin/companies", key: "companies" as const },
     { href: "/admin/partners", key: "partners" as const },
+    { href: "/admin/partner-requests", key: "partnerRequests" as const },
     { href: "/admin/requests", key: "requests" as const },
     { href: "/admin/jobs", key: "jobs" as const },
     { href: "/admin/tracking", key: "tracking" as const },

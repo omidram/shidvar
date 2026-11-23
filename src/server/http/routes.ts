@@ -110,6 +110,7 @@ import { createCargoCompany, getCompanyProfile, setCompanySpecial } from "@/serv
 import { accountControlSchema, getDriverAccount, getOwnerAccount, updateDriverAccount, updateOwnerAccount } from "@/server/domains/admin/account-control";
 import { getPortalSettings, updatePortalSettings, updateSettingsSchema } from "@/server/domains/identity/settings-service";
 import { listPurgeSections, purgeSection, purgeSectionSchema } from "@/server/maintenance/purge-sections";
+import { createBackup, listBackups, restoreBackup } from "@/server/maintenance/backup-service";
 import { getOwnPriceBook, getPriceBookForCompany, quotePrice, upsertPriceBook } from "@/server/domains/finance/price-book-service";
 import { buildChecklist, deleteDocument, getOwnChecklist, verifyDocument } from "@/server/domains/documents/document-service";
 import { prisma } from "@/server/db";
@@ -287,6 +288,32 @@ export const routes: RouteDefinition[] = [
     async handler({ actor, body }) {
       const parsed = body as z.infer<typeof purgeSectionSchema>;
       return purgeSection(requireActor(actor), parsed.section);
+    },
+  },
+  {
+    method: "GET",
+    path: "/admin/backups",
+    permissions: ["settings.manage"],
+    async handler({ actor }) {
+      if (!requireActor(actor).isPlatformStaff) throw Errors.forbidden("پشتیبان فقط برای مدیر است");
+      return listBackups();
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/backups",
+    permissions: ["settings.manage"],
+    async handler({ actor }) {
+      return createBackup(requireActor(actor), false);
+    },
+  },
+  {
+    method: "POST",
+    path: "/admin/backups/:id/restore",
+    permissions: ["settings.manage"],
+    input: z.object({ confirm: z.literal(true) }),
+    async handler({ actor, params }) {
+      return restoreBackup(requireActor(actor), params.id);
     },
   },
   {

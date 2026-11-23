@@ -229,6 +229,7 @@ export const fa = {
     users: "کاربران",
     companies: "صاحبان بار",
     partners: "طرف قرارداد",
+    partnerRequests: "درخواست‌های طرف قرارداد",
     shipments: "بارهای من",
     newShipment: "ثبت بار",
     audit: "لاگ سیستم",

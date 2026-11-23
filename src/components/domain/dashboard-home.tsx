@@ -15,6 +15,7 @@ import { useI18n } from "@/i18n/provider";
 import { useMe } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
 import { DeliveryFlow, ownerTaskRank } from "@/components/domain/delivery-flow";
+import { PartnerLoadsPreview } from "@/components/domain/partner-request-board";
 
 type Dashboard = { portal: string; stats: Record<string, number | string | null> };
 
@@ -59,6 +60,7 @@ export function DashboardView() {
     docsToReview: "مدارک برای تأیید",
     pendingRequests: "درخواست در انتظار تأیید",
     partners: "طرف قرارداد",
+    partnerRequests: "بار طرف قرارداد",
   };
 
   const actions: QuickAction[] =
@@ -99,16 +101,28 @@ export function DashboardView() {
         description={portal === "DRIVER" ? t.dash.driverHome : portal === "REQUESTER" ? t.dash.requesterHome : t.dash.adminHome}
       />
       {portal === "PLATFORM" ? (
-        <Link href="/admin/requests" className="flex items-center gap-4 rounded-3xl bg-primary px-5 py-4 text-primary-foreground">
-          <span className="grid h-16 min-w-16 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl font-black tabular-nums">
-            {Number(stats.pendingRequests ?? 0).toLocaleString("fa-IR")}
-          </span>
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold opacity-80">درخواست‌هایی که برای تأیید آمده</span>
-            <span className="block text-lg font-black">درخواست‌های در انتظار تأیید</span>
-          </span>
-        </Link>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Link href="/admin/requests" className="flex items-center gap-4 rounded-3xl bg-primary px-5 py-4 text-primary-foreground">
+            <span className="grid h-16 min-w-16 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl font-black tabular-nums">
+              {Number(stats.pendingRequests ?? 0).toLocaleString("fa-IR")}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold opacity-80">صاحب بار</span>
+              <span className="block text-lg font-black">درخواست‌های در انتظار تأیید</span>
+            </span>
+          </Link>
+          <Link href="/admin/partner-requests" className="flex items-center gap-4 rounded-3xl border border-border bg-card px-5 py-4 text-foreground">
+            <span className="grid h-16 min-w-16 shrink-0 place-items-center rounded-2xl bg-primary text-3xl font-black tabular-nums text-primary-foreground">
+              {Number(stats.partnerRequests ?? 0).toLocaleString("fa-IR")}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-muted">جدا از صاحب بار</span>
+              <span className="block text-lg font-black">درخواست‌های طرف قرارداد</span>
+            </span>
+          </Link>
+        </div>
       ) : null}
+      {portal === "PLATFORM" ? <PartnerLoadsPreview /> : null}
       {summaryHome ? <p className="text-sm leading-7 text-muted">بقیهٔ کارها داخل منو است.</p> : null}
       {portal === "REQUESTER" ? <OwnerLiveLoads /> : null}
       <QuickAccess title={summaryHome ? "کارهای اصلی" : t.dash.quick} actions={actions} />

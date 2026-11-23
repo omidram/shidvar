@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BellRing, ChevronDown, FileText, MapPinned, ShieldCheck, TrendingUp, Wallet } from "lucide-react";
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter, SupportFab } from "@/components/layout/public-footer";
+import { EnamadSeal } from "@/components/layout/enamad-seal";
 import { Button } from "@/components/ui/button";
 import { ShamsiDateInput } from "@/components/ui/shamsi-date-input";
 import { Card } from "@/components/ui/card";
@@ -314,6 +315,11 @@ export default function HomePage() {
         </Card>
       </section>
       <PublicFooter />
+      <div className="surface-ink flex justify-center px-4 pb-16">
+        <div className="rounded-2xl bg-white p-2">
+          <EnamadSeal />
+        </div>
+      </div>
       <SupportFab />
     </div>
   );

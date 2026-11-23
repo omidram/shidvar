@@ -42,9 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# private uploads
+# private uploads and server backups
 /storage
 /uploads
+/.backups
 
 # prisma
 /prisma/*.db

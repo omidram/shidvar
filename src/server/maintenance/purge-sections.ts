@@ -6,7 +6,7 @@ import { writeAudit } from "@/server/audit";
 import { assertPermission, type Actor } from "@/server/rbac/actor";
 import { FileService } from "@/server/storage/file-service";
 
-export const PURGE_SECTIONS = ["loads", "invoices", "drivers", "owners", "chats", "notifications", "tickets", "documents", "logs"] as const;
+export const PURGE_SECTIONS = ["loads", "invoices", "drivers", "owners", "partnerLoads", "partners", "chats", "notifications", "tickets", "documents", "logs"] as const;
 
 export const purgeSectionSchema = z.object({
   section: z.enum(PURGE_SECTIONS),
@@ -60,6 +60,10 @@ async function countSection(section: PurgeSectionId) {
       return prisma.driverProfile.count();
     case "owners":
       return prisma.company.count({ where: { type: { in: ["REQUESTER", "SUPPLIER"] } } });
+    case "partnerLoads":
+      return prisma.partnerShipment.count();
+    case "partners":
+      return prisma.company.count({ where: { type: "PARTNER", deletedAt: null } });
     case "chats":
       return prisma.conversation.count();
     case "notifications":
@@ -242,6 +246,47 @@ async function purgeDrivers(db: Db) {
   if (filled(removable)) await db.user.deleteMany({ where: { id: { in: removable } } });
 }
 
+async function purgePartnerLoads(db: Db) {
+  const rows = await db.partnerShipment.findMany({ select: { invoiceId: true } });
+  const invoiceIds = rows.map((row) => row.invoiceId).filter((id): id is string => Boolean(id));
+  await db.partnerShipment.deleteMany();
+  if (filled(invoiceIds)) {
+    await db.payment.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+    await db.commissionEntry.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+    await db.invoiceLine.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+    await db.invoice.deleteMany({ where: { id: { in: invoiceIds } } });
+  }
+  await resetNumbers(db, ["PS"]);
+}
+
+async function purgePartners(db: Db) {
+  const companies = await db.company.findMany({ where: { type: "PARTNER" }, select: { id: true } });
+  const companyIds = companies.map((row) => row.id);
+  await purgePartnerLoads(db);
+  const memberships = filled(companyIds)
+    ? await db.membership.findMany({ where: { companyId: { in: companyIds } }, select: { userId: true } })
+    : [];
+  const candidateIds = [...new Set(memberships.map((row) => row.userId))];
+  const protectedUsers = filled(candidateIds)
+    ? await db.user.findMany({
+        where: {
+          id: { in: candidateIds },
+          OR: [
+            { userRoles: { some: { role: { OR: [{ code: "SUPER_ADMIN" }, { portal: "PLATFORM" }] } } } },
+            { driverProfile: { isNot: null } },
+            { memberships: { some: { company: { type: { not: "PARTNER" } } } } },
+          ],
+        },
+        select: { id: true },
+      })
+    : [];
+  const keep = new Set(protectedUsers.map((row) => row.id));
+  const removable = candidateIds.filter((id) => !keep.has(id));
+  await detachUsers(db, removable);
+  await deleteCompanies(db, companyIds);
+  if (filled(removable)) await db.user.deleteMany({ where: { id: { in: removable } } });
+}
+
 async function purgeOwners(db: Db) {
   const companies = await db.company.findMany({
     where: { type: { in: ["REQUESTER", "SUPPLIER"] } },
@@ -284,6 +329,10 @@ async function runSection(db: Db, section: PurgeSectionId) {
       return purgeDrivers(db);
     case "owners":
       return purgeOwners(db);
+    case "partnerLoads":
+      return purgePartnerLoads(db);
+    case "partners":
+      return purgePartners(db);
     case "chats":
       await db.message.deleteMany();
       await db.conversationParticipant.deleteMany();

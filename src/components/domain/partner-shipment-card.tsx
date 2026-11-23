@@ -73,7 +73,6 @@ export function PartnerShipmentCard({ shipment, href }: { shipment: PartnerShipm
         {shipment.driver ? (
           <p className="text-sm">
             راننده: {shipment.driver.name} {shipment.driver.phone ? <PhoneLink phone={shipment.driver.phone} /> : null}
-            {shipment.driverLocation ? ` · ${shipment.driverLocation}` : ""}
           </p>
         ) : (
           <p className="text-sm text-muted">راننده هنوز تخصیص نشده است.</p>

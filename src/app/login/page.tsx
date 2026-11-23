@@ -11,6 +11,7 @@ import { api, formatApiError } from "@/lib/api";
 import { homePath, safeInternalPath } from "@/lib/portal";
 import { useI18n } from "@/i18n/provider";
 import type { Me } from "@/hooks/use-me";
+import { EnamadSeal } from "@/components/layout/enamad-seal";
 import { BrandMark } from "@/components/visual/icons";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { TwoFactorChannel } from "@/lib/settings";
@@ -184,10 +185,11 @@ function LoginForm() {
           </div>
         </div>
       </aside>
-      <main className="relative grid place-items-center bg-background px-4 py-12 text-foreground">
+      <main className="relative flex min-h-screen flex-col bg-background px-4 py-8 text-foreground">
         <div className="absolute end-4 top-4">
           <ThemeToggle />
         </div>
+        <div className="grid flex-1 place-items-center">
         <div className="w-full max-w-md">
           <Link href="/" className="mb-8 block lg:hidden">
             <BrandMark />
@@ -293,6 +295,10 @@ function LoginForm() {
               </div>
             </>
           )}
+        </div>
+        </div>
+        <div className="flex justify-center pb-12 pt-6">
+          <EnamadSeal />
         </div>
       </main>
     </div>
