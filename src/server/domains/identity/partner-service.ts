@@ -94,6 +94,67 @@ export async function listPartnerShipments(actor: Actor) {
   return rows.map(mapShipment);
 }
 
+export async function listDriverCompletedTrips(actor: Actor) {
+  assertPermission(actor, "jobs.read");
+  if (!actor.driverProfile) throw Errors.forbidden();
+  const driverId = actor.driverProfile.id;
+  const [partners, jobs] = await Promise.all([
+    prisma.partnerShipment.findMany({
+      where: { driverId, status: "DELIVERED" },
+      include: partnerInclude,
+      orderBy: { deliveredAt: "desc" },
+      take: 100,
+    }),
+    prisma.transportationJob.findMany({
+      where: { assignedDriverId: driverId, status: { in: ["PROOF_SUBMITTED", "CONFIRMED", "COMPLETED"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+      include: {
+        order: {
+          select: {
+            requesterCompany: { select: { tradeName: true } },
+            request: { select: { originCity: true, destinationCity: true } },
+            items: { select: { name: true }, take: 4 },
+          },
+        },
+        pickupWarehouse: { select: { address: { select: { city: true } } } },
+        deliveryWarehouse: { select: { address: { select: { city: true } } } },
+      },
+    }),
+  ]);
+  const rows = [
+    ...partners.map((row) => ({
+      id: row.id,
+      kind: "partner" as const,
+      number: row.number,
+      title: row.brandName,
+      source: row.company.tradeName,
+      sourceKind: "طرف قرارداد",
+      from: row.warehouseName || "شورآباد",
+      to: [row.province, row.city].filter(Boolean).join("، "),
+      cargo: row.cargoType,
+      cartonCount: row.cartonCount,
+      status: row.status,
+      completedAt: (row.deliveredAt ?? row.updatedAt).toISOString(),
+    })),
+    ...jobs.map((job) => ({
+      id: job.id,
+      kind: "job" as const,
+      number: job.number,
+      title: job.order.requesterCompany.tradeName,
+      source: job.order.requesterCompany.tradeName,
+      sourceKind: "صاحب بار",
+      from: job.order.request?.originCity ?? job.pickupWarehouse?.address?.city ?? "مبدأ",
+      to: job.order.request?.destinationCity ?? job.deliveryWarehouse?.address?.city ?? "مقصد",
+      cargo: job.order.items.map((item) => item.name).filter(Boolean).join("، ") || "بار",
+      cartonCount: null as number | null,
+      status: job.status,
+      completedAt: job.updatedAt.toISOString(),
+    })),
+  ];
+  return rows.sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1));
+}
+
 export async function listDriverPartnerShipments(actor: Actor) {
   assertPermission(actor, "jobs.read");
   if (!actor.driverProfile) throw Errors.forbidden();

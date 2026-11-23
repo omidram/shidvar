@@ -31,6 +31,7 @@ import {
   invoicePartnerShipment,
   listAssignableDrivers,
   getDriverPartnerShipment,
+  listDriverCompletedTrips,
   listDriverPartnerShipments,
   listPartnerShipments,
   listPartners,
@@ -1380,6 +1381,14 @@ export const routes: RouteDefinition[] = [
         create: { key: params.key, value: payload.value as object, description: payload.description ?? params.key },
         update: { value: payload.value as object, description: payload.description },
       });
+    },
+  },
+  {
+    method: "GET",
+    path: "/driver/completed-trips",
+    permissions: ["jobs.read"],
+    async handler({ actor }) {
+      return listDriverCompletedTrips(requireActor(actor));
     },
   },
   {

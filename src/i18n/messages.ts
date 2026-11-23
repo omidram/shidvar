@@ -225,6 +225,7 @@ export const fa = {
     marketplace: "بازار بار",
     jobs: "بارهای جاری",
     activeTrip: "سفر فعال",
+    completedTrips: "سفرهای انجام شده",
     verifications: "در انتظار تأیید",
     users: "کاربران",
     companies: "صاحبان بار",

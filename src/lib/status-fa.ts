@@ -29,6 +29,7 @@ const LABELS: Record<string, string> = {
   DELIVERED: "تحویل شد",
   PROOF_SUBMITTED: "منتظر تأیید مدارک",
   COMPLETED: "تکمیل شده",
+  CONFIRMED: "سفر تمام شد",
   DISPUTED: "اختلاف",
   PLATFORM: "سامانه",
   REQUESTER: "صاحب بار",

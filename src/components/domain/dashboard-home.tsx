@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ClipboardList, LifeBuoy, MapPinned, PlusCircle, Receipt, ShieldCheck, Truck, Users, Wallet } from "lucide-react";
+import { BarChart3, CheckCheck, ClipboardList, LifeBuoy, MapPinned, PlusCircle, Receipt, ShieldCheck, Truck, Users, Wallet } from "lucide-react";
 import { StatCard, Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { ErrorState, PageHeader, RouteLine } from "@/components/domain/chrome";
@@ -80,6 +80,7 @@ export function DashboardView() {
           ? [
               { href: "/driver/jobs", label: "بارهای جاری", hint: "بارهایی که می‌توانید قبول کنید", icon: Truck, tone: "green" },
               { href: "/driver/active-trip", label: t.menu.activeTrip, hint: "مسیر باری که قبول کرده‌اید", icon: MapPinned, tone: "ink" },
+              { href: "/driver/completed-trips", label: t.menu.completedTrips, hint: "بارهای تحویل‌شده از طرف قرارداد و صاحب بار", icon: CheckCheck, tone: "violet" },
               { href: "/driver/wallet", label: t.menu.wallet, hint: t.dash.hintWallet, icon: Wallet, tone: "amber" },
             ]
           : [
